@@ -1,2 +1,3 @@
 /tpkg
 /dist
+/test/zlib-*
