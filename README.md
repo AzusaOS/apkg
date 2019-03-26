@@ -20,7 +20,8 @@ Header:
 * File Format Version (0x00000001)
 * Flags int64 (beta, etc)
 * Creation date/time
-* Download URL format
+* Architecture (amd64, i386, etc)
+* Download URL format (should contain architecture)
 * Location in file of indices, length, all int32 (file should never reach 4GB)
 * ... more?
 
