@@ -36,7 +36,10 @@ func main() {
 
 	var err error
 	server, err = fuse.NewServer(NewPkgFS(), "/pkg", &fuse.MountOptions{
-		Debug: true,
+		AllowOther: os.Geteuid() == 0,
+		Debug:      true,
+		FsName:     "tpkg",
+		Name:       "tpkg",
 	})
 	if err != nil {
 		fmt.Printf("Mount fail: %v\n", err)

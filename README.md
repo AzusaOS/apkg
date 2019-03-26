@@ -2,6 +2,20 @@
 
 Work in progress
 
+# Structure
+
+* /pkg/INFO contains basic info on the currently served data (file version, etc)
+* /pkg/by-name/... is a non-listable directory but lookups will return a symlink to a given package in the form ../by-id/id
+* /pkg/by-id/... for each id, allows access to contents of package
+
+# Package names
+
+Each package name is made of sections separated by dots. Typically it would be vendor.package.major.minor.revision.patch
+
+Additional sections can be added, and less-specific names will always point to the most recent package with a given prefix.
+
+For example, package foobar v1.2.3 released as part of the core will be called core.foobar.1.2.3, however core.foobar will also work.
+
 # Database
 
 Encoding is big endian unless specified.
@@ -21,7 +35,7 @@ Header:
 * Flags int64 (beta, etc)
 * Creation date/time
 * Architecture (amd64, i386, etc)
-* Download URL format (should contain architecture)
+* Download URL prefix (should contain architecture)
 * Location in file of indices, length, all int32 (file should never reach 4GB)
 * ... more?
 
@@ -46,3 +60,4 @@ Each data file contains a header, JSON-encoded metadata, a hash data descriptor,
 * Hash descriptor length int32
 * Hash descriptor hash (sha256)
 * Data offset int32
+

@@ -14,3 +14,14 @@ func NewPkgFS() *PkgFS {
 func (p *PkgFS) String() string {
 	return "tpkgFS"
 }
+
+func (p *PkgFS) Access(input *fuse.AccessIn) (code fuse.Status) {
+	if input.Mask&fuse.W_OK != 0 {
+		return fuse.EPERM
+	}
+	return fuse.OK
+}
+
+func (p *PkgFS) Lookup(header *fuse.InHeader, name string, out *fuse.EntryOut) (code fuse.Status) {
+	return fuse.ENOENT
+}
