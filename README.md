@@ -25,15 +25,16 @@ Encoding is big endian unless specified.
 Master DB: one file + signature.
 
 * Header
-* ID + basic pkg info (inode range, etc)
-* ID→info offset index
-* Name→ID index
+* ID & basic pkg info for each package (inode range, etc)
+* Signature
 
 Header:
 
+* Magic "TPDB"
 * File Format Version (0x00000001)
 * Flags int64 (beta, etc)
 * Creation date/time
+* OS (linux, darwin, windows, etc)
 * Architecture (amd64, i386, etc)
 * Download URL prefix (should contain architecture)
 * Location in file of indices, length, all int32 (file should never reach 4GB)
@@ -50,6 +51,7 @@ Basic pkg info:
 
 Each data file contains a header, JSON-encoded metadata, a hash data descriptor, and data blocks
 
+* Magic "TPKG"
 * File Format Version (0x00000001)
 * Flags int64
 * Creation date/time int64 + int64 (unix + nano)

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/hanwen/go-fuse/fuse"
@@ -34,8 +35,19 @@ func main() {
 	log.Printf("tpkg: preparing")
 	setupSignals()
 
+	mountPoint := "/pkg"
+	if os.Geteuid() != 0 {
+		h := os.Getenv("HOME")
+		if h != "" {
+			mountPoint = filepath.Join(h, "pkg")
+		}
+	}
+	if err := os.MkdirAll(mountPoint, 0755); err != nil {
+		log.Fatalf("tpkg: failed to create %s: %s", mountPoint, err)
+	}
+
 	var err error
-	server, err = fuse.NewServer(NewPkgFS(), "/pkg", &fuse.MountOptions{
+	server, err = fuse.NewServer(pkgFSobj, mountPoint, &fuse.MountOptions{
 		AllowOther: os.Geteuid() == 0,
 		Debug:      true,
 		FsName:     "tpkg",
@@ -46,7 +58,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Printf("filesystem mounted on /pkg")
+	log.Printf("filesystem mounted on %s", mountPoint)
 
 	server.Serve()
 }
