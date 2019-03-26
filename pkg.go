@@ -4,13 +4,18 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/hanwen/go-fuse/fuse"
 )
 
 var pkgFSobj = &pkgFS{RawFileSystem: fuse.NewDefaultRawFileSystem(),
 	inodeLast: 100, // values below 100 are reserved for special inodes
-	inodes:    map[uint64]inodeObj{1: &specialInodeObj{ino: 1, refcount: 999, mode: os.ModeDir | 0755}},
+	inodes: map[uint64]inodeObj{
+		1: &specialInodeObj{ino: 1, refcount: 999, mode: os.ModeDir | 0755},
+		2: &specialInodeObj{ino: 2, refcount: 999, mode: os.ModeDir | 0755},
+		3: &specialInodeObj{ino: 3, refcount: 999, mode: os.ModeDir | 0755},
+	},
 }
 
 type pkgFS struct {
@@ -58,5 +63,32 @@ func (p *pkgFS) Lookup(header *fuse.InHeader, name string, out *fuse.EntryOut) (
 	}
 
 	out.NodeId, out.Generation = sub.NodeId()
-	return fuse.ENOENT
+
+	// fill attrs
+	out.Attr.Ino = out.NodeId
+	out.Attr.Mode = uint32(sub.Mode())
+	out.Attr.Nlink = 1
+
+	out.SetEntryTimeout(300 * time.Second)
+	out.SetAttrTimeout(300 * time.Second)
+	return fuse.OK
+}
+
+func (p *pkgFS) GetAttr(input *fuse.GetAttrIn, out *fuse.AttrOut) (code fuse.Status) {
+	ino, ok := p.getInode(input.NodeId)
+	if !ok {
+		return fuse.EINVAL
+	}
+
+	out.Attr.Ino, _ = ino.NodeId()
+	out.Attr.Size = 0
+	out.Attr.Blocks = 1
+	out.Attr.Mode = uint32(ino.Mode())
+	out.Attr.Nlink = 1
+	out.Attr.Rdev = 1
+	out.Attr.Blksize = 512
+	out.Ino = out.Attr.Ino
+
+	out.SetTimeout(300 * time.Second)
+	return fuse.OK
 }
