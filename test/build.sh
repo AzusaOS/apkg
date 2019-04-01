@@ -5,6 +5,12 @@ ZLIB_VER=1.2.11
 ARCH=`uname -m`
 OS=`uname -s | tr A-Z a-z`
 
+case $ARCH in
+	x86_64)
+		ARCH=amd64
+		;;
+esac
+
 # testing with only zlib
 if [ ! -f zlib-${ZLIB_VER}.tar.gz ]; then
 	wget http://zlib.net/zlib-${ZLIB_VER}.tar.gz
@@ -39,3 +45,5 @@ mksquashfs "dist/pkg/by-name/libs.zlib.${ZLIB_VER}" "dist/libs.zlib.${ZLIB_VER}.
 for foo in dist/*.squashfs; do 
 	php convert.php "$foo"
 done
+
+php db.php

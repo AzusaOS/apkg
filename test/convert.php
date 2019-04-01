@@ -53,6 +53,10 @@ foreach($name as $frag) {
 	if (count($tmp) < 2) continue;
 	$names[] = implode('.', $tmp);
 }
+array_shift($name);
+array_shift($name);
+$version = implode('.', $name);
+
 $date = explode(' ', microtime());
 $date = [(int)$date[1], (int)($date[0]*1000000000)];
 
@@ -60,6 +64,7 @@ $date = [(int)$date[1], (int)($date[0]*1000000000)];
 $metadata = [
 	'full_name' => basename($sqfs, '.squashfs'),
 	'name' => $names[0],
+	'version' => $version,
 	'names' => $names,
 	'os' => $os,
 	'arch' => $arch,
@@ -103,8 +108,12 @@ if (strlen($header) != HEADER_LEN) die("invalid header len\n");
 
 echo "header hash: ".hash('sha256', $header, false)."\n";
 
+$base_name = $names[0];
+$base_path = 'dist/data/'.str_replace('.','/',$base_name).'/'.basename($sqfs, '.squashfs').'.tpkg';
+mkdir(dirname($base_path), 0755, true);
+
 // generate output
-$out = 'dist/'.basename($sqfs, '.squashfs').'.tpkg';
+$out = $base_path;
 $outfp = fopen($out, 'wb');
 fwrite($outfp, $header);
 fwrite($outfp, $metadata);

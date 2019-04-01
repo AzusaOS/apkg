@@ -36,16 +36,16 @@ Header:
 * Creation date/time
 * OS (linux, darwin, windows, etc)
 * Architecture (amd64, i386, etc)
-* Download URL prefix (should contain architecture)
+* Download URL prefix (should contain architecture?)
 * Location in file of indices, length, all int32 (file should never reach 4GB)
 * ... more?
 
 Basic pkg info:
 
+* 0x00 (uint32)
 * ID (16 bytes)
 * File header signature (file header contains checksum of rest of file)
 * Size
-* Timestamp
 
 ## Data File
 
