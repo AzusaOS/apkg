@@ -42,7 +42,7 @@ Header:
 
 Basic pkg info:
 
-* 0x00 (uint32)
+* 0x00 (uint8)
 * ID (16 bytes)
 * File header signature (file header contains checksum of rest of file)
 * Size

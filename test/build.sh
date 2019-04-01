@@ -44,6 +44,7 @@ mksquashfs "dist/pkg/by-name/libs.zlib.${ZLIB_VER}" "dist/libs.zlib.${ZLIB_VER}.
 
 for foo in dist/*.squashfs; do 
 	php convert.php "$foo"
+	rm "$foo"
 done
 
 php db.php

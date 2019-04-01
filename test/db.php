@@ -21,6 +21,7 @@ $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator('.'));
 foreach($it as $fn => $info) {
 	if (!$info->isFile()) continue;
 	if (substr($fn, -5) != '.tpkg') continue;
+	echo "Indexing: $fn\n";
 
 	$fp = fopen($fn, 'rb');
 	// read header
@@ -47,8 +48,9 @@ foreach($it as $fn => $info) {
 		'pos' => $pos,
 	];
 
-	fwrite($outfp, pack('N', 0)); // node type = package
+	fwrite($outfp, chr(0)); // node type = package
 	fwrite($outfp, $id);
 	fwrite($outfp, $header_hash);
 	fwrite($outfp, pack('J', $info->getSize()));
+	fwrite($outfp, chr(strlen($metadata['full_name'])).$metadata['full_name']); // TODO check len(full_name) < 256
 }
