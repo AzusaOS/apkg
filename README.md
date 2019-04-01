@@ -51,15 +51,16 @@ Basic pkg info:
 
 Each data file contains a header, JSON-encoded metadata, a hash data descriptor, and data blocks
 
-* Magic "TPKG"
-* File Format Version (0x00000001)
-* Flags int64
-* Creation date/time int64 + int64 (unix + nano)
-* MetaData offset int32
-* MetaData length int32
-* MetaData hash (sha256)
-* Hash descriptor offset int32
-* Hash descriptor length int32
-* Hash descriptor hash (sha256)
-* Data offset int32
-
+* 0 Magic "TPKG"
+* 4 File Format Version (0x00000001)
+* 8 Flags int64
+* 16 Creation date/time int64 + int64 (unix + nano)
+* 32 MetaData offset int32
+* 36 MetaData length int32
+* 40 MetaData hash (sha256)
+* 72 Hash descriptor offset int32
+* 76 Hash descriptor length int32
+* 80 Hash descriptor hash (sha256)
+* 112 Signature offset uint32
+* 116 Data offset uint32
+* 120 end of header

@@ -1,3 +1,4 @@
 /tpkg
 /dist
 /test/zlib-*
+/test/dist
