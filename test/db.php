@@ -12,6 +12,9 @@ fwrite($outfp, pack('JJ', time(), 0)); // creation date/time
 fwrite($outfp, pack('N', 0)); // OS 0=linux 1=darwin 2=windows ...
 fwrite($outfp, pack('N', 1)); // Arch 0=i386 1=amd64 ...
 
+if (ftell($outfp) != 40) die("invalid header\n");
+
+// at 40
 fwrite($outfp, pack('N', 0)); // location of id index
 fwrite($outfp, pack('N', 0)); // location of name index
 
@@ -54,3 +57,14 @@ foreach($it as $fn => $info) {
 	fwrite($outfp, pack('J', $info->getSize()));
 	fwrite($outfp, chr(strlen($metadata['full_name'])).$metadata['full_name']); // TODO check len(full_name) < 256
 }
+
+// location of id index
+$id_index_pos = ftell($outfp);
+fseek($outfp, 40);
+fwrite($outfp, pack('N', $id_index_pos));
+fseek($outfp, $id_index_pos);
+
+// let's create id index
+
+
+
