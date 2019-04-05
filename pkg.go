@@ -43,14 +43,14 @@ func (p *pkgFS) getInode(ino uint64) (inodeObj, bool) {
 	return a, b
 }
 
-func (p *pkgFS) Access(input *fuse.AccessIn) (code fuse.Status) {
+func (p *pkgFS) Access(cancel <-chan struct{}, input *fuse.AccessIn) (code fuse.Status) {
 	if input.Mask&fuse.W_OK != 0 {
 		return fuse.EPERM
 	}
 	return fuse.OK
 }
 
-func (p *pkgFS) Lookup(header *fuse.InHeader, name string, out *fuse.EntryOut) (code fuse.Status) {
+func (p *pkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name string, out *fuse.EntryOut) (code fuse.Status) {
 	ino, ok := p.getInode(header.NodeId)
 	if !ok {
 		// this shouldn't be possible
@@ -65,30 +65,36 @@ func (p *pkgFS) Lookup(header *fuse.InHeader, name string, out *fuse.EntryOut) (
 	out.NodeId, out.Generation = sub.NodeId()
 
 	// fill attrs
-	out.Attr.Ino = out.NodeId
-	out.Attr.Mode = uint32(sub.Mode())
-	out.Attr.Nlink = 1
+	out.Ino = out.NodeId
+	out.Size = 4096
+	out.Blocks = 1
+	out.Mode = uint32(sub.Mode())
+	out.Nlink = 1
+	out.Rdev = 1
+	out.Blksize = 4096
 
 	out.SetEntryTimeout(300 * time.Second)
 	out.SetAttrTimeout(300 * time.Second)
 	return fuse.OK
 }
 
-func (p *pkgFS) GetAttr(input *fuse.GetAttrIn, out *fuse.AttrOut) (code fuse.Status) {
+func (p *pkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse.AttrOut) (code fuse.Status) {
 	ino, ok := p.getInode(input.NodeId)
 	if !ok {
 		return fuse.EINVAL
 	}
 
 	out.Attr.Ino, _ = ino.NodeId()
-	out.Attr.Size = 0
+	out.Attr.Size = 4096
 	out.Attr.Blocks = 1
 	out.Attr.Mode = uint32(ino.Mode())
 	out.Attr.Nlink = 1
 	out.Attr.Rdev = 1
-	out.Attr.Blksize = 512
-	out.Ino = out.Attr.Ino
+	out.Attr.Blksize = 4096
+	out.Atimensec = uint32(time.Now().Unix())
+	out.Mtimensec = uint32(time.Now().Unix())
+	out.Ctimensec = uint32(time.Now().Unix())
 
-	out.SetTimeout(300 * time.Second)
+	out.SetTimeout(3600 * time.Second)
 	return fuse.OK
 }
