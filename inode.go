@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"syscall"
 )
 
 type inodeObj interface {
@@ -10,6 +11,7 @@ type inodeObj interface {
 
 	NodeId() (uint64, uint64) // NodeId, Generation
 	Mode() os.FileMode
+	UnixMode() uint32
 	Lookup(name string) (inodeObj, error)
 }
 
@@ -57,6 +59,29 @@ func (i *specialInodeObj) Lookup(name string) (inodeObj, error) {
 
 func (i *specialInodeObj) Mode() os.FileMode {
 	return i.mode
+}
+
+func (i *specialInodeObj) UnixMode() uint32 {
+	mode := i.Mode()
+	res := uint32(mode.Perm())
+
+	switch {
+	case mode&os.ModeDir == os.ModeDir:
+		res |= syscall.S_IFDIR
+	case mode&os.ModeCharDevice == os.ModeCharDevice:
+		res |= syscall.S_IFCHR
+	case mode&os.ModeDevice == os.ModeDevice:
+		res |= syscall.S_IFBLK
+	case mode&os.ModeNamedPipe == os.ModeNamedPipe:
+		res |= syscall.S_IFIFO
+	case mode&os.ModeSymlink == os.ModeSymlink:
+		res |= syscall.S_IFLNK
+	case mode&os.ModeSocket == os.ModeSocket:
+		res |= syscall.S_IFSOCK
+	default:
+		res |= syscall.S_IFREG
+	}
+	return res
 }
 
 func (i *specialInodeObj) IsDir() bool {

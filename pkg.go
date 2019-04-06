@@ -68,7 +68,7 @@ func (p *pkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	out.Ino = out.NodeId
 	out.Size = 4096
 	out.Blocks = 1
-	out.Mode = uint32(sub.Mode())
+	out.Mode = sub.UnixMode()
 	out.Nlink = 1
 	out.Rdev = 1
 	out.Blksize = 4096
@@ -87,7 +87,7 @@ func (p *pkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 	out.Attr.Ino, _ = ino.NodeId()
 	out.Attr.Size = 4096
 	out.Attr.Blocks = 1
-	out.Attr.Mode = uint32(ino.Mode())
+	out.Attr.Mode = ino.UnixMode()
 	out.Attr.Nlink = 1
 	out.Attr.Rdev = 1
 	out.Attr.Blksize = 4096
