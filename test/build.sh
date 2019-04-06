@@ -42,9 +42,3 @@ echo "Building squashfs..."
 mksquashfs "dist/pkg/by-name/core.zlib.${ZLIB_VER}" "dist/core.zlib.${ZLIB_VER}.${OS}.${ARCH}.squashfs" -no-exports -all-root -b 4096
 mksquashfs "dist/pkg/by-name/libs.zlib.${ZLIB_VER}" "dist/libs.zlib.${ZLIB_VER}.${OS}.${ARCH}.squashfs" -no-exports -all-root -b 4096
 
-for foo in dist/*.squashfs; do 
-	php convert.php "$foo"
-	rm "$foo"
-done
-
-php db.php
