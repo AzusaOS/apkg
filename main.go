@@ -35,6 +35,8 @@ func main() {
 	log.Printf("tpkg: preparing")
 	setupSignals()
 
+	loadDb()
+
 	mountPoint := "/pkg"
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
