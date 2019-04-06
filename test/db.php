@@ -65,6 +65,6 @@ fwrite($outfp, pack('N', $id_index_pos));
 fseek($outfp, $id_index_pos);
 
 // let's create id index
-
+// XXX TODO IN THE FUTURE
 
 
