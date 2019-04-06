@@ -95,6 +95,6 @@ func (p *pkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 	out.Mtimensec = uint32(time.Now().Unix())
 	out.Ctimensec = uint32(time.Now().Unix())
 
-	out.SetTimeout(3600 * time.Second)
+	out.SetTimeout(time.Second)
 	return fuse.OK
 }
