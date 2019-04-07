@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"syscall"
+
+	"github.com/hanwen/go-fuse/fuse"
 )
 
 type inodeObj interface {
@@ -13,12 +15,11 @@ type inodeObj interface {
 	Mode() os.FileMode
 	UnixMode() uint32
 	Lookup(name string) (inodeObj, error)
+	FillAttr(attr *fuse.Attr) error
 }
 
 const (
-	InodeRoot   uint64 = 1
-	InodeById          = 2
-	InodeByName        = 3
+	InodeRoot uint64 = 1
 )
 
 type specialInodeObj struct {
@@ -37,22 +38,6 @@ func (i *specialInodeObj) Lookup(name string) (inodeObj, error) {
 	switch i.ino {
 	case InodeRoot:
 		log.Printf("ROOT lookup: %s", name)
-		switch name {
-		case "by-id":
-			v, ok := pkgFSobj.getInode(InodeById)
-			if ok {
-				return v, nil
-			} else {
-				return nil, os.ErrNotExist
-			}
-		case "by-name":
-			v, ok := pkgFSobj.getInode(InodeByName)
-			if ok {
-				return v, nil
-			} else {
-				return nil, os.ErrNotExist
-			}
-		}
 	}
 	return nil, os.ErrNotExist
 }
@@ -86,4 +71,18 @@ func (i *specialInodeObj) UnixMode() uint32 {
 
 func (i *specialInodeObj) IsDir() bool {
 	return i.mode.IsDir()
+}
+
+func (i *specialInodeObj) FillAttr(attr *fuse.Attr) error {
+	attr.Ino = i.ino
+	attr.Size = 4096
+	attr.Blocks = 1
+	attr.Mode = i.UnixMode()
+	attr.Nlink = 1 // 1 required
+	attr.Rdev = 1
+	attr.Blksize = 4096
+	attr.Atimensec = 0
+	attr.Mtimensec = 0
+	attr.Ctimensec = 0
+	return nil
 }

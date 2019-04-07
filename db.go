@@ -13,7 +13,7 @@ const PKG_URL_PREFIX = "https://pkg.tardigradeos.com/"
 
 var (
 	dbLoad sync.Once
-	db     *tpkgdb.DB
+	dbMain *tpkgdb.DB
 )
 
 func loadDb() {
@@ -21,12 +21,12 @@ func loadDb() {
 }
 
 func realLoadDb() {
-	log.Printf("db: loading database")
+	log.Printf("db: loading main database")
 
 	var err error
-	db, err = tpkgdb.New(PKG_URL_PREFIX, "main")
+	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main")
 	if err != nil {
-		log.Printf("db: failed: %s", err)
+		log.Printf("db: failed to load: %s", err)
 		return
 	}
 }

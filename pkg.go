@@ -12,9 +12,7 @@ import (
 var pkgFSobj = &pkgFS{RawFileSystem: fuse.NewDefaultRawFileSystem(),
 	inodeLast: 100, // values below 100 are reserved for special inodes
 	inodes: map[uint64]inodeObj{
-		1: &specialInodeObj{ino: 1, refcount: 999, mode: os.ModeDir | 0755},
-		2: &specialInodeObj{ino: 2, refcount: 999, mode: os.ModeDir | 0755},
-		3: &specialInodeObj{ino: 3, refcount: 999, mode: os.ModeDir | 0755},
+		1: &specialInodeObj{ino: 1, refcount: 999, mode: os.ModeDir | 0444},
 	},
 }
 
@@ -63,18 +61,10 @@ func (p *pkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	}
 
 	out.NodeId, out.Generation = sub.NodeId()
+	sub.FillAttr(&out.Attr)
 
-	// fill attrs
-	out.Ino = out.NodeId
-	out.Size = 4096
-	out.Blocks = 1
-	out.Mode = sub.UnixMode()
-	out.Nlink = 1
-	out.Rdev = 1
-	out.Blksize = 4096
-
-	out.SetEntryTimeout(300 * time.Second)
-	out.SetAttrTimeout(300 * time.Second)
+	out.SetEntryTimeout(time.Second)
+	out.SetAttrTimeout(time.Second)
 	return fuse.OK
 }
 
@@ -84,17 +74,7 @@ func (p *pkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 		return fuse.EINVAL
 	}
 
-	out.Attr.Ino, _ = ino.NodeId()
-	out.Attr.Size = 4096
-	out.Attr.Blocks = 1
-	out.Attr.Mode = ino.UnixMode()
-	out.Attr.Nlink = 1
-	out.Attr.Rdev = 1
-	out.Attr.Blksize = 4096
-	out.Atimensec = uint32(time.Now().Unix())
-	out.Mtimensec = uint32(time.Now().Unix())
-	out.Ctimensec = uint32(time.Now().Unix())
-
+	ino.FillAttr(&out.Attr)
 	out.SetTimeout(time.Second)
 	return fuse.OK
 }
