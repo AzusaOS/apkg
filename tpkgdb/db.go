@@ -41,17 +41,27 @@ func New(prefix, name string) (*DB, error) {
 		pkgAlias: make(map[string]*Package),
 	}
 
+	isNew := false
 	if _, err := os.Stat(r.name + ".bin"); os.IsNotExist(err) {
 		// immediate download
 		_, err := r.download("")
 		if err != nil {
 			return nil, err
 		}
+		isNew = true
 	}
 
 	err := r.load()
 	if err != nil {
 		return nil, err
+	}
+
+	if !isNew {
+		// check for updates
+		r, err = r.Update()
+		if err != nil {
+			log.Printf("tpkgdb: failed to update: %s", err)
+		}
 	}
 
 	return r, nil
