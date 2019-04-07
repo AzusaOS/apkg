@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"syscall"
 
@@ -18,46 +17,18 @@ type inodeObj interface {
 	FillAttr(attr *fuse.Attr) error
 }
 
-const (
-	InodeRoot uint64 = 1
-	InodeInfo uint64 = 2
-)
-
-type specialInodeObj struct {
-	ino      uint64
-	refcount int64
-	mode     os.FileMode
-	children map[string]*inodeObj
-}
-
-func (i *specialInodeObj) NodeId() (uint64, uint64) {
-	// special nodes have generation=0
-	return i.ino, 0
-}
-
-func (i *specialInodeObj) Lookup(name string) (inodeObj, error) {
-	switch i.ino {
-	case InodeRoot:
-		log.Printf("ROOT lookup: %s", name)
-	}
-	return nil, os.ErrNotExist
-}
-
-func (i *specialInodeObj) Mode() os.FileMode {
-	return i.mode
-}
-
-func (i *specialInodeObj) UnixMode() uint32 {
-	mode := i.Mode()
+// see: https://golang.org/src/os/stat_linux.go
+func modeToUnix(mode os.FileMode) uint32 {
 	res := uint32(mode.Perm())
 
+	// type of file
 	switch {
-	case mode&os.ModeDir == os.ModeDir:
-		res |= syscall.S_IFDIR
 	case mode&os.ModeCharDevice == os.ModeCharDevice:
 		res |= syscall.S_IFCHR
 	case mode&os.ModeDevice == os.ModeDevice:
 		res |= syscall.S_IFBLK
+	case mode&os.ModeDir == os.ModeDir:
+		res |= syscall.S_IFDIR
 	case mode&os.ModeNamedPipe == os.ModeNamedPipe:
 		res |= syscall.S_IFIFO
 	case mode&os.ModeSymlink == os.ModeSymlink:
@@ -67,23 +38,19 @@ func (i *specialInodeObj) UnixMode() uint32 {
 	default:
 		res |= syscall.S_IFREG
 	}
+
+	// extra flags
+	if mode&os.ModeSetgid == os.ModeSetgid {
+		res |= syscall.S_ISGID
+	}
+
+	if mode&os.ModeSetuid == os.ModeSetuid {
+		res |= syscall.S_ISUID
+	}
+
+	if mode&os.ModeSticky == os.ModeSticky {
+		res |= syscall.S_ISVTX
+	}
+
 	return res
-}
-
-func (i *specialInodeObj) IsDir() bool {
-	return i.mode.IsDir()
-}
-
-func (i *specialInodeObj) FillAttr(attr *fuse.Attr) error {
-	attr.Ino = i.ino
-	attr.Size = 4096
-	attr.Blocks = 1
-	attr.Mode = i.UnixMode()
-	attr.Nlink = 1 // 1 required
-	attr.Rdev = 1
-	attr.Blksize = 4096
-	attr.Atimensec = 0
-	attr.Mtimensec = 0
-	attr.Ctimensec = 0
-	return nil
 }

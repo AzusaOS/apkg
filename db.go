@@ -17,7 +17,7 @@ var (
 )
 
 func loadDb() {
-	dbLoad.Do(realLoadDb)
+	go dbLoad.Do(realLoadDb)
 }
 
 func realLoadDb() {
