@@ -5,8 +5,7 @@ Work in progress
 # Structure
 
 * /pkg/INFO contains basic info on the currently served data (file version, etc)
-* /pkg/by-name/... is a non-listable directory but lookups will return a symlink to a given package in the form ../by-id/id
-* /pkg/by-id/... for each id, allows access to contents of package
+* /pkg/... is a non-listable directory but lookups will return a symlink to a given package's full name, or a directory of the actual package contents
 
 # Package names
 

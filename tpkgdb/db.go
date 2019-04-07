@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -19,6 +20,10 @@ type DB struct {
 	created  time.Time
 	os, arch uint32
 	name     string
+
+	ino      map[uint64]*Package
+	pkgName  map[string]*Package
+	pkgAlias map[string]*Package
 }
 
 func New(f *os.File) (*DB, error) {
@@ -39,7 +44,12 @@ func New(f *os.File) (*DB, error) {
 		return nil, err
 	}
 
-	r := &DB{data: data}
+	r := &DB{
+		data:     data,
+		ino:      make(map[uint64]*Package),
+		pkgName:  make(map[string]*Package),
+		pkgAlias: make(map[string]*Package),
+	}
 	runtime.SetFinalizer(r, (*DB).Close)
 
 	err = r.index()
@@ -120,6 +130,7 @@ func (d *DB) index() error {
 		return err
 	}
 	// TODO → use indices
+	curIno := uint64(0)
 
 	// OK now let's read each package
 	for {
@@ -137,28 +148,30 @@ func (d *DB) index() error {
 			return errors.New("invalid data in db, couldn't open it")
 		}
 
+		pkg := &Package{
+			startIno: curIno,
+			pos:      pos,
+		}
+
 		// let's read the package id & other info
-		id := make([]byte, 16)
-		_, err = io.ReadFull(r, id)
+		_, err = io.ReadFull(r, pkg.id[:])
 		if err != nil {
 			return err
 		}
 
-		hash := make([]byte, 32)
-		_, err = io.ReadFull(r, hash)
+		pkg.hash = make([]byte, 32)
+		_, err = io.ReadFull(r, pkg.hash)
 		if err != nil {
 			return err
 		}
 
 		// read size
-		var size uint64
-		err = binary.Read(r, binary.BigEndian, &size)
+		err = binary.Read(r, binary.BigEndian, &pkg.size)
 		if err != nil {
 			return err
 		}
 
-		var inodes uint32
-		err = binary.Read(r, binary.BigEndian, &inodes)
+		err = binary.Read(r, binary.BigEndian, &pkg.inodes)
 		if err != nil {
 			return err
 		}
@@ -184,10 +197,23 @@ func (d *DB) index() error {
 		if err != nil {
 			return err
 		}
+		pkg.name = string(name)
+		pkg.path = string(path)
 
-		_ = pos
-		_ = hash
-		log.Printf("read package %s inodes=%d size=%d", name, inodes, size)
+		d.ino[pkg.startIno] = pkg
+		d.pkgName[pkg.name] = pkg
+		aliasName := pkg.name
+		for {
+			p := strings.LastIndexByte(aliasName, '.')
+			if p == -1 {
+				break
+			}
+			aliasName = aliasName[:p]
+			d.pkgAlias[aliasName] = pkg
+		}
+
+		log.Printf("read package %s pos=%d startIno=%d inodes=%d size=%d", pkg.name, pkg.pos, pkg.startIno, pkg.inodes, pkg.size)
+		curIno += uint64(pkg.inodes)
 	}
 
 	return nil
