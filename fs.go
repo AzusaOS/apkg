@@ -4,6 +4,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/hanwen/go-fuse/fuse"
@@ -103,8 +104,24 @@ func (p *pkgFS) Readlink(cancel <-chan struct{}, header *fuse.InHeader) (out []b
 }
 
 func (p *pkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenOut) (status fuse.Status) {
-	// TODO
-	return fuse.ENOSYS
+	if input.Flags&syscall.O_WRONLY != 0 {
+		// can be readwrite or wronly
+		return fuse.EROFS
+	}
+
+	// grab inode
+	ino, ok := p.getInode(input.NodeId)
+	if !ok {
+		return fuse.EINVAL
+	}
+
+	// check if can open
+	err := ino.Open(input.Flags)
+	if err != nil {
+		return fuse.ToStatus(err)
+	}
+
+	return fuse.OK
 }
 
 //    Read(cancel <-chan struct{}, input *ReadIn, buf []byte) (ReadResult, Status)

@@ -66,3 +66,7 @@ func (i *specialInodeObj) FillAttr(attr *fuse.Attr) error {
 func (i *specialInodeObj) Readlink() ([]byte, error) {
 	return nil, os.ErrInvalid
 }
+
+func (i *specialInodeObj) Open(flags uint32) error {
+	return nil
+}
