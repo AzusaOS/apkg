@@ -31,19 +31,15 @@ type DBData struct {
 
 	ready uint32
 
-	ino      map[uint64]*Package
-	pkgName  map[string]*Package
-	pkgAlias map[string]*Package
+	ino map[uint64]*Package
 }
 
 func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
 	r := &DBData{
-		prefix:   prefix,
-		name:     name,
-		fs:       fs,
-		ino:      make(map[uint64]*Package),
-		pkgName:  make(map[string]*Package),
-		pkgAlias: make(map[string]*Package),
+		prefix: prefix,
+		name:   name,
+		fs:     fs,
+		ino:    make(map[uint64]*Package),
 	}
 
 	isNew := false

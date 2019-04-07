@@ -76,6 +76,8 @@ func (d *DBData) index() error {
 	}
 	// TODO → use indices
 
+	pkgList := make(map[uint64]*Package)
+
 	// OK now let's read each package
 	for i := uint32(0); i < d.count; i++ {
 		var t uint8
@@ -111,10 +113,12 @@ func (d *DBData) index() error {
 			return err
 		}
 
-		err = binary.Read(r, binary.BigEndian, &pkg.inodes)
+		var inodes uint32
+		err = binary.Read(r, binary.BigEndian, &inodes)
 		if err != nil {
 			return err
 		}
+		pkg.inodes = uint64(inodes)
 
 		// read name
 		l, err := binary.ReadUvarint(r)
@@ -140,8 +144,23 @@ func (d *DBData) index() error {
 		pkg.name = string(name)
 		pkg.path = string(path)
 
-		d.ino[pkg.startIno] = pkg
-		d.pkgName[pkg.name] = pkg
+		pkgList[pkg.startIno] = pkg
+
+		//log.Printf("read package %s size=%d", pkg.name, pkg.size)
+		d.inoCount += uint64(pkg.inodes) + 1
+		d.totalSize += pkg.size
+	}
+
+	offt, err := d.fs.AllocateInodes(d.inoCount, d.lookupInode)
+	if err != nil {
+		return err
+	}
+
+	// register inodes in root
+	for ino, pkg := range pkgList {
+		d.ino[ino+offt] = pkg
+		d.fs.RegisterRootInode(offt+ino+1, pkg.name)
+
 		aliasName := pkg.name
 		first := true
 		for {
@@ -150,23 +169,32 @@ func (d *DBData) index() error {
 				break
 			}
 			if !first {
-				d.pkgAlias[aliasName] = pkg
+				d.fs.RegisterRootInode(offt+ino, aliasName)
 			} else {
 				first = false
 			}
 			aliasName = aliasName[:p]
 		}
-
-		//log.Printf("read package %s size=%d", pkg.name, pkg.size)
-		d.inoCount += uint64(pkg.inodes)
-		d.totalSize += pkg.size
 	}
-
-	d.fs.AllocateInodes(d.inoCount, d.lookupInode)
 
 	return nil
 }
 
-func (d *DBData) lookupInode(ino uint64) (tpkgfs.Inode, error) {
-	return nil, errors.New("WIP")
+func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, bool) {
+	log.Printf("inode lookup WIP %d", reqino)
+	if pkg, ok := d.ino[reqino]; ok {
+		// quick lookup, return symlink
+		log.Printf("return symlink to %s", pkg.name)
+		return tpkgfs.NewSymlink(reqino, []byte(pkg.name)), true
+	}
+
+	for ino, pkg := range d.ino {
+		if reqino < ino {
+			continue
+		}
+		if reqino > ino+pkg.inodes+1 {
+			continue
+		}
+	}
+	return nil, false
 }

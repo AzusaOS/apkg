@@ -59,12 +59,10 @@ func (d *DBData) download(v string) (bool, error) {
 // Update will check server for new version, update and return a new instance of DB unless there was no new version, in which case the original instance is returned
 func (d *DB) Update() error {
 	r := &DBData{
-		prefix:   d.DBData.prefix,
-		name:     d.DBData.name,
-		fs:       d.DBData.fs,
-		ino:      make(map[uint64]*Package),
-		pkgName:  make(map[string]*Package),
-		pkgAlias: make(map[string]*Package),
+		prefix: d.DBData.prefix,
+		name:   d.DBData.name,
+		fs:     d.DBData.fs,
+		ino:    make(map[uint64]*Package),
 	}
 
 	v := d.created.UTC().Format("20060102150405")

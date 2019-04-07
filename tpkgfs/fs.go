@@ -34,7 +34,7 @@ func New() (*PkgFS, error) {
 		return nil, err
 	}
 
-	root := &rootInodeObj{}
+	root := &rootInodeObj{children: make(map[string]uint64)}
 	res := &PkgFS{
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
 		root:          root,
@@ -42,6 +42,7 @@ func New() (*PkgFS, error) {
 		inodes:        map[uint64]Inode{1: root},
 		inodesRange:   make(map[uint64]*inodeR),
 	}
+	root.parent = res
 
 	var err error
 	res.server, err = fuse.NewServer(res, mountPoint, &fuse.MountOptions{

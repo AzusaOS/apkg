@@ -7,7 +7,7 @@ import (
 
 type inodeR struct {
 	count  uint64
-	lookup func(ino uint64) (Inode, error)
+	lookup func(ino uint64) (Inode, bool)
 }
 
 // allocateInode returns a numeric ID suitable for a new inode
@@ -19,11 +19,26 @@ func (p *PkgFS) getInode(ino uint64) (Inode, bool) {
 	p.inodesLock.RLock()
 	defer p.inodesLock.RUnlock()
 
+	if ino == 1 {
+		return p.root, true
+	}
+
 	a, b := p.inodes[ino]
-	return a, b
+	if b {
+		return a, b
+	}
+
+	for start, r := range p.inodesRange {
+		if ino >= start && ino < start+r.count {
+			// got a hit
+			return r.lookup(ino)
+		}
+	}
+
+	return nil, false
 }
 
-func (p *PkgFS) AllocateInodes(count uint64, lookup func(ino uint64) (Inode, error)) (uint64, error) {
+func (p *PkgFS) AllocateInodes(count uint64, lookup func(ino uint64) (Inode, bool)) (uint64, error) {
 	// allocate count number of inodes
 	lastIno := atomic.AddUint64(&p.inodeLast, count)
 	firstIno := lastIno - count

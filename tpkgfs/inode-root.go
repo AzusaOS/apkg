@@ -8,7 +8,12 @@ import (
 )
 
 type rootInodeObj struct {
+	parent   *PkgFS
 	children map[string]uint64
+}
+
+func (d *PkgFS) RegisterRootInode(ino uint64, name string) {
+	d.root.children[name] = ino
 }
 
 func (i *rootInodeObj) NodeId() (uint64, uint64) {
@@ -18,7 +23,15 @@ func (i *rootInodeObj) NodeId() (uint64, uint64) {
 
 func (i *rootInodeObj) Lookup(name string) (Inode, error) {
 	log.Printf("ROOT lookup: %s", name)
-	return nil, os.ErrNotExist
+	ino, ok := i.children[name]
+	if !ok {
+		return nil, os.ErrNotExist
+	}
+	inoObj, ok := i.parent.getInode(ino)
+	if !ok {
+		return nil, os.ErrInvalid
+	}
+	return inoObj, nil
 }
 
 func (i *rootInodeObj) Mode() os.FileMode {

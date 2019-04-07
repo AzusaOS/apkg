@@ -8,7 +8,7 @@ type Package struct {
 	id       uuid.UUID
 	hash     []byte // typically sha256
 	size     uint64
-	inodes   uint32
+	inodes   uint64
 	name     string
 	path     string // path relative to where db file was downloaded from
 }

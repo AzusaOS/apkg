@@ -50,7 +50,7 @@ func (i *symlinkInodeObj) FillAttr(attr *fuse.Attr) error {
 }
 
 func (i *symlinkInodeObj) Readlink() ([]byte, error) {
-	return i.target, os.ErrInvalid
+	return i.target, nil
 }
 
 func (i *symlinkInodeObj) Open(flags uint32) error {
