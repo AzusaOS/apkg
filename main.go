@@ -7,21 +7,18 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/hanwen/go-fuse/fuse"
 	"github.com/tardigradeos/tpkg/tpkgdb"
 	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
 const PKG_URL_PREFIX = "https://pkg.tardigradeos.com/"
 
-var server *fuse.Server
 var dbMain *tpkgdb.DB
+var shutdownChan = make(chan struct{})
 
 func shutdown() {
 	log.Println("tpkg: shutting down...")
-	if server != nil {
-		server.Unmount()
-	}
+	close(shutdownChan)
 }
 
 func setupSignals() {
@@ -44,6 +41,8 @@ func main() {
 		fmt.Printf("Mount fail: %s\n", err)
 		os.Exit(1)
 	}
+	go mp.Serve()
+	defer mp.Unmount()
 
 	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main", mp)
 	if err != nil {
@@ -51,5 +50,5 @@ func main() {
 		return
 	}
 
-	mp.Serve()
+	<-shutdownChan
 }

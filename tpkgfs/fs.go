@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -15,10 +14,11 @@ import (
 type PkgFS struct {
 	fuse.RawFileSystem
 
-	inodes     map[uint64]inodeObj
-	inodeLast  uint64 // last generated inode number (set to 1=root)
-	inodesLock sync.RWMutex
-	server     *fuse.Server
+	inodes      map[uint64]inodeObj
+	inodesRange map[uint64]*inodeR
+	inodeLast   uint64 // last generated inode number (set to 1=root)
+	inodesLock  sync.RWMutex
+	server      *fuse.Server
 }
 
 func New() (*PkgFS, error) {
@@ -37,9 +37,9 @@ func New() (*PkgFS, error) {
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
 		inodeLast:     100, // values below 100 are reserved for special inodes
 		inodes: map[uint64]inodeObj{
-			1: &specialInodeObj{ino: 1, refcount: 999, mode: os.ModeDir | 0444},
-			2: &specialInodeObj{ino: 2, refcount: 999, mode: 0444},
+			1: &rootInodeObj{},
 		},
+		inodesRange: make(map[uint64]*inodeR),
 	}
 
 	var err error
@@ -66,17 +66,8 @@ func (p *PkgFS) Serve() {
 	p.server.Serve()
 }
 
-// allocateInode returns a numeric ID suitable for a new inode
-func (p *PkgFS) allocateInode() uint64 {
-	return atomic.AddUint64(&p.inodeLast, 1)
-}
-
-func (p *PkgFS) getInode(ino uint64) (inodeObj, bool) {
-	p.inodesLock.RLock()
-	defer p.inodesLock.RUnlock()
-
-	a, b := p.inodes[ino]
-	return a, b
+func (p *PkgFS) Unmount() {
+	p.server.Unmount()
 }
 
 func (p *PkgFS) Access(cancel <-chan struct{}, input *fuse.AccessIn) (code fuse.Status) {

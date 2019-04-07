@@ -14,6 +14,7 @@ type DB struct {
 }
 
 type InodeProvider interface {
+	AllocateInodes(count uint64, lookup func(ino uint64) (interface{}, error)) (uint64, error)
 }
 
 type DBData struct {
@@ -59,7 +60,22 @@ func New(prefix, name string, fs InodeProvider) (*DB, error) {
 
 	err := r.load()
 	if err != nil {
-		return nil, err
+		if !isNew {
+			// may have more luck downloading again
+			log.Printf("tpkgdb: failed to load existing db, will try redownload: %s", err)
+			r.Close() // free any mmap resource
+			_, err = r.download("")
+			if err != nil {
+				return nil, err
+			}
+			err = r.load()
+			if err != nil {
+				return nil, err
+			}
+			isNew = true
+		} else {
+			return nil, err
+		}
 	}
 
 	res := &DB{r}

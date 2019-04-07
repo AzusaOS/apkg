@@ -12,7 +12,6 @@ type inodeObj interface {
 
 	NodeId() (uint64, uint64) // NodeId, Generation
 	Mode() os.FileMode
-	UnixMode() uint32
 	Lookup(name string) (inodeObj, error)
 	FillAttr(attr *fuse.Attr) error
 	Readlink() ([]byte, error)

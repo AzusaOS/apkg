@@ -160,5 +160,11 @@ func (d *DBData) index() error {
 		d.totalSize += pkg.size
 	}
 
+	d.inoP.AllocateInodes(d.inoCount, d.lookupInode)
+
 	return nil
+}
+
+func (d *DBData) lookupInode(ino uint64) (interface{}, error) {
+	return nil, errors.New("WIP")
 }
