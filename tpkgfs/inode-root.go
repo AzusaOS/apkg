@@ -8,8 +8,7 @@ import (
 )
 
 type rootInodeObj struct {
-	parent   *PkgFS
-	children map[string]*inodeObj
+	parent *PkgFS
 }
 
 func (i *rootInodeObj) NodeId() (uint64, uint64) {
@@ -17,7 +16,7 @@ func (i *rootInodeObj) NodeId() (uint64, uint64) {
 	return 1, 0
 }
 
-func (i *rootInodeObj) Lookup(name string) (inodeObj, error) {
+func (i *rootInodeObj) Lookup(name string) (Inode, error) {
 	log.Printf("ROOT lookup: %s", name)
 	return nil, os.ErrNotExist
 }

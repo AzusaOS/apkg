@@ -7,14 +7,12 @@ import (
 	"runtime"
 	"syscall"
 	"time"
+
+	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
 type DB struct {
 	*DBData
-}
-
-type InodeProvider interface {
-	AllocateInodes(count uint64, lookup func(ino uint64) (interface{}, error)) (uint64, error)
 }
 
 type DBData struct {
@@ -28,7 +26,7 @@ type DBData struct {
 	count    uint32
 
 	totalSize uint64
-	inoP      InodeProvider
+	fs        *tpkgfs.PkgFS
 	inoCount  uint64
 
 	ready uint32
@@ -38,11 +36,11 @@ type DBData struct {
 	pkgAlias map[string]*Package
 }
 
-func New(prefix, name string, fs InodeProvider) (*DB, error) {
+func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
 	r := &DBData{
 		prefix:   prefix,
 		name:     name,
-		inoP:     fs,
+		fs:       fs,
 		ino:      make(map[uint64]*Package),
 		pkgName:  make(map[string]*Package),
 		pkgAlias: make(map[string]*Package),

@@ -7,12 +7,12 @@ import (
 	"github.com/hanwen/go-fuse/fuse"
 )
 
-type inodeObj interface {
+type Inode interface {
 	//os.FileInfo
 
 	NodeId() (uint64, uint64) // NodeId, Generation
 	Mode() os.FileMode
-	Lookup(name string) (inodeObj, error)
+	Lookup(name string) (Inode, error)
 	FillAttr(attr *fuse.Attr) error
 	Readlink() ([]byte, error)
 

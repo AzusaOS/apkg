@@ -9,6 +9,8 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
 func (d *DBData) index() error {
@@ -160,11 +162,11 @@ func (d *DBData) index() error {
 		d.totalSize += pkg.size
 	}
 
-	d.inoP.AllocateInodes(d.inoCount, d.lookupInode)
+	d.fs.AllocateInodes(d.inoCount, d.lookupInode)
 
 	return nil
 }
 
-func (d *DBData) lookupInode(ino uint64) (interface{}, error) {
+func (d *DBData) lookupInode(ino uint64) (tpkgfs.Inode, error) {
 	return nil, errors.New("WIP")
 }
