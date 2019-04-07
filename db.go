@@ -24,7 +24,7 @@ func realLoadDb() {
 	log.Printf("db: loading main database")
 
 	var err error
-	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main")
+	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main", 2)
 	if err != nil {
 		log.Printf("db: failed to load: %s", err)
 		return

@@ -61,6 +61,7 @@ func (d *DB) Update() error {
 	r := &DBData{
 		prefix:   d.DBData.prefix,
 		name:     d.DBData.name,
+		inoStart: d.DBData.inoStart + d.DBData.inoCount,
 		ino:      make(map[uint64]*Package),
 		pkgName:  make(map[string]*Package),
 		pkgAlias: make(map[string]*Package),
