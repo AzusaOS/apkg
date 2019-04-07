@@ -5,13 +5,17 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
 	"github.com/hanwen/go-fuse/fuse"
+	"github.com/tardigradeos/tpkg/tpkgdb"
+	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
+const PKG_URL_PREFIX = "https://pkg.tardigradeos.com/"
+
 var server *fuse.Server
+var dbMain *tpkgdb.DB
 
 func shutdown() {
 	log.Println("tpkg: shutting down...")
@@ -35,32 +39,17 @@ func main() {
 	log.Printf("tpkg: preparing")
 	setupSignals()
 
-	loadDb()
-
-	mountPoint := "/pkg"
-	if os.Geteuid() != 0 {
-		h := os.Getenv("HOME")
-		if h != "" {
-			mountPoint = filepath.Join(h, "pkg")
-		}
-	}
-	if err := os.MkdirAll(mountPoint, 0755); err != nil {
-		log.Fatalf("tpkg: failed to create %s: %s", mountPoint, err)
-	}
-
-	var err error
-	server, err = fuse.NewServer(pkgFSobj, mountPoint, &fuse.MountOptions{
-		AllowOther: os.Geteuid() == 0,
-		Debug:      true,
-		FsName:     "tpkg",
-		Name:       "tpkg",
-	})
+	mp, err := tpkgfs.New()
 	if err != nil {
-		fmt.Printf("Mount fail: %v\n", err)
+		fmt.Printf("Mount fail: %s\n", err)
 		os.Exit(1)
 	}
 
-	log.Printf("filesystem mounted on %s", mountPoint)
+	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main", mp)
+	if err != nil {
+		log.Printf("db: failed to load: %s", err)
+		return
+	}
 
-	server.Serve()
+	mp.Serve()
 }

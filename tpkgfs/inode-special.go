@@ -1,4 +1,4 @@
-package main
+package tpkgfs
 
 import (
 	"log"
@@ -13,6 +13,7 @@ const (
 )
 
 type specialInodeObj struct {
+	parent   *PkgFS
 	ino      uint64
 	refcount int64
 	mode     os.FileMode
@@ -29,7 +30,7 @@ func (i *specialInodeObj) Lookup(name string) (inodeObj, error) {
 	case InodeRoot:
 		if name == "INFO" {
 			// special file
-			ino, _ := pkgFSobj.getInode(InodeInfo)
+			ino, _ := i.parent.getInode(InodeInfo)
 			return ino, nil
 		}
 		log.Printf("ROOT lookup: %s", name)

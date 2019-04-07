@@ -13,6 +13,9 @@ type DB struct {
 	*DBData
 }
 
+type InodeProvider interface {
+}
+
 type DBData struct {
 	prefix   string
 	name     string
@@ -24,7 +27,7 @@ type DBData struct {
 	count    uint32
 
 	totalSize uint64
-	inoStart  uint64
+	inoP      InodeProvider
 	inoCount  uint64
 
 	ready uint32
@@ -34,11 +37,11 @@ type DBData struct {
 	pkgAlias map[string]*Package
 }
 
-func New(prefix, name string, inoStart uint64) (*DB, error) {
+func New(prefix, name string, fs InodeProvider) (*DB, error) {
 	r := &DBData{
 		prefix:   prefix,
 		name:     name,
-		inoStart: inoStart,
+		inoP:     fs,
 		ino:      make(map[uint64]*Package),
 		pkgName:  make(map[string]*Package),
 		pkgAlias: make(map[string]*Package),
