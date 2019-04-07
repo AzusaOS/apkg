@@ -129,7 +129,22 @@ func (p *pkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 //    Release(cancel <-chan struct{}, input *ReleaseIn)
 
 // Directory handling
-//    OpenDir(cancel <-chan struct{}, input *OpenIn, out *OpenOut) (status Status)
+func (p *pkgFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenOut) (status fuse.Status) {
+	// directories (open is always for read only)
+	// check stats → if not dir return error
+	ino, ok := p.getInode(input.NodeId)
+	if !ok {
+		return fuse.EINVAL
+	}
+
+	if !ino.Mode().IsDir() {
+		return fuse.ENOTDIR
+	}
+
+	err := ino.OpenDir()
+	return fuse.ToStatus(err)
+}
+
 //    ReadDir(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
 //    ReadDirPlus(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
 //    ReleaseDir(input *ReleaseIn)

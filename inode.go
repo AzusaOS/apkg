@@ -18,6 +18,7 @@ type inodeObj interface {
 	Readlink() ([]byte, error)
 
 	Open(flags uint32) error
+	OpenDir() error
 }
 
 // see: https://golang.org/src/os/stat_linux.go

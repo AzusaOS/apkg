@@ -70,3 +70,7 @@ func (i *specialInodeObj) Readlink() ([]byte, error) {
 func (i *specialInodeObj) Open(flags uint32) error {
 	return nil
 }
+
+func (i *specialInodeObj) OpenDir() error {
+	return os.ErrPermission
+}
