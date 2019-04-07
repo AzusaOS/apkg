@@ -181,13 +181,12 @@ func (d *DBData) index() error {
 }
 
 func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, bool) {
-	log.Printf("inode lookup WIP %d", reqino)
 	if pkg, ok := d.ino[reqino]; ok {
 		// quick lookup, return symlink
-		log.Printf("return symlink to %s", pkg.name)
-		return tpkgfs.NewSymlink(reqino, []byte(pkg.name)), true
+		return tpkgfs.NewSymlink([]byte(pkg.name)), true
 	}
 
+	log.Printf("inode lookup WIP %d", reqino)
 	for ino, pkg := range d.ino {
 		if reqino < ino {
 			continue

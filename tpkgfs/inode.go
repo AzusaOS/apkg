@@ -10,9 +10,8 @@ import (
 type Inode interface {
 	//os.FileInfo
 
-	NodeId() (uint64, uint64) // NodeId, Generation
 	Mode() os.FileMode
-	Lookup(name string) (Inode, error)
+	Lookup(name string) (uint64, error)
 	FillAttr(attr *fuse.Attr) error
 	Readlink() ([]byte, error)
 

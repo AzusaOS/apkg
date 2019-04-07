@@ -91,8 +91,14 @@ func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 		return fuse.ToStatus(err)
 	}
 
-	out.NodeId, out.Generation = sub.NodeId()
-	sub.FillAttr(&out.Attr)
+	subI, ok := p.getInode(sub)
+	if !ok {
+		return fuse.EINVAL
+	}
+
+	out.NodeId, out.Generation = sub, 0
+	out.Ino = sub
+	subI.FillAttr(&out.Attr)
 
 	// TODO sub addref()
 
@@ -117,6 +123,7 @@ func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 		return fuse.EINVAL
 	}
 
+	out.Ino = input.NodeId
 	ino.FillAttr(&out.Attr)
 	out.SetTimeout(time.Second)
 	return fuse.OK

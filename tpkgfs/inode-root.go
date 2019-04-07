@@ -16,22 +16,13 @@ func (d *PkgFS) RegisterRootInode(ino uint64, name string) {
 	d.root.children[name] = ino
 }
 
-func (i *rootInodeObj) NodeId() (uint64, uint64) {
-	// special nodes have generation=0
-	return 1, 0
-}
-
-func (i *rootInodeObj) Lookup(name string) (Inode, error) {
+func (i *rootInodeObj) Lookup(name string) (uint64, error) {
 	log.Printf("ROOT lookup: %s", name)
 	ino, ok := i.children[name]
 	if !ok {
-		return nil, os.ErrNotExist
+		return 0, os.ErrNotExist
 	}
-	inoObj, ok := i.parent.getInode(ino)
-	if !ok {
-		return nil, os.ErrInvalid
-	}
-	return inoObj, nil
+	return ino, nil
 }
 
 func (i *rootInodeObj) Mode() os.FileMode {
