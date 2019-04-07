@@ -107,8 +107,11 @@ func (p *pkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 	return fuse.ENOSYS
 }
 
+//    Read(cancel <-chan struct{}, input *ReadIn, buf []byte) (ReadResult, Status)
+//    Lseek(cancel <-chan struct{}, in *LseekIn, out *LseekOut) Status
+
 func (p *pkgFS) StatFs(cancel <-chan struct{}, input *fuse.InHeader, out *fuse.StatfsOut) (code fuse.Status) {
-	loadDb()
+	loadDb() // ensure db is ready
 
 	out.Blocks = (uint64(dbMain.Length()+dbMain.PackagesSize()) / 4096) + 1
 	out.Bfree = 0
@@ -121,10 +124,6 @@ func (p *pkgFS) StatFs(cancel <-chan struct{}, input *fuse.InHeader, out *fuse.S
 
 	return fuse.OK
 }
-
-//    Read(cancel <-chan struct{}, input *ReadIn, buf []byte) (ReadResult, Status)
-//    Lseek(cancel <-chan struct{}, in *LseekIn, out *LseekOut) Status
-//
 
 // Write methods
 func (p *pkgFS) SetAttr(cancel <-chan struct{}, input *fuse.SetAttrIn, out *fuse.AttrOut) (code fuse.Status) {
@@ -163,18 +162,41 @@ func (p *pkgFS) Create(cancel <-chan struct{}, input *fuse.CreateIn, name string
 	return fuse.EROFS
 }
 
+func (p *pkgFS) SetXAttr(cancel <-chan struct{}, input *fuse.SetXAttrIn, attr string, data []byte) fuse.Status {
+	return fuse.EROFS
+}
+
+func (p *pkgFS) RemoveXAttr(cancel <-chan struct{}, header *fuse.InHeader, attr string) (code fuse.Status) {
+	return fuse.EROFS
+}
+
+func (p *pkgFS) Flush(cancel <-chan struct{}, input *fuse.FlushIn) fuse.Status {
+	return fuse.OK
+}
+
+func (p *pkgFS) Fsync(cancel <-chan struct{}, input *fuse.FsyncIn) (code fuse.Status) {
+	return fuse.OK
+}
+
+func (p *pkgFS) Fallocate(cancel <-chan struct{}, input *fuse.FallocateIn) (code fuse.Status) {
+	return fuse.EROFS
+}
+
+func (p *pkgFS) Write(cancel <-chan struct{}, input *fuse.WriteIn, data []byte) (written uint32, code fuse.Status) {
+	return 0, fuse.EROFS
+}
+
+func (p *pkgFS) CopyFileRange(cancel <-chan struct{}, input *fuse.CopyFileRangeIn) (written uint32, code fuse.Status) {
+	return 0, fuse.EROFS
+}
+
 //    // File locking
 //    GetLk(cancel <-chan struct{}, input *LkIn, out *LkOut) (code Status)
 //    SetLk(cancel <-chan struct{}, input *LkIn) (code Status)
 //    SetLkw(cancel <-chan struct{}, input *LkIn) (code Status)
 //
 //    Release(cancel <-chan struct{}, input *ReleaseIn)
-//    Write(cancel <-chan struct{}, input *WriteIn, data []byte) (written uint32, code Status)
-//    CopyFileRange(cancel <-chan struct{}, input *CopyFileRangeIn) (written uint32, code Status)
 //
-//    Flush(cancel <-chan struct{}, input *FlushIn) Status
-//    Fsync(cancel <-chan struct{}, input *FsyncIn) (code Status)
-//    Fallocate(cancel <-chan struct{}, input *FallocateIn) (code Status)
 //
 //    // Directory handling
 //    OpenDir(cancel <-chan struct{}, input *OpenIn, out *OpenOut) (status Status)
@@ -198,10 +220,4 @@ func (p *pkgFS) Create(cancel <-chan struct{}, input *fuse.CreateIn, name string
 //    // slice, and return the number of bytes. If the buffer is too
 //    // small, return ERANGE, with the required buffer size.
 //    ListXAttr(cancel <-chan struct{}, header *InHeader, dest []byte) (uint32, Status)
-//
-//    // SetAttr writes an extended attribute.
-//    SetXAttr(cancel <-chan struct{}, input *SetXAttrIn, attr string, data []byte) Status
-//
-//    // RemoveXAttr removes an extended attribute.
-//    RemoveXAttr(cancel <-chan struct{}, header *InHeader, attr string) (code Status)
 //
