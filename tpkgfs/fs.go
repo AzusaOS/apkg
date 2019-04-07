@@ -14,6 +14,7 @@ import (
 type PkgFS struct {
 	fuse.RawFileSystem
 
+	root        *rootInodeObj
 	inodes      map[uint64]Inode
 	inodesRange map[uint64]*inodeR
 	inodeLast   uint64 // last generated inode number (set to 1=root)
@@ -33,13 +34,13 @@ func New() (*PkgFS, error) {
 		return nil, err
 	}
 
+	root := &rootInodeObj{}
 	res := &PkgFS{
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
+		root:          root,
 		inodeLast:     100, // values below 100 are reserved for special inodes
-		inodes: map[uint64]Inode{
-			1: &rootInodeObj{},
-		},
-		inodesRange: make(map[uint64]*inodeR),
+		inodes:        map[uint64]Inode{1: root},
+		inodesRange:   make(map[uint64]*inodeR),
 	}
 
 	var err error

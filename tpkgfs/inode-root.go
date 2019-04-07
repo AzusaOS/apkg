@@ -8,7 +8,7 @@ import (
 )
 
 type rootInodeObj struct {
-	parent *PkgFS
+	children map[string]uint64
 }
 
 func (i *rootInodeObj) NodeId() (uint64, uint64) {
