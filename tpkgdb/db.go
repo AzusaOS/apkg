@@ -23,6 +23,7 @@ type DB struct {
 	created  time.Time
 	os, arch uint32
 	count    uint32
+	inoCount uint64
 
 	ready uint32
 
@@ -40,41 +41,58 @@ func New(prefix, name string) (*DB, error) {
 		pkgAlias: make(map[string]*Package),
 	}
 
-	err := r.Update()
+	if _, err := os.Stat(r.name + ".bin"); os.IsNotExist(err) {
+		// immediate download
+		_, err := r.download("")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err := r.load()
 	if err != nil {
 		return nil, err
 	}
 
-	// we use mmap
-	f, err := os.Open(r.name + ".bin")
-	if err != nil {
-		return nil, err
+	return r, nil
+}
+
+func (d *DB) load() error {
+	if d.data != nil {
+		return errors.New("tpkgdb: attempt to load an already loaded db")
 	}
+
+	// we use mmap
+	f, err := os.Open(d.name + ".bin")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 
 	fi, err := f.Stat()
 	size := fi.Size()
 
 	if size <= 0 {
-		return nil, errors.New("tpkgdb: file size is way too low")
+		return errors.New("tpkgdb: file size is way too low")
 	}
 
 	if size != int64(int(size)) {
-		return nil, errors.New("tpkgdb: file size is over 4GB")
+		return errors.New("tpkgdb: file size is over 4GB")
 	}
 
-	runtime.SetFinalizer(r, (*DB).Close)
-	r.data, err = syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
+	runtime.SetFinalizer(d, (*DB).Close)
+	d.data, err = syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = r.index()
+	err = d.index()
 	if err != nil {
-		r.Close()
-		return nil, err
+		d.Close()
+		return err
 	}
 
-	return r, nil
+	return nil
 }
 
 func (d *DB) Close() error {
@@ -232,9 +250,10 @@ func (d *DB) index() error {
 			aliasName = aliasName[:p]
 		}
 
-		log.Printf("read package %s pos=%d startIno=%d inodes=%d size=%d", pkg.name, pkg.pos, pkg.startIno, pkg.inodes, pkg.size)
+		//log.Printf("read package %s size=%d", pkg.name, pkg.size)
 		curIno += uint64(pkg.inodes)
 	}
+	d.inoCount = curIno
 
 	return nil
 }
