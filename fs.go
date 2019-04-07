@@ -13,6 +13,7 @@ var pkgFSobj = &pkgFS{RawFileSystem: fuse.NewDefaultRawFileSystem(),
 	inodeLast: 100, // values below 100 are reserved for special inodes
 	inodes: map[uint64]inodeObj{
 		1: &specialInodeObj{ino: 1, refcount: 999, mode: os.ModeDir | 0444},
+		2: &specialInodeObj{ino: 2, refcount: 999, mode: os.ModeDir | 0444},
 	},
 }
 

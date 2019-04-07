@@ -20,6 +20,7 @@ type inodeObj interface {
 
 const (
 	InodeRoot uint64 = 1
+	InodeInfo uint64 = 2
 )
 
 type specialInodeObj struct {
