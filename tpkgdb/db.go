@@ -15,6 +15,10 @@ import (
 )
 
 type DB struct {
+	*DBData
+}
+
+type DBData struct {
 	prefix   string
 	name     string
 	data     []byte
@@ -33,7 +37,7 @@ type DB struct {
 }
 
 func New(prefix, name string) (*DB, error) {
-	r := &DB{
+	r := &DBData{
 		prefix:   prefix,
 		name:     name,
 		ino:      make(map[uint64]*Package),
@@ -56,18 +60,20 @@ func New(prefix, name string) (*DB, error) {
 		return nil, err
 	}
 
+	res := &DB{r}
+
 	if !isNew {
 		// check for updates
-		r, err = r.Update()
+		err = res.Update()
 		if err != nil {
 			log.Printf("tpkgdb: failed to update: %s", err)
 		}
 	}
 
-	return r, nil
+	return res, nil
 }
 
-func (d *DB) load() error {
+func (d *DBData) load() error {
 	if d.data != nil {
 		return errors.New("tpkgdb: attempt to load an already loaded db")
 	}
@@ -90,7 +96,7 @@ func (d *DB) load() error {
 		return errors.New("tpkgdb: file size is over 4GB")
 	}
 
-	runtime.SetFinalizer(d, (*DB).Close)
+	runtime.SetFinalizer(d, (*DBData).Close)
 	d.data, err = syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
 		return err
@@ -105,7 +111,7 @@ func (d *DB) load() error {
 	return nil
 }
 
-func (d *DB) Close() error {
+func (d *DBData) Close() error {
 	if d.data == nil {
 		return nil
 	}
@@ -115,7 +121,7 @@ func (d *DB) Close() error {
 	return syscall.Munmap(data)
 }
 
-func (d *DB) index() error {
+func (d *DBData) index() error {
 	if string(d.data[:4]) != "TPDB" {
 		return errors.New("not a tpkgdb file")
 	}

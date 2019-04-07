@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync/atomic"
+	"unsafe"
 )
 
-func (d *DB) download(v string) (bool, error) {
+func (d *DBData) download(v string) (bool, error) {
 	resp, err := http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/LATEST.txt")
 	if err != nil {
 		return false, err
@@ -55,10 +57,10 @@ func (d *DB) download(v string) (bool, error) {
 }
 
 // Update will check server for new version, update and return a new instance of DB unless there was no new version, in which case the original instance is returned
-func (d *DB) Update() (*DB, error) {
-	r := &DB{
-		prefix:   d.prefix,
-		name:     d.name,
+func (d *DB) Update() error {
+	r := &DBData{
+		prefix:   d.DBData.prefix,
+		name:     d.DBData.name,
 		ino:      make(map[uint64]*Package),
 		pkgName:  make(map[string]*Package),
 		pkgAlias: make(map[string]*Package),
@@ -68,19 +70,20 @@ func (d *DB) Update() (*DB, error) {
 
 	upd, err := r.download(v)
 	if err != nil {
-		return d, err
+		return err
 	}
 	if !upd {
 		// no update
-		return d, nil
+		return nil
 	}
 
 	// index new value
 	err = r.load()
 	if err != nil {
-		return d, err
+		return err
 	}
 
-	// return new db
-	return r, nil
+	// atomic update of ptr
+	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&d.DBData)), unsafe.Pointer(r))
+	return nil
 }
