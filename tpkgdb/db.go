@@ -111,6 +111,11 @@ func (d *DBData) load() error {
 	return nil
 }
 
+func (d *DB) Close() error {
+	d.DBData = nil
+	return nil
+}
+
 func (d *DBData) Close() error {
 	if d.data == nil {
 		return nil
