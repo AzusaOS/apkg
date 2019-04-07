@@ -109,6 +109,15 @@ func (p *pkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 
 //    Read(cancel <-chan struct{}, input *ReadIn, buf []byte) (ReadResult, Status)
 //    Lseek(cancel <-chan struct{}, in *LseekIn, out *LseekOut) Status
+//    Release(cancel <-chan struct{}, input *ReleaseIn)
+
+// Directory handling
+//    OpenDir(cancel <-chan struct{}, input *OpenIn, out *OpenOut) (status Status)
+//    ReadDir(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
+//    ReadDirPlus(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
+//    ReleaseDir(input *ReleaseIn)
+//    FsyncDir(cancel <-chan struct{}, input *FsyncIn) (code Status)
+//
 
 func (p *pkgFS) StatFs(cancel <-chan struct{}, input *fuse.InHeader, out *fuse.StatfsOut) (code fuse.Status) {
 	loadDb() // ensure db is ready
@@ -120,7 +129,7 @@ func (p *pkgFS) StatFs(cancel <-chan struct{}, input *fuse.InHeader, out *fuse.S
 	out.Ffree = 0
 	out.Bsize = 4096
 	out.NameLen = 255
-	out.Frsize = 0
+	out.Frsize = 4096 // Fragment size
 
 	return fuse.OK
 }
@@ -195,15 +204,7 @@ func (p *pkgFS) CopyFileRange(cancel <-chan struct{}, input *fuse.CopyFileRangeI
 //    SetLk(cancel <-chan struct{}, input *LkIn) (code Status)
 //    SetLkw(cancel <-chan struct{}, input *LkIn) (code Status)
 //
-//    Release(cancel <-chan struct{}, input *ReleaseIn)
 //
-//
-//    // Directory handling
-//    OpenDir(cancel <-chan struct{}, input *OpenIn, out *OpenOut) (status Status)
-//    ReadDir(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
-//    ReadDirPlus(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
-//    ReleaseDir(input *ReleaseIn)
-//    FsyncDir(cancel <-chan struct{}, input *FsyncIn) (code Status)
 //
 //
 //    // This is called on processing the first request. The
