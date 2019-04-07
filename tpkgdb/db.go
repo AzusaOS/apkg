@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -14,20 +15,42 @@ import (
 )
 
 type DB struct {
+	prefix   string
+	name     string
 	data     []byte
 	version  uint32
 	flags    uint64
 	created  time.Time
 	os, arch uint32
-	name     string
+	count    uint32
+
+	ready uint32
 
 	ino      map[uint64]*Package
 	pkgName  map[string]*Package
 	pkgAlias map[string]*Package
 }
 
-func New(f *os.File) (*DB, error) {
+func New(prefix, name string) (*DB, error) {
+	r := &DB{
+		prefix:   prefix,
+		name:     name,
+		ino:      make(map[uint64]*Package),
+		pkgName:  make(map[string]*Package),
+		pkgAlias: make(map[string]*Package),
+	}
+
+	err := r.Update()
+	if err != nil {
+		return nil, err
+	}
+
 	// we use mmap
+	f, err := os.Open(r.name + ".bin")
+	if err != nil {
+		return nil, err
+	}
+
 	fi, err := f.Stat()
 	size := fi.Size()
 
@@ -39,18 +62,11 @@ func New(f *os.File) (*DB, error) {
 		return nil, errors.New("tpkgdb: file size is over 4GB")
 	}
 
-	data, err := syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
+	runtime.SetFinalizer(r, (*DB).Close)
+	r.data, err = syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
 		return nil, err
 	}
-
-	r := &DB{
-		data:     data,
-		ino:      make(map[uint64]*Package),
-		pkgName:  make(map[string]*Package),
-		pkgAlias: make(map[string]*Package),
-	}
-	runtime.SetFinalizer(r, (*DB).Close)
 
 	err = r.index()
 	if err != nil {
@@ -102,15 +118,16 @@ func (d *DB) index() error {
 
 	log.Printf("tpkgdb: reading database generated on %s (%s ago)", d.created, time.Since(d.created))
 
-	osarch := make([]uint32, 2)
-	err = binary.Read(r, binary.BigEndian, osarch)
+	osarchcnt := make([]uint32, 3)
+	err = binary.Read(r, binary.BigEndian, osarchcnt)
 	if err != nil {
 		return err
 	}
 
 	// TODO check values
-	d.os = osarch[0]   // 0=linux 1=darwin 2=windows ...
-	d.arch = osarch[1] // 0=i386 1=amd64 ...
+	d.os = osarchcnt[0]   // 0=linux 1=darwin 2=windows ...
+	d.arch = osarchcnt[1] // 0=i386 1=amd64 ...
+	d.count = osarchcnt[2]
 
 	name := make([]byte, 32)
 	_, err = io.ReadFull(r, name)
@@ -121,7 +138,9 @@ func (d *DB) index() error {
 	if offt := bytes.IndexByte(name, 0); offt != -1 {
 		name = name[:offt]
 	}
-	d.name = string(name)
+	if string(name) != d.name {
+		return fmt.Errorf("invalid database, was expecting %s but downloaded database was for %s", d.name, name)
+	}
 
 	// read location of indexes (unused)
 	indices := make([]uint32, 2)
@@ -133,14 +152,10 @@ func (d *DB) index() error {
 	curIno := uint64(0)
 
 	// OK now let's read each package
-	for {
+	for i := uint32(0); i < d.count; i++ {
 		var t uint8
 		pos, _ := r.Seek(0, io.SeekCurrent)
 		err = binary.Read(r, binary.BigEndian, &t)
-		if err == io.EOF {
-			// this is OK
-			return nil
-		}
 		if err != nil {
 			return err
 		}
@@ -203,13 +218,18 @@ func (d *DB) index() error {
 		d.ino[pkg.startIno] = pkg
 		d.pkgName[pkg.name] = pkg
 		aliasName := pkg.name
+		first := true
 		for {
 			p := strings.LastIndexByte(aliasName, '.')
 			if p == -1 {
 				break
 			}
+			if !first {
+				d.pkgAlias[aliasName] = pkg
+			} else {
+				first = false
+			}
 			aliasName = aliasName[:p]
-			d.pkgAlias[aliasName] = pkg
 		}
 
 		log.Printf("read package %s pos=%d startIno=%d inodes=%d size=%d", pkg.name, pkg.pos, pkg.startIno, pkg.inodes, pkg.size)
