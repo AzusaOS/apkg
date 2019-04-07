@@ -62,3 +62,7 @@ func (i *specialInodeObj) FillAttr(attr *fuse.Attr) error {
 	attr.Ctimensec = 0
 	return nil
 }
+
+func (i *specialInodeObj) Readlink() ([]byte, error) {
+	return nil, os.ErrInvalid
+}

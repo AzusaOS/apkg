@@ -27,7 +27,9 @@ type DBData struct {
 	created  time.Time
 	os, arch uint32
 	count    uint32
-	inoCount uint64
+
+	totalSize uint64
+	inoCount  uint64
 
 	ready uint32
 
@@ -188,7 +190,6 @@ func (d *DBData) index() error {
 		return err
 	}
 	// TODO → use indices
-	curIno := uint64(0)
 
 	// OK now let's read each package
 	for i := uint32(0); i < d.count; i++ {
@@ -203,7 +204,7 @@ func (d *DBData) index() error {
 		}
 
 		pkg := &Package{
-			startIno: curIno,
+			startIno: d.inoCount,
 			pos:      pos,
 		}
 
@@ -272,9 +273,9 @@ func (d *DBData) index() error {
 		}
 
 		//log.Printf("read package %s size=%d", pkg.name, pkg.size)
-		curIno += uint64(pkg.inodes)
+		d.inoCount += uint64(pkg.inodes)
+		d.totalSize += pkg.size
 	}
-	d.inoCount = curIno
 
 	return nil
 }

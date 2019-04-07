@@ -15,6 +15,7 @@ type inodeObj interface {
 	UnixMode() uint32
 	Lookup(name string) (inodeObj, error)
 	FillAttr(attr *fuse.Attr) error
+	Readlink() ([]byte, error)
 }
 
 // see: https://golang.org/src/os/stat_linux.go
