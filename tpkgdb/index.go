@@ -91,6 +91,7 @@ func (d *DBData) index() error {
 		}
 
 		pkg := &Package{
+			parent:   d,
 			startIno: d.inoCount,
 			pos:      pos,
 		}
@@ -186,7 +187,6 @@ func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, bool) {
 		return tpkgfs.NewSymlink([]byte(pkg.name)), true
 	}
 
-	log.Printf("inode lookup WIP %d", reqino)
 	for ino, pkg := range d.ino {
 		if reqino < ino {
 			continue
@@ -194,6 +194,8 @@ func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, bool) {
 		if reqino > ino+pkg.inodes+1 {
 			continue
 		}
+
+		return pkg.handleLookup(reqino)
 	}
 	return nil, false
 }
