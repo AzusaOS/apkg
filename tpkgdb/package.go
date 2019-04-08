@@ -10,8 +10,10 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/tardigradeos/tpkg/squashfs"
 	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
@@ -26,9 +28,14 @@ type Package struct {
 	name     string
 	path     string // path relative to where db file was downloaded from
 
+	// from file
+	flags   uint64
+	created time.Time
+
 	dl     sync.Once
 	f      *os.File
-	offset uint64 // offset of data in file
+	offset int64 // offset of data in file
+	squash *squashfs.Superblock
 }
 
 func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, bool) {
@@ -41,10 +48,38 @@ func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, bool) {
 func (p *Package) doDl() {
 	lpath := path.Join("data", p.parent.name, p.path)
 
-	if _, err := os.Stat(lpath); err == nil {
+	if _, err := os.Stat(lpath); os.IsNotExist(err) {
+		p.dlFile()
 		// TODO: check size, checksum, etc
+	} else {
+		f, err := os.Open(lpath)
+		if err != nil {
+			log.Printf("tpkgdb: failed to open: %s", err)
+			return
+		}
+		p.f = f
+	}
+
+	err := p.validate()
+	if err != nil {
+		log.Printf("tpkgdb: failed to validate file: %s", err)
+		defer p.f.Close()
+		p.f = nil
 		return
 	}
+
+	p.squash, err = squashfs.New(p)
+	if err != nil {
+		log.Printf("tpkgdb: failed to mount: %s", err)
+		defer p.f.Close()
+		p.f = nil
+		p.squash = nil
+		return
+	}
+}
+
+func (p *Package) dlFile() {
+	lpath := path.Join("data", p.parent.name, p.path)
 
 	// download this package
 	resp, err := http.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + p.path)
@@ -74,14 +109,6 @@ func (p *Package) doDl() {
 	}
 
 	p.f = f
-
-	err = p.validate()
-	if err != nil {
-		log.Printf("tpkgdb: failed to validate file: %s", err)
-		p.f = nil
-		f.Close()
-		return
-	}
 }
 
 func (p *Package) validate() error {
@@ -92,7 +119,7 @@ func (p *Package) validate() error {
 		return err
 	}
 
-	if string(header[:3]) != "TPKG" {
+	if string(header[:4]) != "TPKG" {
 		return errors.New("not a TPKG file")
 	}
 
@@ -107,5 +134,61 @@ func (p *Package) validate() error {
 		return errors.New("unsupported file version")
 	}
 
+	err = binary.Read(r, binary.BigEndian, &p.flags)
+	if err != nil {
+		return err
+	}
+
+	ts := make([]int64, 2)
+	err = binary.Read(r, binary.BigEndian, ts)
+	if err != nil {
+		return err
+	}
+	p.created = time.Unix(ts[0], ts[1])
+
+	metadata := make([]uint32, 2) // metadata offset + len (json encoded)
+	err = binary.Read(r, binary.BigEndian, metadata)
+	if err != nil {
+		return err
+	}
+
+	metadata_hash := make([]byte, 32)
+	_, err = io.ReadFull(r, metadata_hash)
+	if err != nil {
+		return err
+	}
+
+	table := make([]uint32, 2) // hash table offset + len
+	err = binary.Read(r, binary.BigEndian, table)
+	if err != nil {
+		return err
+	}
+
+	table_hash := make([]byte, 32)
+	_, err = io.ReadFull(r, table_hash)
+	if err != nil {
+		return err
+	}
+
+	// read sign_offset + data_offset
+	last_offt := make([]uint32, 2)
+	err = binary.Read(r, binary.BigEndian, last_offt)
+	if err != nil {
+		return err
+	}
+
+	// TODO store all that stuff
+
+	p.offset = int64(last_offt[1])
+
 	return nil
+}
+
+func (p *Package) ReadAt(b []byte, off int64) (int, error) {
+	if p.f == nil {
+		return 0, os.ErrInvalid // should return E_IO
+	}
+	log.Printf("converted read = %d", off+p.offset)
+
+	return p.f.ReadAt(b, off+p.offset)
 }
