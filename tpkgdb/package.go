@@ -1,6 +1,9 @@
 package tpkgdb
 
 import (
+	"bytes"
+	"encoding/binary"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -72,9 +75,37 @@ func (p *Package) doDl() {
 
 	p.f = f
 
-	p.validate()
+	err = p.validate()
+	if err != nil {
+		log.Printf("tpkgdb: failed to validate file: %s", err)
+		p.f = nil
+		f.Close()
+		return
+	}
 }
 
-func (p *Package) validate() {
+func (p *Package) validate() error {
 	// read header, check file
+	header := make([]byte, 120)
+	_, err := p.f.ReadAt(header, 0)
+	if err != nil {
+		return err
+	}
+
+	if string(header[:3]) != "TPKG" {
+		return errors.New("not a TPKG file")
+	}
+
+	// we use readat + newreader to make sure so other process seeks this file
+	r := bytes.NewReader(header[4:])
+	var version uint32
+	err = binary.Read(r, binary.BigEndian, &version)
+	if err != nil {
+		return err
+	}
+	if version != 1 {
+		return errors.New("unsupported file version")
+	}
+
+	return nil
 }

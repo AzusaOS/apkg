@@ -43,7 +43,7 @@ func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
 	}
 
 	isNew := false
-	if _, err := os.Stat(r.name + ".bin"); os.IsNotExist(err) {
+	if _, err := os.Stat("data/" + r.name + ".bin"); os.IsNotExist(err) {
 		// immediate download
 		_, err := r.download("")
 		if err != nil {
@@ -91,7 +91,7 @@ func (d *DBData) load() error {
 	}
 
 	// we use mmap
-	f, err := os.Open(d.name + ".bin")
+	f, err := os.Open("data/" + d.name + ".bin")
 	if err != nil {
 		return err
 	}

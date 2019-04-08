@@ -39,7 +39,8 @@ func (d *DBData) download(v string) (bool, error) {
 	}
 	defer resp.Body.Close()
 
-	out, err := os.Create(d.name + ".bin~")
+	os.MkdirAll("data", 0755)
+	out, err := os.Create("data/" + d.name + ".bin~")
 	if err != nil {
 		return false, err
 	}
@@ -52,7 +53,7 @@ func (d *DBData) download(v string) (bool, error) {
 	out.Close()
 
 	// rename method allows already open db to stay the same
-	os.Rename(d.name+".bin~", d.name+".bin")
+	os.Rename("data/"+d.name+".bin~", "data/"+d.name+".bin")
 	return true, nil
 }
 
