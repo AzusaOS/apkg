@@ -9,17 +9,18 @@ import (
 	"time"
 
 	"github.com/hanwen/go-fuse/fuse"
+	"github.com/petar/GoLLRB/llrb"
 )
 
 type PkgFS struct {
 	fuse.RawFileSystem
 
-	root        *rootInodeObj
-	inodes      map[uint64]Inode
-	inodesRange map[uint64]*inodeR
-	inodeLast   uint64 // last generated inode number (set to 1=root)
-	inodesLock  sync.RWMutex
-	server      *fuse.Server
+	root       *rootInodeObj
+	inodes     map[uint64]Inode
+	inodesIdx  *llrb.LLRB
+	inodeLast  uint64 // last generated inode number (set to 1=root)
+	inodesLock sync.RWMutex
+	server     *fuse.Server
 }
 
 func New() (*PkgFS, error) {
@@ -40,7 +41,7 @@ func New() (*PkgFS, error) {
 		root:          root,
 		inodeLast:     100, // values below 100 are reserved for special inodes
 		inodes:        map[uint64]Inode{1: root},
-		inodesRange:   make(map[uint64]*inodeR),
+		inodesIdx:     llrb.New(),
 	}
 	root.parent = res
 
