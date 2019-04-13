@@ -188,7 +188,7 @@ func (p *Package) ReadAt(b []byte, off int64) (int, error) {
 	if p.f == nil {
 		return 0, os.ErrInvalid // should return E_IO
 	}
-	log.Printf("converted read = %d", off+p.offset)
+	//log.Printf("converted read = %d", off+p.offset)
 
 	return p.f.ReadAt(b, off+p.offset)
 }
