@@ -2,6 +2,7 @@ package tpkgfs
 
 import (
 	"log"
+	"os"
 	"sync/atomic"
 
 	"github.com/petar/GoLLRB/llrb"
@@ -10,7 +11,7 @@ import (
 type inodeR struct {
 	start  uint64
 	count  uint64
-	lookup func(ino uint64) (Inode, bool)
+	lookup func(ino uint64) (Inode, error)
 }
 
 type inodeRindex uint64
@@ -41,17 +42,17 @@ func (p *PkgFS) allocateInode() uint64 {
 	return atomic.AddUint64(&p.inodeLast, 1)
 }
 
-func (p *PkgFS) getInode(ino uint64) (Inode, bool) {
+func (p *PkgFS) getInode(ino uint64) (Inode, error) {
 	p.inodesLock.RLock()
 	defer p.inodesLock.RUnlock()
 
 	if ino == 1 {
-		return p.root, true
+		return p.root, nil
 	}
 
 	a, b := p.inodes[ino]
 	if b {
-		return a, b
+		return a, nil
 	}
 
 	var res *inodeR
@@ -67,10 +68,10 @@ func (p *PkgFS) getInode(ino uint64) (Inode, bool) {
 		}
 	}
 
-	return nil, false
+	return nil, os.ErrInvalid
 }
 
-func (p *PkgFS) AllocateInodes(count uint64, lookup func(ino uint64) (Inode, bool)) (uint64, error) {
+func (p *PkgFS) AllocateInodes(count uint64, lookup func(ino uint64) (Inode, error)) (uint64, error) {
 	// allocate count number of inodes
 	lastIno := atomic.AddUint64(&p.inodeLast, count)
 	firstIno := lastIno - count

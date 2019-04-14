@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -181,10 +182,10 @@ func (d *DBData) index() error {
 	return nil
 }
 
-func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, bool) {
+func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, error) {
 	if pkg, ok := d.ino[reqino]; ok {
 		// quick lookup, return symlink
-		return tpkgfs.NewSymlink([]byte(pkg.name)), true
+		return tpkgfs.NewSymlink([]byte(pkg.name)), nil
 	}
 
 	for ino, pkg := range d.ino {
@@ -197,5 +198,5 @@ func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, bool) {
 
 		return pkg.handleLookup(reqino)
 	}
-	return nil, false
+	return nil, os.ErrInvalid
 }

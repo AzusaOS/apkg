@@ -81,10 +81,10 @@ func (p *PkgFS) Access(cancel <-chan struct{}, input *fuse.AccessIn) (code fuse.
 }
 
 func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name string, out *fuse.EntryOut) (code fuse.Status) {
-	ino, ok := p.getInode(header.NodeId)
-	if !ok {
+	ino, err := p.getInode(header.NodeId)
+	if err != nil {
 		// this shouldn't be possible
-		return fuse.EINVAL
+		return fuse.ToStatus(err)
 	}
 
 	sub, err := ino.Lookup(name)
@@ -92,9 +92,9 @@ func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 		return fuse.ToStatus(err)
 	}
 
-	subI, ok := p.getInode(sub)
-	if !ok {
-		return fuse.EINVAL
+	subI, err := p.getInode(sub)
+	if err != nil {
+		return fuse.ToStatus(err)
 	}
 
 	out.NodeId, out.Generation = sub, 0
@@ -119,9 +119,9 @@ func (p *PkgFS) Forget(nodeid, nlookup uint64) {
 }
 
 func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse.AttrOut) (code fuse.Status) {
-	ino, ok := p.getInode(input.NodeId)
-	if !ok {
-		return fuse.EINVAL
+	ino, err := p.getInode(input.NodeId)
+	if err != nil {
+		return fuse.ToStatus(err)
 	}
 
 	out.Ino = input.NodeId
@@ -131,9 +131,9 @@ func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 }
 
 func (p *PkgFS) Readlink(cancel <-chan struct{}, header *fuse.InHeader) (out []byte, code fuse.Status) {
-	ino, ok := p.getInode(header.NodeId)
-	if !ok {
-		return nil, fuse.EINVAL
+	ino, err := p.getInode(header.NodeId)
+	if err != nil {
+		return nil, fuse.ToStatus(err)
 	}
 
 	v, err := ino.Readlink()
@@ -147,13 +147,13 @@ func (p *PkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 	}
 
 	// grab inode
-	ino, ok := p.getInode(input.NodeId)
-	if !ok {
-		return fuse.EINVAL
+	ino, err := p.getInode(input.NodeId)
+	if err != nil {
+		return fuse.ToStatus(err)
 	}
 
 	// check if can open
-	err := ino.Open(input.Flags)
+	err = ino.Open(input.Flags)
 	if err != nil {
 		return fuse.ToStatus(err)
 	}
@@ -169,16 +169,16 @@ func (p *PkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 func (p *PkgFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenOut) (status fuse.Status) {
 	// directories (open is always for read only)
 	// check stats → if not dir return error
-	ino, ok := p.getInode(input.NodeId)
-	if !ok {
-		return fuse.EINVAL
+	ino, err := p.getInode(input.NodeId)
+	if err != nil {
+		return fuse.ToStatus(err)
 	}
 
 	if !ino.Mode().IsDir() {
 		return fuse.ENOTDIR
 	}
 
-	err := ino.OpenDir()
+	err = ino.OpenDir()
 	return fuse.ToStatus(err)
 }
 

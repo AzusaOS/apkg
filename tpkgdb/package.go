@@ -38,11 +38,17 @@ type Package struct {
 	squash *squashfs.Superblock
 }
 
-func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, bool) {
+func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, error) {
 	p.dl.Do(p.doDl)
+
+	if p.squash == nil {
+		// problem
+		return nil, os.ErrInvalid
+	}
+
 	log.Printf("inode lookup WIP %d %s", ino, p.name)
 
-	return nil, false
+	return nil, os.ErrInvalid
 }
 
 func (p *Package) doDl() {
