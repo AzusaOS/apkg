@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/petar/GoLLRB/llrb"
 	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
@@ -31,7 +32,7 @@ type DBData struct {
 
 	ready uint32
 
-	ino map[uint64]*Package
+	ino *llrb.LLRB
 }
 
 func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
@@ -39,7 +40,7 @@ func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
 		prefix: prefix,
 		name:   name,
 		fs:     fs,
-		ino:    make(map[uint64]*Package),
+		ino:    llrb.New(),
 	}
 
 	isNew := false

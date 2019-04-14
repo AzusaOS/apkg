@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/petar/GoLLRB/llrb"
 	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
@@ -160,7 +161,8 @@ func (d *DBData) index() error {
 
 	// register inodes in root
 	for ino, pkg := range pkgList {
-		d.ino[ino+offt] = pkg
+		pkg.startIno = ino + offt
+		d.ino.ReplaceOrInsert(pkg)
 		d.fs.RegisterRootInode(offt+ino+1, pkg.name)
 
 		aliasName := pkg.name
@@ -183,20 +185,14 @@ func (d *DBData) index() error {
 }
 
 func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, error) {
-	if pkg, ok := d.ino[reqino]; ok {
-		// quick lookup, return symlink
-		return tpkgfs.NewSymlink([]byte(pkg.name)), nil
-	}
-
-	for ino, pkg := range d.ino {
-		if reqino < ino {
-			continue
-		}
-		if reqino > ino+pkg.inodes+1 {
-			continue
-		}
-
+	var pkg *Package
+	d.ino.DescendLessOrEqual(pkgindex(reqino), func(i llrb.Item) bool {
+		pkg = i.(*Package)
+		return false
+	})
+	if pkg != nil {
 		return pkg.handleLookup(reqino)
 	}
+
 	return nil, os.ErrInvalid
 }

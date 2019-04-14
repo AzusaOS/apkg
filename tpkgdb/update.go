@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/petar/GoLLRB/llrb"
 )
 
 func (d *DBData) download(v string) (bool, error) {
@@ -63,7 +65,7 @@ func (d *DB) Update() error {
 		prefix: d.DBData.prefix,
 		name:   d.DBData.name,
 		fs:     d.DBData.fs,
-		ino:    make(map[uint64]*Package),
+		ino:    llrb.New(),
 	}
 
 	v := d.created.UTC().Format("20060102150405")

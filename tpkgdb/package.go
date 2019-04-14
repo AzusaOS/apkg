@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/petar/GoLLRB/llrb"
 	"github.com/tardigradeos/tpkg/squashfs"
 	"github.com/tardigradeos/tpkg/tpkgfs"
 )
@@ -38,7 +39,34 @@ type Package struct {
 	squash *squashfs.Superblock
 }
 
+type pkgindex uint64
+
+type pkgindexItem interface {
+	Value() uint64
+	Less(than llrb.Item) bool
+}
+
+func (p *Package) Less(than llrb.Item) bool {
+	return p.startIno < than.(pkgindexItem).Value()
+}
+
+func (i pkgindex) Less(than llrb.Item) bool {
+	return uint64(i) < than.(pkgindexItem).Value()
+}
+
+func (i pkgindex) Value() uint64 {
+	return uint64(i)
+}
+
+func (p *Package) Value() uint64 {
+	return p.startIno
+}
+
 func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, error) {
+	if ino == p.startIno {
+		return tpkgfs.NewSymlink([]byte(p.name)), nil
+	}
+
 	p.dl.Do(p.doDl)
 
 	if p.squash == nil {
@@ -46,9 +74,12 @@ func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, error) {
 		return nil, os.ErrInvalid
 	}
 
-	log.Printf("inode lookup WIP %d %s", ino, p.name)
+	if ino <= p.startIno {
+		// in case it is == it is symlink, which is returned by the
+		return nil, os.ErrInvalid
+	}
 
-	return nil, os.ErrInvalid
+	return p.squash.GetInode(ino - p.startIno)
 }
 
 func (p *Package) doDl() {
