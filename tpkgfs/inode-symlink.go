@@ -48,3 +48,7 @@ func (i symlinkInodeObj) Open(flags uint32) error {
 func (i symlinkInodeObj) OpenDir() error {
 	return os.ErrInvalid
 }
+
+func (i symlinkInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList) error {
+	return os.ErrInvalid
+}

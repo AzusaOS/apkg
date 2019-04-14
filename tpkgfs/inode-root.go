@@ -58,3 +58,7 @@ func (i *rootInodeObj) Open(flags uint32) error {
 func (i *rootInodeObj) OpenDir() error {
 	return os.ErrPermission
 }
+
+func (i *rootInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList) error {
+	return os.ErrPermission
+}

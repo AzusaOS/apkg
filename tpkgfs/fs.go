@@ -182,8 +182,34 @@ func (p *PkgFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.Op
 	return fuse.ToStatus(err)
 }
 
-//    ReadDir(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
-//    ReadDirPlus(cancel <-chan struct{}, input *ReadIn, out *DirEntryList) Status
+func (p *PkgFS) ReadDir(cancel <-chan struct{}, input *fuse.ReadIn, out *fuse.DirEntryList) fuse.Status {
+	ino, err := p.getInode(input.NodeId)
+	if err != nil {
+		return fuse.ToStatus(err)
+	}
+
+	if !ino.Mode().IsDir() {
+		return fuse.ENOTDIR
+	}
+
+	err = ino.ReadDir(input, out)
+	return fuse.ToStatus(err)
+}
+
+func (p *PkgFS) ReadDirPlus(cancel <-chan struct{}, input *fuse.ReadIn, out *fuse.DirEntryList) fuse.Status {
+	ino, err := p.getInode(input.NodeId)
+	if err != nil {
+		return fuse.ToStatus(err)
+	}
+
+	if !ino.Mode().IsDir() {
+		return fuse.ENOTDIR
+	}
+
+	err = ino.ReadDir(input, out)
+	return fuse.ToStatus(err)
+}
+
 //    ReleaseDir(input *ReleaseIn)
 //    FsyncDir(cancel <-chan struct{}, input *FsyncIn) (code Status)
 //
