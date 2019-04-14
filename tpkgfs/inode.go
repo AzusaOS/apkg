@@ -20,7 +20,7 @@ type Inode interface {
 }
 
 // see: https://golang.org/src/os/stat_linux.go
-func modeToUnix(mode os.FileMode) uint32 {
+func ModeToUnix(mode os.FileMode) uint32 {
 	res := uint32(mode.Perm())
 
 	// type of file

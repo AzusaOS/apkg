@@ -37,7 +37,7 @@ func (i *rootInodeObj) FillAttr(attr *fuse.Attr) error {
 	attr.Ino = 1
 	attr.Size = 4096
 	attr.Blocks = 1
-	attr.Mode = modeToUnix(i.Mode())
+	attr.Mode = ModeToUnix(i.Mode())
 	attr.Nlink = 1 // 1 required
 	attr.Rdev = 1
 	attr.Blksize = 4096
