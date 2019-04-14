@@ -206,7 +206,14 @@ func (p *PkgFS) ReadDirPlus(cancel <-chan struct{}, input *fuse.ReadIn, out *fus
 		return fuse.ENOTDIR
 	}
 
-	err = ino.ReadDir(input, out)
+	inop, ok := ino.(interface {
+		ReadDirPlus(input *fuse.ReadIn, out *fuse.DirEntryList) error
+	})
+	if !ok {
+		return fuse.ENOTSUP
+	}
+
+	err = inop.ReadDirPlus(input, out)
 	return fuse.ToStatus(err)
 }
 

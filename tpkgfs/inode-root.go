@@ -60,5 +60,5 @@ func (i *rootInodeObj) OpenDir() error {
 }
 
 func (i *rootInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList) error {
-	return os.ErrPermission
+	return os.ErrInvalid
 }
