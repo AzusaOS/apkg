@@ -49,6 +49,6 @@ func (i symlinkInodeObj) OpenDir() error {
 	return os.ErrInvalid
 }
 
-func (i symlinkInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList) error {
+func (i symlinkInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error {
 	return os.ErrInvalid
 }

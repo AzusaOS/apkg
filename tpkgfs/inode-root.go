@@ -3,6 +3,7 @@ package tpkgfs
 import (
 	"log"
 	"os"
+	"sync"
 
 	"github.com/hanwen/go-fuse/fuse"
 )
@@ -10,14 +11,20 @@ import (
 type rootInodeObj struct {
 	parent   *PkgFS
 	children map[string]uint64
+	chLock   sync.RWMutex
 }
 
 func (d *PkgFS) RegisterRootInode(ino uint64, name string) {
+	d.root.chLock.Lock()
+	defer d.root.chLock.Unlock()
 	d.root.children[name] = ino
 }
 
 func (i *rootInodeObj) Lookup(name string) (uint64, error) {
 	log.Printf("ROOT lookup: %s", name)
+	i.chLock.RLock()
+	defer i.chLock.RUnlock()
+
 	ino, ok := i.children[name]
 	if !ok {
 		return 0, os.ErrNotExist
@@ -59,6 +66,6 @@ func (i *rootInodeObj) OpenDir() error {
 	return os.ErrPermission
 }
 
-func (i *rootInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList) error {
+func (i *rootInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error {
 	return os.ErrInvalid
 }

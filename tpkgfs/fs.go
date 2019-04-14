@@ -84,17 +84,17 @@ func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	ino, err := p.getInode(header.NodeId)
 	if err != nil {
 		// this shouldn't be possible
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	sub, err := ino.Lookup(name)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	subI, err := p.getInode(sub)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	out.NodeId, out.Generation = sub, 0
@@ -121,7 +121,7 @@ func (p *PkgFS) Forget(nodeid, nlookup uint64) {
 func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse.AttrOut) (code fuse.Status) {
 	ino, err := p.getInode(input.NodeId)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	out.Ino = input.NodeId
@@ -133,11 +133,11 @@ func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 func (p *PkgFS) Readlink(cancel <-chan struct{}, header *fuse.InHeader) (out []byte, code fuse.Status) {
 	ino, err := p.getInode(header.NodeId)
 	if err != nil {
-		return nil, fuse.ToStatus(err)
+		return nil, toStatus(err)
 	}
 
 	v, err := ino.Readlink()
-	return v, fuse.ToStatus(err)
+	return v, toStatus(err)
 }
 
 func (p *PkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenOut) (status fuse.Status) {
@@ -149,13 +149,13 @@ func (p *PkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 	// grab inode
 	ino, err := p.getInode(input.NodeId)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	// check if can open
 	err = ino.Open(input.Flags)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	return fuse.OK
@@ -171,7 +171,7 @@ func (p *PkgFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.Op
 	// check stats → if not dir return error
 	ino, err := p.getInode(input.NodeId)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	if !ino.Mode().IsDir() {
@@ -179,42 +179,35 @@ func (p *PkgFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.Op
 	}
 
 	err = ino.OpenDir()
-	return fuse.ToStatus(err)
+	return toStatus(err)
 }
 
 func (p *PkgFS) ReadDir(cancel <-chan struct{}, input *fuse.ReadIn, out *fuse.DirEntryList) fuse.Status {
 	ino, err := p.getInode(input.NodeId)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	if !ino.Mode().IsDir() {
 		return fuse.ENOTDIR
 	}
 
-	err = ino.ReadDir(input, out)
-	return fuse.ToStatus(err)
+	err = ino.ReadDir(input, out, false)
+	return toStatus(err)
 }
 
 func (p *PkgFS) ReadDirPlus(cancel <-chan struct{}, input *fuse.ReadIn, out *fuse.DirEntryList) fuse.Status {
 	ino, err := p.getInode(input.NodeId)
 	if err != nil {
-		return fuse.ToStatus(err)
+		return toStatus(err)
 	}
 
 	if !ino.Mode().IsDir() {
 		return fuse.ENOTDIR
 	}
 
-	inop, ok := ino.(interface {
-		ReadDirPlus(input *fuse.ReadIn, out *fuse.DirEntryList) error
-	})
-	if !ok {
-		return fuse.ENOTSUP
-	}
-
-	err = inop.ReadDirPlus(input, out)
-	return fuse.ToStatus(err)
+	err = ino.ReadDir(input, out, true)
+	return toStatus(err)
 }
 
 //    ReleaseDir(input *ReleaseIn)
