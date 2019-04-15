@@ -105,7 +105,7 @@ func (p *Package) doDl() {
 		return
 	}
 
-	p.squash, err = squashfs.New(p)
+	p.squash, err = squashfs.New(p, p.startIno, p.parent.fs)
 	if err != nil {
 		log.Printf("tpkgdb: failed to mount: %s", err)
 		defer p.f.Close()
