@@ -4,8 +4,21 @@ Work in progress
 
 # Structure
 
-* /pkg/INFO contains basic info on the currently served data (file version, etc)
 * /pkg/... is a non-listable directory but lookups will return a symlink to a given package's full name, or a directory of the actual package contents
+
+For example:
+
+	$ readlink ~/pkg/libs.zlib
+	libs.zlib.1.2.11.linux.amd64
+	$ ls ~/pkg/libs.zlib/ -la
+	total 4
+	drwxr-xr-x 3 root root    100 Apr 14 01:44 .
+	dr--r--r-- 1 root root   4096 Jan  1  1970 ..
+	-rw-r--r-- 0 root root 146362 Apr 14 01:44 libz.a
+	lrwxrwxrwx 1 root root     14 Apr 14 01:44 libz.so -> libz.so.1.2.11
+	lrwxrwxrwx 1 root root     14 Apr 14 01:44 libz.so.1 -> libz.so.1.2.11
+	-rwxr-xr-x 0 root root 117632 Apr 14 01:44 libz.so.1.2.11
+	drwxr-xr-x 2 root root     30 Apr 14 01:44 pkgconfig
 
 # Package names
 
