@@ -36,7 +36,7 @@ func New() (*PkgFS, error) {
 		return nil, err
 	}
 
-	root := &rootInodeObj{children: make(map[string]uint64)}
+	root := &rootInodeObj{children: llrb.New(), t: time.Now()}
 	res := &PkgFS{
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
 		root:          root,
