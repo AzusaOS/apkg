@@ -1,7 +1,6 @@
 package tpkgfs
 
 import (
-	"log"
 	"os"
 	"sync"
 
@@ -21,7 +20,6 @@ func (d *PkgFS) RegisterRootInode(ino uint64, name string) {
 }
 
 func (i *rootInodeObj) Lookup(name string) (uint64, error) {
-	log.Printf("ROOT lookup: %s", name)
 	i.chLock.RLock()
 	defer i.chLock.RUnlock()
 
