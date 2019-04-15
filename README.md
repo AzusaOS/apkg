@@ -4,13 +4,14 @@ Work in progress
 
 # Structure
 
-* /pkg/... is a non-listable directory but lookups will return a symlink to a given package's full name, or a directory of the actual package contents
+* /pkg/ directories each containing a database (main, etc)
+ * /pkg/main/... is a non-listable directory but lookups will return a symlink to a given package's full name, or a directory of the actual package contents
 
 For example:
 
-	$ readlink ~/pkg/libs.zlib
+	$ readlink ~/pkg/main/libs.zlib
 	libs.zlib.1.2.11.linux.amd64
-	$ ls ~/pkg/libs.zlib/ -la
+	$ ls ~/pkg/main/libs.zlib/ -la
 	total 4
 	drwxr-xr-x 3 root root    100 Apr 14 01:44 .
 	dr--r--r-- 1 root root   4096 Jan  1  1970 ..
