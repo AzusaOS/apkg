@@ -1,6 +1,7 @@
 package tpkgfs
 
 import (
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -161,7 +162,25 @@ func (p *PkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 	return fuse.OK
 }
 
-//    Read(cancel <-chan struct{}, input *ReadIn, buf []byte) (ReadResult, Status)
+func (p *PkgFS) Read(cancel <-chan struct{}, input *fuse.ReadIn, buf []byte) (fuse.ReadResult, fuse.Status) {
+	ino, err := p.getInode(input.NodeId)
+	if err != nil {
+		return nil, toStatus(err)
+	}
+
+	r, ok := ino.(io.ReaderAt)
+	if !ok {
+		return nil, fuse.ENOSYS
+	}
+
+	n, err := r.ReadAt(buf, int64(input.Offset))
+	if err != nil {
+		return nil, toStatus(err)
+	}
+
+	return fuse.ReadResultData(buf[:n]), fuse.OK
+}
+
 //    Lseek(cancel <-chan struct{}, in *LseekIn, out *LseekOut) Status
 //    Release(cancel <-chan struct{}, input *ReleaseIn)
 
