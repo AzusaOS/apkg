@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/petar/GoLLRB/llrb"
@@ -163,22 +162,7 @@ func (d *DBData) index() error {
 	for ino, pkg := range pkgList {
 		pkg.startIno = ino + offt
 		d.ino.ReplaceOrInsert(pkg)
-		d.fs.RegisterRootInode(offt+ino+1, pkg.name)
-
-		aliasName := pkg.name
-		first := true
-		for {
-			p := strings.LastIndexByte(aliasName, '.')
-			if p == -1 {
-				break
-			}
-			if !first {
-				d.fs.RegisterRootInode(offt+ino, aliasName)
-			} else {
-				first = false
-			}
-			aliasName = aliasName[:p]
-		}
+		d.nameIdx.ReplaceOrInsert(&llrbString{k: pkg.name, v: pkg})
 	}
 
 	return nil

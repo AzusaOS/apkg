@@ -29,6 +29,7 @@ type DBData struct {
 	totalSize uint64
 	fs        *tpkgfs.PkgFS
 	inoCount  uint64
+	nameIdx   *llrb.LLRB
 
 	ready uint32
 
@@ -37,10 +38,11 @@ type DBData struct {
 
 func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
 	r := &DBData{
-		prefix: prefix,
-		name:   name,
-		fs:     fs,
-		ino:    llrb.New(),
+		prefix:  prefix,
+		name:    name,
+		fs:      fs,
+		ino:     llrb.New(),
+		nameIdx: llrb.New(),
 	}
 
 	isNew := false
@@ -74,6 +76,12 @@ func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
 	}
 
 	res := &DB{r}
+
+	ino, err := r.fs.AllocateInode(res)
+	if err != nil {
+		return nil, err
+	}
+	r.fs.RegisterRootInode(ino, r.name)
 
 	if !isNew {
 		// check for updates

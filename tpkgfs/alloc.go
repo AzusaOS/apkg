@@ -71,6 +71,14 @@ func (p *PkgFS) getInode(ino uint64) (Inode, error) {
 	return nil, os.ErrInvalid
 }
 
+func (p *PkgFS) AllocateInode(i Inode) (uint64, error) {
+	ino := atomic.AddUint64(&p.inodeLast, 1)
+	log.Printf("tpkgfs: allocated inode %d", ino)
+	p.inodes[ino] = i
+
+	return ino, nil
+}
+
 func (p *PkgFS) AllocateInodes(count uint64, lookup func(ino uint64) (Inode, error)) (uint64, error) {
 	// allocate count number of inodes
 	lastIno := atomic.AddUint64(&p.inodeLast, count)
