@@ -126,7 +126,7 @@ func process(filename string) error {
 	signbuf := make([]byte, padding)
 	dataOffset := signOffset + padding
 
-	log.Printf("signature at %d, datat at %d", signOffset, dataOffset)
+	log.Printf("signature at %d, data at %d", signOffset, dataOffset)
 
 	header := &bytes.Buffer{}
 	header.Write([]byte("TPKG"))
