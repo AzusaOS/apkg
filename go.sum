@@ -6,6 +6,10 @@ github.com/MagicalTux/hsm v0.0.0-20190417080131-d1c3e83663da h1:XQ6KHhfDt3DlFlS7
 github.com/MagicalTux/hsm v0.0.0-20190417080131-d1c3e83663da/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
 github.com/MagicalTux/hsm v0.0.0-20190417081318-8e2e2af1e523 h1:z/8/1roe6ylEGTq001SFB9vPRC/zkpvpH6tOr+6YrIs=
 github.com/MagicalTux/hsm v0.0.0-20190417081318-8e2e2af1e523/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
+github.com/MagicalTux/hsm v0.0.0-20190417084049-7e71c258d4d3 h1:I7aV879FXTnRisERn+fF2UwbQh1cRJ34/4lw8NGY1H4=
+github.com/MagicalTux/hsm v0.0.0-20190417084049-7e71c258d4d3/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
+github.com/MagicalTux/hsm v0.0.0-20190417085317-09f6dc690a49 h1:tvmk4hhy8SJVaJbf1SxiqT02ODadGXpHQbZ2O4jRBQg=
+github.com/MagicalTux/hsm v0.0.0-20190417085317-09f6dc690a49/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
 github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 h1:D22EM5TeYZJp43hGDx6dUng8mvtyYbB9BnE3+BmJR1Q=

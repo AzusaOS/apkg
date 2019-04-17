@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -16,11 +18,12 @@ import (
 
 	"github.com/MagicalTux/hsm"
 	"github.com/tardigradeos/tpkg/squashfs"
+	"golang.org/x/crypto/ed25519"
 )
 
 const HEADER_LEN = 120
 
-func process(h hsm.HSM, filename string) error {
+func process(k hsm.Key, filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -146,6 +149,34 @@ func process(h hsm.HSM, filename string) error {
 
 	if header.Len() != HEADER_LEN {
 		return errors.New("invalid header length")
+	}
+
+	// generate signature
+	if k != nil {
+		sig_pub, err := k.PublicBlob()
+		if err != nil {
+			return err
+		}
+		// use raw hash because we expect to use ed25519
+		sig_blob, err := k.Sign(rand.Reader, header.Bytes(), crypto.Hash(0))
+		if err != nil {
+			return err
+		}
+
+		// verify signature
+		if !ed25519.Verify(ed25519.PublicKey(sig_pub), header.Bytes(), sig_blob) {
+			return errors.New("signature verification failed")
+		}
+
+		sig := append([]byte{byte(len(sig_pub))}, sig_pub...)
+		sig = append(sig, byte(len(sig_blob)))
+		sig = append(sig, sig_blob...)
+
+		if len(sig) > len(signbuf) {
+			return errors.New("signature buffer not large enough!")
+		}
+
+		copy(signbuf, sig)
 	}
 
 	// generate output filename
