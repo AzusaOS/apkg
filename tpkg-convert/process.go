@@ -14,12 +14,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MagicalTux/hsm"
 	"github.com/tardigradeos/tpkg/squashfs"
 )
 
 const HEADER_LEN = 120
 
-func process(filename string) error {
+func process(h hsm.HSM, filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
