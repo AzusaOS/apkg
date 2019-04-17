@@ -1,7 +1,7 @@
 module github.com/tardigradeos/tpkg
 
 require (
-	github.com/MagicalTux/hsm v0.0.0-20190417085317-09f6dc690a49
+	github.com/MagicalTux/hsm v0.1.0
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
 	github.com/google/uuid v1.1.1

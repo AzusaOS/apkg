@@ -1,9 +1,10 @@
 package main
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"flag"
 	"log"
+	"os"
 
 	"github.com/MagicalTux/hsm"
 )
@@ -11,24 +12,26 @@ import (
 func main() {
 	flag.Parse()
 	h, err := hsm.New()
-	var k hsm.Key
 
 	if err != nil {
-		log.Printf("failed to initialize HSM, signature won't be possible: %s", err)
-	} else {
-		ks, err := h.ListKeysByName("pkg_sign")
-		if err != nil {
-			log.Printf("failed to list HSM keys: %s", err)
-		} else if len(ks) == 0 {
-			log.Printf("failed to list HSM keys: no keys")
-		} else {
-			k = ks[0]
-			log.Printf("found key: %s", k)
-			blob, err := k.PublicBlob()
-			if err == nil {
-				log.Printf("Public key: %s", hex.EncodeToString(blob))
-			}
-		}
+		log.Printf("failed to initialize HSM: %s", err)
+		os.Exit(1)
+	}
+
+	ks, err := h.ListKeysByName("pkg_sign_ed25519")
+	if err != nil {
+		log.Printf("failed to list HSM keys: %s", err)
+		os.Exit(1)
+	} else if len(ks) == 0 {
+		log.Printf("failed to list HSM keys: no keys. Please generate one.")
+		os.Exit(1)
+	}
+
+	k := ks[0]
+	log.Printf("found key: %s", k)
+	blob, err := k.PublicBlob()
+	if err == nil {
+		log.Printf("Public key: %s", base64.RawURLEncoding.EncodeToString(blob))
 	}
 
 	for _, f := range flag.Args() {
