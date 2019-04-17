@@ -152,32 +152,38 @@ func process(k hsm.Key, filename string) error {
 	}
 
 	// generate signature
-	if k != nil {
-		sig_pub, err := k.PublicBlob()
-		if err != nil {
-			return err
-		}
-		// use raw hash because we expect to use ed25519
-		sig_blob, err := k.Sign(rand.Reader, header.Bytes(), crypto.Hash(0))
-		if err != nil {
-			return err
-		}
+	sigB := &bytes.Buffer{}
+	vInt := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutUvarint(vInt, 0x0001) // Signature type 1 = ed25519
+	sigB.Write(vInt[:n])
 
-		// verify signature
-		if !ed25519.Verify(ed25519.PublicKey(sig_pub), header.Bytes(), sig_blob) {
-			return errors.New("signature verification failed")
-		}
-
-		sig := append([]byte{byte(len(sig_pub))}, sig_pub...)
-		sig = append(sig, byte(len(sig_blob)))
-		sig = append(sig, sig_blob...)
-
-		if len(sig) > len(signbuf) {
-			return errors.New("signature buffer not large enough!")
-		}
-
-		copy(signbuf, sig)
+	sig_pub, err := k.PublicBlob()
+	if err != nil {
+		return err
 	}
+	n = binary.PutUvarint(vInt, uint64(len(sig_pub)))
+	sigB.Write(vInt[:n])
+	sigB.Write(sig_pub)
+
+	// use raw hash for ed25519
+	sig_blob, err := k.Sign(rand.Reader, header.Bytes(), crypto.Hash(0))
+	if err != nil {
+		return err
+	}
+	n = binary.PutUvarint(vInt, uint64(len(sig_blob)))
+	sigB.Write(vInt[:n])
+	sigB.Write(sig_blob)
+
+	// verify signature
+	if !ed25519.Verify(ed25519.PublicKey(sig_pub), header.Bytes(), sig_blob) {
+		return errors.New("signature verification failed")
+	}
+
+	if sigB.Len() > len(signbuf) {
+		return errors.New("signature buffer not large enough!")
+	}
+
+	copy(signbuf, sigB.Bytes())
 
 	// generate output filename
 	out := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist/main", strings.Join(fn_a, "/"), filename_f+".tpkg")
