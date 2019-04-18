@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"hash"
 	"io"
 	"log"
 	"os"
@@ -14,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MagicalTux/hsm"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -28,9 +32,18 @@ type dbFile struct {
 	path string
 	arch string
 	os   string
+
+	ino uint64
+	cnt uint32
+
+	idxFN  map[string]int64
+	idxIno map[uint64]int64
+
+	w    io.Writer
+	hash hash.Hash
 }
 
-func processDb(name string) error {
+func processDb(name string, k hsm.Key) error {
 	dir := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist", name)
 	files := make(map[fileKey]*dbFile)
 	now := time.Now()
@@ -56,18 +69,20 @@ func processDb(name string) error {
 			return err
 		}
 
-		fk := fileKey{arch: p.meta["arch"].(string), os: p.meta["os"].(string)}
+		fk := fileKey{arch: p.meta.Arch, os: p.meta.Os}
 		db, ok := files[fk]
 		if !ok {
 			db = &dbFile{
-				path: filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/db", name, fk.os, fk.arch, stamp+".db"),
-				arch: fk.arch,
-				os:   fk.os,
-				name: name,
+				path:   filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/db", name, fk.os, fk.arch, stamp+".bin"),
+				arch:   fk.arch,
+				os:     fk.os,
+				name:   name,
+				idxFN:  make(map[string]int64),
+				idxIno: make(map[uint64]int64),
 			}
 
 			// open db
-			db.f, err = os.Create(db.path)
+			db.f, err = os.Create(db.path + "~")
 			if err != nil {
 				return err
 			}
@@ -84,6 +99,13 @@ func processDb(name string) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	for _, db := range files {
+		err = db.finalize(k)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -130,15 +152,18 @@ func (db *dbFile) init(now time.Time) error {
 	// SHA256('') = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 	emptyHash, _ := hex.DecodeString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 
+	// 76
 	binary.Write(db.f, binary.BigEndian, uint32(196+128)) // location of data
 	binary.Write(db.f, binary.BigEndian, uint32(0))       // length of data
 	db.f.Write(emptyHash)                                 // hash of data
-	binary.Write(db.f, binary.BigEndian, uint32(0))       // location of id index
-	binary.Write(db.f, binary.BigEndian, uint32(0))       // length of id index
-	db.f.Write(emptyHash)                                 // hash of id index
-	binary.Write(db.f, binary.BigEndian, uint32(0))       // location of name index
-	binary.Write(db.f, binary.BigEndian, uint32(0))       // length of name index
-	db.f.Write(emptyHash)                                 // hash of name index
+	// 110
+	binary.Write(db.f, binary.BigEndian, uint32(0)) // location of id index
+	binary.Write(db.f, binary.BigEndian, uint32(0)) // length of id index
+	db.f.Write(emptyHash)                           // hash of id index
+	// 156
+	binary.Write(db.f, binary.BigEndian, uint32(0)) // location of name index
+	binary.Write(db.f, binary.BigEndian, uint32(0)) // length of name index
+	db.f.Write(emptyHash)                           // hash of name index
 
 	n, _ := db.f.Seek(0, io.SeekCurrent)
 
@@ -148,21 +173,117 @@ func (db *dbFile) init(now time.Time) error {
 
 	db.f.Write(make([]byte, 128)) // reserved space for signature
 
+	db.hash = sha256.New()
+	db.w = io.MultiWriter(db.f, db.hash)
+
 	return nil
 }
 
 func (db *dbFile) index(rpath string, info os.FileInfo, p *pkginfo) {
+	// write package to list & store position details
+	pos, _ := db.f.Seek(0, io.SeekCurrent)
+	db.idxFN[p.meta.FullName] = pos
+	db.idxIno[db.ino] = pos
+	db.ino += uint64(p.meta.Inodes) + 1
+	db.cnt += 1
 
+	db.w.Write([]byte{0}) // package
+	db.w.Write(p.headerHash[:])
+	binary.Write(db.w, binary.BigEndian, uint64(info.Size()))
+	binary.Write(db.w, binary.BigEndian, p.meta.Inodes)
+
+	vInt := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutUvarint(vInt, uint64(len(p.meta.FullName)))
+	db.w.Write(vInt[:n])
+	db.w.Write([]byte(p.meta.FullName))
+
+	n = binary.PutUvarint(vInt, uint64(len(rpath)))
+	db.w.Write(vInt[:n])
+	db.w.Write([]byte(rpath))
+}
+
+func (db *dbFile) finalize(k hsm.Key) error {
+	// compute hash, etc
+	pos, _ := db.f.Seek(0, io.SeekCurrent)
+	hash := db.hash.Sum(nil)
+
+	// write to header
+	db.w = nil
+	db.hash = nil
+
+	db.f.Seek(76, io.SeekStart) // length of data, data starts at 196+128
+	var start uint32
+	binary.Read(db.f, binary.BigEndian, &start)             // should be reading 196+128
+	binary.Write(db.f, binary.BigEndian, uint32(pos)-start) // write length of data
+	db.f.Write(hash)                                        // write hash of data
+
+	// TODO: index, etc
+
+	// compute header signature
+	header := make([]byte, 196)
+	_, err := db.f.ReadAt(header, 0)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Signing %s...", db.path)
+
+	sigB := &bytes.Buffer{}
+	vInt := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutUvarint(vInt, 0x0001) // Signature type 1 = ed25519
+	sigB.Write(vInt[:n])
+
+	sig_pub, err := k.PublicBlob()
+	if err != nil {
+		return err
+	}
+
+	n = binary.PutUvarint(vInt, uint64(len(sig_pub)))
+	sigB.Write(vInt[:n])
+	sigB.Write(sig_pub)
+
+	// use raw hash for ed25519
+	sig_blob, err := k.Sign(rand.Reader, header, crypto.Hash(0))
+	if err != nil {
+		return err
+	}
+	n = binary.PutUvarint(vInt, uint64(len(sig_blob)))
+	sigB.Write(vInt[:n])
+	sigB.Write(sig_blob)
+
+	// verify signature
+	if !ed25519.Verify(ed25519.PublicKey(sig_pub), header, sig_blob) {
+		return errors.New("signature verification failed")
+	}
+
+	if sigB.Len() > 128 {
+		return errors.New("signature buffer not large enough!")
+	}
+
+	db.f.Seek(196, io.SeekStart)
+	db.f.Write(sigB.Bytes())
+
+	db.f.Close()
+
+	return os.Rename(db.path+"~", db.path)
+}
+
+type pkgMeta struct {
+	FullName string `json:"full_name"`
+	Inodes   uint32 `json:"inodes"`
+	Arch     string `json:"arch"`
+	Os       string `json:"os"`
 }
 
 type pkginfo struct {
 	flags   uint64
 	created time.Time
-	meta    map[string]interface{}
+	meta    *pkgMeta
 
 	// details in signature
-	key []byte
-	sig []byte
+	headerHash [32]byte // sha256 of header
+	key        []byte
+	sig        []byte
 }
 
 func parsePkgHeader(f *os.File) (*pkginfo, error) {
@@ -174,6 +295,8 @@ func parsePkgHeader(f *os.File) (*pkginfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	p.headerHash = sha256.Sum256(header)
 
 	if string(header[:4]) != "TPKG" {
 		return nil, errors.New("not a TPKG file")

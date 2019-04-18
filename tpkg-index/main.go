@@ -34,7 +34,7 @@ func main() {
 		log.Printf("Public key: %s", base64.RawURLEncoding.EncodeToString(blob))
 	}
 
-	err = processDb("main")
+	err = processDb("main", k)
 	if err != nil {
 		log.Printf("failed: %s", err)
 	}

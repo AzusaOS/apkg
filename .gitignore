@@ -4,3 +4,4 @@
 .*.swp
 /data
 /tpkg-convert/tpkg-convert
+/tpkg-index/tpkg-index
