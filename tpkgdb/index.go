@@ -59,8 +59,6 @@ func (d *DBData) index() error {
 	d.arch = osarchcnt[1] // 0=i386 1=amd64 ...
 	d.count = osarchcnt[2]
 
-	log.Printf("data = %v", osarchcnt)
-
 	name := make([]byte, 32)
 	_, err = io.ReadFull(r, name)
 	if err != nil {
