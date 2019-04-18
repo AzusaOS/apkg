@@ -6,6 +6,7 @@ GOPATH:=$(shell go env GOPATH)
 SOURCES:=$(shell find . -name '*.go')
 AWS:=$(shell which 2>/dev/null aws)
 S3_TARGET=s3://dist-go
+TPKG_DB=main
 ifeq ($(DATE_TAG),)
 DATE_TAG:=$(shell date '+%Y%m%d%H%M%S')
 endif
@@ -29,7 +30,7 @@ ifeq ($(PROJECT_NAME),)
 PROJECT_NAME:=$(shell basename `pwd`)
 endif
 
-.PHONY: all deps update fmt test check doc dist update-make gen cov
+.PHONY: all deps update fmt test check doc dist update-make gen cov tpkg-dist
 
 all: $(PROJECT_NAME)
 
@@ -68,6 +69,18 @@ doc:
 	@if [ ! -f $(GOPATH)/bin/godoc ]; then go get golang.org/x/tools/cmd/godoc; fi
 	$(GOPATH)/bin/godoc -v -http=:6060 -index -play
 
+ifneq ($(TPKG_NAME),)
+tpkg-dist:
+	@mkdir -p dist/$(PROJECT_NAME)_$(GIT_TAG)/upload
+	@make -s $(patsubst %,tpkg-dist-%,$(DIST_ARCHS))
+
+tpkg-dist-%: dist/$(PROJECT_NAME)_$(GIT_TAG)/%/$(PROJECT_NAME)
+	@echo "Generating $(TPKG_NAME) from $<"
+	@mksquashfs "$<" "dist/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend
+	@tpkg-convert "dist/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs"
+
+endif
+
 dist:
 	@mkdir -p dist/$(PROJECT_NAME)_$(GIT_TAG)/upload
 	@make -s $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2,$(DIST_ARCHS))
@@ -90,6 +103,12 @@ dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2: dist/$(PROJECT_NAM
 
 dist/$(PROJECT_NAME)_$(GIT_TAG):
 	@mkdir "$@"
+
+dist/$(PROJECT_NAME)_$(GIT_TAG)/%/$(PROJECT_NAME): $(SOURCES)
+	@echo " * Building $(PROJECT_NAME) for $*"
+	@TARGET_ARCH="$*" make -s dist/$(PROJECT_NAME)_$(GIT_TAG)/build_$(PROJECT_NAME).$*
+	@mkdir -p 'dist/$(PROJECT_NAME)_$(GIT_TAG)/$*/'
+	@mv 'dist/$(PROJECT_NAME)_$(GIT_TAG)/build_$(PROJECT_NAME).$*' 'dist/$(PROJECT_NAME)_$(GIT_TAG)/$*/$(PROJECT_NAME)'
 
 dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%: $(SOURCES)
 	@echo " * Building $(PROJECT_NAME) for $*"
