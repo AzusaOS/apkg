@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
@@ -25,6 +26,7 @@ type DBData struct {
 	created  time.Time
 	os, arch uint32
 	count    uint32
+	path     string
 
 	totalSize uint64
 	fs        *tpkgfs.PkgFS
@@ -36,17 +38,18 @@ type DBData struct {
 	ino *llrb.LLRB
 }
 
-func New(prefix, name string, fs *tpkgfs.PkgFS) (*DB, error) {
+func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
 	r := &DBData{
 		prefix:  prefix,
 		name:    name,
+		path:    path,
 		fs:      fs,
 		ino:     llrb.New(),
 		nameIdx: llrb.New(),
 	}
 
 	isNew := false
-	if _, err := os.Stat("data/" + r.name + ".bin"); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(r.path, r.name+".bin")); os.IsNotExist(err) {
 		// immediate download
 		_, err := r.download("")
 		if err != nil {
@@ -100,7 +103,7 @@ func (d *DBData) load() error {
 	}
 
 	// we use mmap
-	f, err := os.Open("data/" + d.name + ".bin")
+	f, err := os.Open(filepath.Join(d.path, d.name+".bin"))
 	if err != nil {
 		return err
 	}

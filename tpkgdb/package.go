@@ -2,6 +2,7 @@ package tpkgdb
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"github.com/petar/GoLLRB/llrb"
 	"github.com/tardigradeos/tpkg/squashfs"
 	"github.com/tardigradeos/tpkg/tpkgfs"
+	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
 type Package struct {
@@ -81,7 +83,7 @@ func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, error) {
 }
 
 func (p *Package) doDl() {
-	lpath := path.Join("data", p.parent.name, p.path)
+	lpath := path.Join(p.parent.path, p.parent.name, p.path)
 
 	if _, err := os.Stat(lpath); os.IsNotExist(err) {
 		p.dlFile()
@@ -114,7 +116,7 @@ func (p *Package) doDl() {
 }
 
 func (p *Package) dlFile() {
-	lpath := path.Join("data", p.parent.name, p.path)
+	lpath := path.Join(p.parent.path, p.parent.name, p.path)
 
 	// download this package
 	resp, err := http.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + p.path)
@@ -152,6 +154,12 @@ func (p *Package) validate() error {
 	_, err := p.f.ReadAt(header, 0)
 	if err != nil {
 		return err
+	}
+
+	// check hash
+	h256 := sha256.Sum256(header)
+	if !bytes.Equal(h256[:], p.hash) {
+		return errors.New("header invalid or corrupted")
 	}
 
 	if string(header[:4]) != "TPKG" {
@@ -208,6 +216,17 @@ func (p *Package) validate() error {
 	// read sign_offset + data_offset
 	last_offt := make([]uint32, 2)
 	err = binary.Read(r, binary.BigEndian, last_offt)
+	if err != nil {
+		return err
+	}
+
+	// check signature
+	sig := make([]byte, 128)
+	_, err = p.f.ReadAt(sig, int64(last_offt[0]))
+	if err != nil {
+		return err
+	}
+	err = tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
 	if err != nil {
 		return err
 	}

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/MagicalTux/hsm"
+	"github.com/tardigradeos/tpkg/tpkgsig"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -202,14 +203,8 @@ func (db *dbFile) index(rpath string, info os.FileInfo, p *pkginfo) {
 	binary.Write(db.w, binary.BigEndian, uint64(info.Size()))
 	binary.Write(db.w, binary.BigEndian, p.meta.Inodes)
 
-	vInt := make([]byte, binary.MaxVarintLen64)
-	n := binary.PutUvarint(vInt, uint64(len(p.meta.FullName)))
-	db.w.Write(vInt[:n])
-	db.w.Write([]byte(p.meta.FullName))
-
-	n = binary.PutUvarint(vInt, uint64(len(rpath)))
-	db.w.Write(vInt[:n])
-	db.w.Write([]byte(rpath))
+	tpkgsig.WriteVarblob(db.w, []byte(p.meta.FullName))
+	tpkgsig.WriteVarblob(db.w, []byte(rpath))
 }
 
 func (db *dbFile) finalize(k hsm.Key) error {
@@ -251,22 +246,19 @@ func (db *dbFile) finalize(k hsm.Key) error {
 		return err
 	}
 
-	n = binary.PutUvarint(vInt, uint64(len(sig_pub)))
-	sigB.Write(vInt[:n])
-	sigB.Write(sig_pub)
+	tpkgsig.WriteVarblob(sigB, sig_pub)
 
 	// use raw hash for ed25519
 	sig_blob, err := k.Sign(rand.Reader, header, crypto.Hash(0))
 	if err != nil {
 		return err
 	}
-	n = binary.PutUvarint(vInt, uint64(len(sig_blob)))
-	sigB.Write(vInt[:n])
-	sigB.Write(sig_blob)
+	tpkgsig.WriteVarblob(sigB, sig_blob)
 
 	// verify signature
-	if !ed25519.Verify(ed25519.PublicKey(sig_pub), header, sig_blob) {
-		return errors.New("signature verification failed")
+	err = tpkgsig.VerifyDb(header, bytes.NewReader(sigB.Bytes()))
+	if err != nil {
+		return err
 	}
 
 	if sigB.Len() > 128 {

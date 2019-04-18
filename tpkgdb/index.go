@@ -3,7 +3,6 @@ package tpkgdb
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -14,7 +13,7 @@ import (
 
 	"github.com/petar/GoLLRB/llrb"
 	"github.com/tardigradeos/tpkg/tpkgfs"
-	"golang.org/x/crypto/ed25519"
+	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
 func (d *DBData) index() error {
@@ -97,55 +96,10 @@ func (d *DBData) index() error {
 	headerData := d.data[:196]
 	// seek at signature location
 	r.Seek(196, io.SeekStart)
-	sigV, err := binary.ReadUvarint(r)
+	err = tpkgsig.VerifyDb(headerData, r)
 	if err != nil {
 		return err
 	}
-	if sigV != 1 {
-		return errors.New("unsupported signature version")
-	}
-
-	// read pub
-	pubL, err := binary.ReadUvarint(r)
-	if err != nil {
-		return err
-	}
-	if pubL > 64 {
-		return errors.New("invalid signature data")
-	}
-	pub := make([]byte, pubL)
-	_, err = r.Read(pub)
-	if err != nil {
-		return err
-	}
-
-	// read sig
-	sigL, err := binary.ReadUvarint(r)
-	if err != nil {
-		return err
-	}
-	if sigL > 64 {
-		return errors.New("invalid signature data")
-	}
-	sig := make([]byte, sigL)
-	_, err = r.Read(sig)
-	if err != nil {
-		return err
-	}
-
-	// check sig
-	if !ed25519.Verify(ed25519.PublicKey(pub), headerData, sig) {
-		return errors.New("invalid signature for database")
-	}
-
-	// get info
-	pubS := base64.RawURLEncoding.EncodeToString(pub)
-	sigN, ok := trustedDbSig[pubS]
-	if !ok {
-		return errors.New("not trusted but valid signature found, do you need to upgrade?")
-	}
-
-	log.Printf("tpkgdb: database was signed by %s (%s)", sigN, pubS)
 
 	// TODO → use indices
 

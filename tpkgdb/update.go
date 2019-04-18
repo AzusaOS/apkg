@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"unsafe"
@@ -41,8 +42,8 @@ func (d *DBData) download(v string) (bool, error) {
 	}
 	defer resp.Body.Close()
 
-	os.MkdirAll("data", 0755)
-	out, err := os.Create("data/" + d.name + ".bin~")
+	os.MkdirAll(d.path, 0755)
+	out, err := os.Create(filepath.Join(d.path, d.name+".bin~"))
 	if err != nil {
 		return false, err
 	}
@@ -55,17 +56,19 @@ func (d *DBData) download(v string) (bool, error) {
 	out.Close()
 
 	// rename method allows already open db to stay the same
-	os.Rename("data/"+d.name+".bin~", "data/"+d.name+".bin")
+	os.Rename(filepath.Join(d.path, d.name+".bin~"), filepath.Join(d.path, d.name+".bin"))
 	return true, nil
 }
 
 // Update will check server for new version, update and return a new instance of DB unless there was no new version, in which case the original instance is returned
 func (d *DB) Update() error {
 	r := &DBData{
-		prefix: d.DBData.prefix,
-		name:   d.DBData.name,
-		fs:     d.DBData.fs,
-		ino:    llrb.New(),
+		prefix:  d.DBData.prefix,
+		name:    d.DBData.name,
+		path:    d.DBData.path,
+		fs:      d.DBData.fs,
+		ino:     llrb.New(),
+		nameIdx: llrb.New(),
 	}
 
 	v := d.created.UTC().Format("20060102150405")

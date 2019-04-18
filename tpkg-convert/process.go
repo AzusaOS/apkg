@@ -18,7 +18,7 @@ import (
 
 	"github.com/MagicalTux/hsm"
 	"github.com/tardigradeos/tpkg/squashfs"
-	"golang.org/x/crypto/ed25519"
+	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
 const HEADER_LEN = 120
@@ -161,22 +161,19 @@ func process(k hsm.Key, filename string) error {
 	if err != nil {
 		return err
 	}
-	n = binary.PutUvarint(vInt, uint64(len(sig_pub)))
-	sigB.Write(vInt[:n])
-	sigB.Write(sig_pub)
+	tpkgsig.WriteVarblob(sigB, sig_pub)
 
 	// use raw hash for ed25519
 	sig_blob, err := k.Sign(rand.Reader, header.Bytes(), crypto.Hash(0))
 	if err != nil {
 		return err
 	}
-	n = binary.PutUvarint(vInt, uint64(len(sig_blob)))
-	sigB.Write(vInt[:n])
-	sigB.Write(sig_blob)
+	tpkgsig.WriteVarblob(sigB, sig_blob)
 
 	// verify signature
-	if !ed25519.Verify(ed25519.PublicKey(sig_pub), header.Bytes(), sig_blob) {
-		return errors.New("signature verification failed")
+	err = tpkgsig.VerifyPkg(header.Bytes(), bytes.NewReader(sigB.Bytes()))
+	if err != nil {
+		return err
 	}
 
 	if sigB.Len() > len(signbuf) {

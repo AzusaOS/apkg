@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/tardigradeos/tpkg/tpkgdb"
@@ -44,7 +45,14 @@ func main() {
 	go mp.Serve()
 	defer mp.Unmount()
 
-	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main", mp)
+	p := "/var/lib/tpkg"
+	if os.Geteuid() != 0 {
+		h := os.Getenv("HOME")
+		if h != "" {
+			p = filepath.Join(h, ".cache/tpkg")
+		}
+	}
+	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main", p, mp)
 	if err != nil {
 		log.Printf("db: failed to load: %s", err)
 		return
