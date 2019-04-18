@@ -22,7 +22,6 @@ import (
 
 	"github.com/MagicalTux/hsm"
 	"github.com/tardigradeos/tpkg/tpkgsig"
-	"golang.org/x/crypto/ed25519"
 )
 
 type fileKey struct {
@@ -322,8 +321,6 @@ type pkginfo struct {
 
 	// details in signature
 	headerHash [32]byte // sha256 of header
-	key        []byte
-	sig        []byte
 }
 
 func parsePkgHeader(f *os.File) (*pkginfo, error) {
@@ -402,39 +399,9 @@ func parsePkgHeader(f *os.File) (*pkginfo, error) {
 		return nil, err
 	}
 
-	// read signature version
-	sigB := bytes.NewReader(sig)
-	sigV, err := binary.ReadUvarint(sigB)
+	err = tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
 	if err != nil {
 		return nil, err
-	}
-	if sigV != 0x0001 { // only supported is 0x0001 ed25519
-		return nil, errors.New("unsupported signature version")
-	}
-
-	pubL, err := binary.ReadUvarint(sigB)
-	if err != nil {
-		return nil, err
-	}
-	p.key = make([]byte, pubL)
-	_, err = sigB.Read(p.key)
-	if err != nil {
-		return nil, err
-	}
-
-	sigL, err := binary.ReadUvarint(sigB)
-	if err != nil {
-		return nil, err
-	}
-	p.sig = make([]byte, sigL)
-	_, err = sigB.Read(p.sig)
-	if err != nil {
-		return nil, err
-	}
-
-	// check signature
-	if !ed25519.Verify(ed25519.PublicKey(p.key), header, p.sig) {
-		return nil, errors.New("invalid signature")
 	}
 
 	// read metadata
