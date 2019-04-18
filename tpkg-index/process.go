@@ -9,10 +9,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"log"
 	"os"
+	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -27,11 +30,12 @@ type fileKey struct {
 }
 
 type dbFile struct {
-	f    *os.File
-	name string
-	path string
-	arch string
-	os   string
+	f     *os.File
+	name  string
+	path  string
+	stamp string
+	arch  string
+	os    string
 
 	ino uint64
 	cnt uint32
@@ -74,6 +78,7 @@ func processDb(name string, k hsm.Key) error {
 		if !ok {
 			db = &dbFile{
 				path:   filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/db", name, fk.os, fk.arch, stamp+".bin"),
+				stamp:  stamp,
 				arch:   fk.arch,
 				os:     fk.os,
 				name:   name,
@@ -106,6 +111,9 @@ func processDb(name string, k hsm.Key) error {
 		if err != nil {
 			return err
 		}
+	}
+	for _, db := range files {
+		db.upload()
 	}
 
 	return nil
@@ -265,7 +273,42 @@ func (db *dbFile) finalize(k hsm.Key) error {
 
 	db.f.Close()
 
-	return os.Rename(db.path+"~", db.path)
+	err = os.Rename(db.path+"~", db.path)
+	if err != nil {
+		return err
+	}
+
+	// update LATEST.txt
+	lat, err := os.Create(filepath.Join(filepath.Dir(db.path), "LATEST.txt"))
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(lat, "%s\n", db.stamp)
+	lat.Close()
+
+	return nil
+}
+
+func (db *dbFile) upload() error {
+	// upload file to s3
+	s3pfx := "s3:/" + path.Join("/tpkg/db", db.name, db.os, db.arch)
+	log.Printf("uploading files to %s", s3pfx)
+
+	//system('aws s3 cp --cache-control max-age=31536000 '.escapeshellarg($db_path.'/'.$datestamp.'.bin').' '.escapeshellarg($s3_prefix.'/'.$datestamp.'.bin'));
+	cmd1 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=31536000", db.path, s3pfx+"/"+db.stamp+".bin")
+	cmd1.Stdout = os.Stdout
+	cmd1.Stderr = os.Stderr
+	err := cmd1.Run()
+	if err != nil {
+		return err
+	}
+
+	//system('aws s3 cp --cache-control max-age=60 '.escapeshellarg($db_path.'/LATEST.txt').' '.escapeshellarg($s3_prefix.'/LATEST.txt'));
+	cmd2 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path)+"/LATEST.txt", s3pfx+"/LATEST.txt")
+	cmd2.Stdout = os.Stdout
+	cmd2.Stderr = os.Stderr
+
+	return cmd2.Run()
 }
 
 type pkgMeta struct {
