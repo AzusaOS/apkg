@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/petar/GoLLRB/llrb"
 	"github.com/tardigradeos/tpkg/squashfs"
 	"github.com/tardigradeos/tpkg/tpkgfs"
@@ -21,8 +20,7 @@ import (
 type Package struct {
 	parent   *DBData
 	startIno uint64
-	pos      int64 // position in archive of data
-	id       uuid.UUID
+	pos      int64  // position in archive of data
 	hash     []byte // typically sha256
 	size     uint64
 	inodes   uint64

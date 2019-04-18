@@ -51,7 +51,7 @@ func processDb(name string, k hsm.Key) error {
 	dir := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist", name)
 	files := make(map[fileKey]*dbFile)
 	now := time.Now()
-	stamp := now.Format("20060102150405")
+	stamp := now.UTC().Format("20060102150405")
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if !info.Mode().IsRegular() {
@@ -152,7 +152,9 @@ func (db *dbFile) init(now time.Time) error {
 
 	binary.Write(db.f, binary.BigEndian, os)
 	binary.Write(db.f, binary.BigEndian, arch)
+	// 40 (pkg count)
 	binary.Write(db.f, binary.BigEndian, uint32(0)) // offset 40: number of packages (filled at the end)
+
 	nameBuf := make([]byte, 32)
 	copy(nameBuf, db.name)
 	db.f.Write(nameBuf)
@@ -218,6 +220,9 @@ func (db *dbFile) finalize(k hsm.Key) error {
 	// write to header
 	db.w = nil
 	db.hash = nil
+
+	db.f.Seek(40, io.SeekStart)
+	binary.Write(db.f, binary.BigEndian, db.cnt) // pkg count
 
 	db.f.Seek(76, io.SeekStart) // length of data, data starts at 196+128
 	var start uint32
