@@ -101,6 +101,11 @@ func (p *Package) doDl() {
 	err := p.validate()
 	if err != nil {
 		log.Printf("tpkgdb: failed to validate file: %s", err)
+		go func() {
+			// cause download to be re-available in 10 seconds
+			time.Sleep(10*time.Second)
+			p.dl = sync.Once{}
+		}()
 		defer p.f.Close()
 		p.f = nil
 		return
@@ -165,7 +170,6 @@ func (p *Package) validate() error {
 	h256 := sha256.Sum256(header)
 	if !bytes.Equal(h256[:], p.hash) {
 		os.Remove(p.lpath())
-		p.dl = sync.Once{}
 		return errors.New("header invalid or corrupted")
 	}
 
