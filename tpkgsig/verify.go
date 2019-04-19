@@ -53,7 +53,7 @@ func verify(data []byte, sigB SigReader, trust map[string]string) error {
 		return errors.New("valid signature from non trusted key")
 	}
 
-	log.Printf("Verified valid signature by %s (%s)", keyN, keyS)
+	log.Printf("tpkgsig: Verified valid signature by %s (%s)", keyN, keyS)
 
 	return nil
 }

@@ -22,6 +22,7 @@ type PkgFS struct {
 	inodeLast  uint64 // last generated inode number (set to 1=root)
 	inodesLock sync.RWMutex
 	server     *fuse.Server
+	mountPoint string
 }
 
 func New() (*PkgFS, error) {
@@ -43,13 +44,14 @@ func New() (*PkgFS, error) {
 		inodeLast:     100, // values below 100 are reserved for special inodes
 		inodes:        map[uint64]Inode{1: root},
 		inodesIdx:     llrb.New(),
+		mountPoint:    mountPoint,
 	}
 	root.parent = res
 
 	var err error
 	res.server, err = fuse.NewServer(res, mountPoint, &fuse.MountOptions{
 		AllowOther: os.Geteuid() == 0,
-		Debug:      true,
+		Debug:      false,
 		FsName:     "tpkg",
 		Name:       "tpkg",
 	})
@@ -64,6 +66,10 @@ func New() (*PkgFS, error) {
 
 func (p *PkgFS) String() string {
 	return "tPkgFS"
+}
+
+func (p *PkgFS) Path() string {
+	return p.mountPoint
 }
 
 func (p *PkgFS) Serve() {

@@ -16,6 +16,7 @@ const PKG_URL_PREFIX = "https://pkg.tardigradeos.com/"
 
 var dbMain *tpkgdb.DB
 var shutdownChan = make(chan struct{})
+var DATE_TAG = "unknown"
 
 func shutdown() {
 	log.Println("tpkg: shutting down...")
@@ -34,7 +35,7 @@ func setupSignals() {
 }
 
 func main() {
-	log.Printf("tpkg: preparing")
+	log.Printf("tpkg: Starting tpkg daemon built on %s", DATE_TAG)
 	setupSignals()
 
 	mp, err := tpkgfs.New()
@@ -57,6 +58,8 @@ func main() {
 		log.Printf("db: failed to load: %s", err)
 		return
 	}
+
+	go updater(mp.Path())
 
 	<-shutdownChan
 }

@@ -142,7 +142,7 @@ func (db *dbFile) init(now time.Time) error {
 	}
 
 	switch db.arch {
-	case "i386":
+	case "386":
 		arch = 0
 	case "amd64":
 		arch = 1

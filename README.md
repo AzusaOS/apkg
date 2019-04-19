@@ -29,6 +29,12 @@ Additional sections can be added, and less-specific names will always point to t
 
 For example, package foobar v1.2.3 released as part of the core will be called core.foobar.1.2.3, however core.foobar will also work.
 
+# Installing
+
+	curl -s https://raw.githubusercontent.com/MagicalTux/make-go/master/get.sh | /bin/sh -s tpkg
+
+Note: this is EXPERIMENTAL. A lot of stuff is missing. Do not use unless you know what you are doing.
+
 # Database
 
 Encoding is big endian unless specified.
