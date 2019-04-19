@@ -30,7 +30,7 @@ ifeq ($(PROJECT_NAME),)
 PROJECT_NAME:=$(shell basename `pwd`)
 endif
 
-.PHONY: all deps update fmt test check doc dist update-make gen cov tpkg-dist
+.PHONY: all deps update fmt test check doc dist update-make gen cov
 
 all: $(PROJECT_NAME)
 
@@ -69,18 +69,6 @@ doc:
 	@if [ ! -f $(GOPATH)/bin/godoc ]; then go get golang.org/x/tools/cmd/godoc; fi
 	$(GOPATH)/bin/godoc -v -http=:6060 -index -play
 
-ifneq ($(TPKG_NAME),)
-tpkg-dist:
-	@mkdir -p dist/$(PROJECT_NAME)_$(GIT_TAG)/upload
-	@make -s $(patsubst %,tpkg-dist-%,$(DIST_ARCHS))
-
-tpkg-dist-%: dist/$(PROJECT_NAME)_$(GIT_TAG)/%/$(PROJECT_NAME)
-	@echo "Generating $(TPKG_NAME) from $<"
-	@mksquashfs "$<" "dist/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend
-	@tpkg-convert "dist/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs"
-
-endif
-
 dist:
 	@mkdir -p dist/$(PROJECT_NAME)_$(GIT_TAG)/upload
 	@make -s $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2,$(DIST_ARCHS))
@@ -100,6 +88,10 @@ endif
 dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2: dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%
 	@echo "Generating $@"
 	@bzip2 --stdout --compress --keep -9 "$<" >"$@"
+ifneq ($(TPKG_NAME),)
+	@mkdir -p dist/empty dist/tpkg
+	@mksquashfs dist/empty "dist/tpkg/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend -p 'tpkg f 777 root root bzcat $@'
+endif
 
 dist/$(PROJECT_NAME)_$(GIT_TAG):
 	@mkdir "$@"
