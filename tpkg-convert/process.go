@@ -100,6 +100,13 @@ func process(k hsm.Key, filename string) error {
 
 	created := time.Now()
 
+	// TODO scan squashfs file for the following kind of files:
+	// pkgconfig/*.pc
+	// bin/* (with +x)
+	// sbin/* (with +x)
+	// lib/* (with +x, or symlinks)
+	// those are to be added to metadata in "provides"
+
 	metadata := map[string]interface{}{
 		"full_name":  filename_f,
 		"name":       strings.Join(fn_a, "."),
