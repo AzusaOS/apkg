@@ -31,7 +31,7 @@ For example, package foobar v1.2.3 released as part of the core will be called c
 
 # Installing
 
-	curl -s https://raw.githubusercontent.com/MagicalTux/make-go/master/get.sh | /bin/sh -s tpkg
+	curl -s https://raw.githubusercontent.com/TrisTech/make-go/master/get.sh | /bin/sh -s tpkg
 
 Note: this is EXPERIMENTAL. A lot of stuff is missing. Do not use unless you know what you are doing.
 
