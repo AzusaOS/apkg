@@ -105,6 +105,7 @@ func process(k hsm.Key, filename string) error {
 	// bin/* (with +x)
 	// sbin/* (with +x)
 	// lib/* (with +x, or symlinks)
+	// lib32|64/* (with +x, or symlinks)
 	// those are to be added to metadata in "provides"
 
 	metadata := map[string]interface{}{

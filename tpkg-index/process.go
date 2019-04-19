@@ -86,6 +86,9 @@ func processDb(name string, k hsm.Key) error {
 				idxIno: make(map[uint64]int64),
 			}
 
+			// make sure dir exists
+			os.MkdirAll(filepath.Dir(db.path), 0755)
+
 			// open db
 			db.f, err = os.Create(db.path + "~")
 			if err != nil {
