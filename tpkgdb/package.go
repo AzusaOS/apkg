@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -83,7 +84,7 @@ func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, error) {
 }
 
 func (p *Package) doDl() {
-	lpath := path.Join(p.parent.path, p.parent.name, p.path)
+	lpath := p.lpath()
 
 	if _, err := os.Stat(lpath); os.IsNotExist(err) {
 		p.dlFile()
@@ -116,7 +117,7 @@ func (p *Package) doDl() {
 }
 
 func (p *Package) dlFile() {
-	lpath := path.Join(p.parent.path, p.parent.name, p.path)
+	lpath := p.lpath()
 
 	// download this package
 	resp, err := http.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + p.path)
@@ -148,6 +149,10 @@ func (p *Package) dlFile() {
 	p.f = f
 }
 
+func (p *Package) lpath() string {
+	return filepath.Join(p.parent.path, p.parent.name, p.path)
+}
+
 func (p *Package) validate() error {
 	// read header, check file
 	header := make([]byte, 120)
@@ -159,6 +164,8 @@ func (p *Package) validate() error {
 	// check hash
 	h256 := sha256.Sum256(header)
 	if !bytes.Equal(h256[:], p.hash) {
+		os.Remove(p.lpath())
+		p.dl = sync.Once{}
 		return errors.New("header invalid or corrupted")
 	}
 
