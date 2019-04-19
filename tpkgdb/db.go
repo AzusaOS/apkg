@@ -15,6 +15,7 @@ import (
 
 type DB struct {
 	*DBData
+	upd chan struct{}
 }
 
 type DBData struct {
@@ -32,10 +33,9 @@ type DBData struct {
 	fs        *tpkgfs.PkgFS
 	inoCount  uint64
 	nameIdx   *llrb.LLRB
+	ino       *llrb.LLRB
 
 	ready uint32
-
-	ino *llrb.LLRB
 }
 
 func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
@@ -78,7 +78,7 @@ func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
 		}
 	}
 
-	res := &DB{r}
+	res := &DB{DBData: r, upd: make(chan struct{})}
 
 	ino, err := r.fs.AllocateInode(res)
 	if err != nil {
@@ -88,11 +88,13 @@ func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
 
 	if !isNew {
 		// check for updates
-		err = res.Update()
+		err = res.update()
 		if err != nil {
 			log.Printf("tpkgdb: failed to update: %s", err)
 		}
 	}
+
+	go res.updateThread()
 
 	return res, nil
 }
