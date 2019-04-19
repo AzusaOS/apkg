@@ -103,7 +103,7 @@ func (p *Package) doDl() {
 		log.Printf("tpkgdb: failed to validate file: %s", err)
 		go func() {
 			// cause download to be re-available in 10 seconds
-			time.Sleep(10*time.Second)
+			time.Sleep(10 * time.Second)
 			p.dl = sync.Once{}
 		}()
 		defer p.f.Close()
