@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/petar/GoLLRB/llrb"
@@ -60,8 +61,8 @@ func (d *DBData) download(v string) (bool, error) {
 	return true, nil
 }
 
-// Update will check server for new version, update and return a new instance of DB unless there was no new version, in which case the original instance is returned
-func (d *DB) Update() error {
+// update will check server for new version, and update the db if needed
+func (d *DB) update() error {
 	r := &DBData{
 		prefix:  d.DBData.prefix,
 		name:    d.DBData.name,
@@ -91,4 +92,17 @@ func (d *DB) Update() error {
 	// atomic update of ptr
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&d.DBData)), unsafe.Pointer(r))
 	return nil
+}
+
+func (d *DB) updateThread() {
+	// keep running & check for updates
+	t := time.NewTicker(1 * time.Hour)
+	for {
+		select {
+		case <-t.C:
+			d.update()
+		case <-d.upd:
+			d.update()
+		}
+	}
 }
