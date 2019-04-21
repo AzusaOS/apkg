@@ -260,7 +260,7 @@ func (db *dbFile) finalize(k hsm.Key) error {
 	tpkgsig.WriteVarblob(sigB, sig_blob)
 
 	// verify signature
-	err = tpkgsig.VerifyDb(header, bytes.NewReader(sigB.Bytes()))
+	_, err = tpkgsig.VerifyDb(header, bytes.NewReader(sigB.Bytes()))
 	if err != nil {
 		return err
 	}

@@ -242,10 +242,11 @@ func (p *Package) validate() error {
 	if err != nil {
 		return err
 	}
-	err = tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
+	sigV, err := tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
 	if err != nil {
 		return err
 	}
+	log.Printf("tpkgdb: verified database signature, signed by %s", sigV.Name)
 
 	// TODO store all that stuff
 

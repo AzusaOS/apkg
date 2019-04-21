@@ -96,7 +96,7 @@ func (d *DBData) index() error {
 	headerData := d.data[:196]
 	// seek at signature location
 	r.Seek(196, io.SeekStart)
-	err = tpkgsig.VerifyDb(headerData, r)
+	_, err = tpkgsig.VerifyDb(headerData, r)
 	if err != nil {
 		return err
 	}

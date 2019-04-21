@@ -29,6 +29,8 @@ type pkginfo struct {
 	rawSig    []byte
 	rawMeta   []byte
 
+	sig *tpkgsig.VerifyResult
+
 	// details in signature
 	headerHash [32]byte // sha256 of header
 }
@@ -111,7 +113,7 @@ func parsePkgHeader(f *os.File) (*pkginfo, error) {
 	}
 	p.rawSig = sig
 
-	err = tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
+	p.sig, err = tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
 	if err != nil {
 		return nil, err
 	}

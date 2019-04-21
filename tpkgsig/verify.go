@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"log"
 
 	"golang.org/x/crypto/ed25519"
 )
@@ -15,48 +14,60 @@ type SigReader interface {
 	io.ByteReader
 }
 
+type VerifyResult struct {
+	Version int
+	Key     string
+	Name    string
+}
+
 // varint(1), varint(ed25519.PublicKeySize), varint(ed25519.SignatureSize) = 3
 const SignatureSize = 3 + ed25519.PublicKeySize + ed25519.SignatureSize
 
-func VerifyPkg(data []byte, sig SigReader) error {
+func VerifyPkg(data []byte, sig SigReader) (*VerifyResult, error) {
 	return verify(data, sig, trustedPkgSig)
 }
 
-func VerifyDb(data []byte, sig SigReader) error {
+func VerifyDb(data []byte, sig SigReader) (*VerifyResult, error) {
 	return verify(data, sig, trustedDbSig)
 }
 
-func verify(data []byte, sigB SigReader, trust map[string]string) error {
+func verify(data []byte, sigB SigReader, trust map[string]string) (*VerifyResult, error) {
 	n, _ := binary.ReadUvarint(sigB)
 	if n != 0x0001 {
-		return errors.New("unsupported package signature version")
+		return nil, errors.New("unsupported package signature version")
 	}
 
 	// read pubkey
 	pub, err := ReadVarblob(sigB, ed25519.PublicKeySize)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// read sig
 	blob, err := ReadVarblob(sigB, ed25519.SignatureSize)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// check sig
 	if !ed25519.Verify(ed25519.PublicKey(pub), data, blob) {
-		return errors.New("invalid signature")
+		return nil, errors.New("invalid signature")
 	}
 
 	// check trust data
 	keyS := base64.RawURLEncoding.EncodeToString(pub)
 	keyN, ok := trust[keyS]
 	if !ok {
-		return errors.New("valid signature from non trusted key")
+		return nil, errors.New("valid signature from non trusted key")
 	}
 
-	log.Printf("tpkgsig: Verified valid signature by %s (%s)", keyN, keyS)
+	//log.Printf("tpkgsig: Verified valid signature by %s (%s)", keyN, keyS)
 
-	return nil
+	res := &VerifyResult{
+		Version: int(n),
+		Key:     keyS,
+		Name:    keyN,
+	}
+
+	return res, nil
 }

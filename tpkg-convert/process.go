@@ -179,7 +179,7 @@ func process(k hsm.Key, filename string) error {
 	tpkgsig.WriteVarblob(sigB, sig_blob)
 
 	// verify signature
-	err = tpkgsig.VerifyPkg(header.Bytes(), bytes.NewReader(sigB.Bytes()))
+	_, err = tpkgsig.VerifyPkg(header.Bytes(), bytes.NewReader(sigB.Bytes()))
 	if err != nil {
 		return err
 	}
