@@ -104,7 +104,7 @@ func parsePkgHeader(f *os.File) (*pkginfo, error) {
 	}
 
 	// read sign
-	sig := make([]byte, 128) // should be less
+	sig := make([]byte, tpkgsig.SignatureSize)
 	_, err = f.ReadAt(sig, int64(last_offt[0]))
 	if err != nil {
 		return nil, err
