@@ -145,26 +145,30 @@ func (d *DBData) index() error {
 		pkg.inodes = uint64(inodes)
 
 		// read name
-		l, err := binary.ReadUvarint(r)
-		if err != nil {
-			return err
-		}
-		name := make([]byte, l)
-		_, err = io.ReadFull(r, name)
+		name, err := tpkgsig.ReadVarblob(r)
 		if err != nil {
 			return err
 		}
 
 		// read path
-		l, err = binary.ReadUvarint(r)
+		path, err := tpkgsig.ReadVarblob(r)
 		if err != nil {
 			return err
 		}
-		path := make([]byte, l)
-		_, err = io.ReadFull(r, path)
+
+		pkg.rawHeader, err = tpkgsig.ReadVarblob(r)
 		if err != nil {
 			return err
 		}
+		pkg.rawSig, err = tpkgsig.ReadVarblob(r)
+		if err != nil {
+			return err
+		}
+		pkg.rawMeta, err = tpkgsig.ReadVarblob(r)
+		if err != nil {
+			return err
+		}
+
 		pkg.name = string(name)
 		pkg.path = string(path)
 

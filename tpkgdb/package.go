@@ -30,6 +30,11 @@ type Package struct {
 	name     string
 	path     string // path relative to where db file was downloaded from
 
+	// from db
+	rawHeader []byte
+	rawSig    []byte
+	rawMeta   []byte
+
 	// from file
 	flags   uint64
 	created time.Time

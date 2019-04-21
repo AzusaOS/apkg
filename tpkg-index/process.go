@@ -206,6 +206,9 @@ func (db *dbFile) index(rpath string, info os.FileInfo, p *pkginfo) {
 
 	tpkgsig.WriteVarblob(db.w, []byte(p.meta.FullName))
 	tpkgsig.WriteVarblob(db.w, []byte(rpath))
+	tpkgsig.WriteVarblob(db.w, p.rawHeader)
+	tpkgsig.WriteVarblob(db.w, p.rawSig)
+	tpkgsig.WriteVarblob(db.w, p.rawMeta)
 }
 
 func (db *dbFile) finalize(k hsm.Key) error {
