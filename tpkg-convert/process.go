@@ -132,7 +132,7 @@ func process(k hsm.Key, filename string) error {
 	metadataLen := len(metadataJson)
 	signOffset := HEADER_LEN + metadataLen + len(hashtable)
 	padding := 512 - (signOffset % 512)
-	if padding < 128 {
+	if padding < tpkgsig.SignatureSize {
 		padding += 512
 	}
 	signbuf := make([]byte, padding)

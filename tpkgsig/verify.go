@@ -15,6 +15,9 @@ type SigReader interface {
 	io.ByteReader
 }
 
+// varint(1), varint(ed25519.PublicKeySize), varint(ed25519.SignatureSize) = 3
+const SignatureSize = 3 + ed25519.PublicKeySize + ed25519.SignatureSize
+
 func VerifyPkg(data []byte, sig SigReader) error {
 	return verify(data, sig, trustedPkgSig)
 }
