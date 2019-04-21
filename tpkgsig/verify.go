@@ -33,13 +33,13 @@ func verify(data []byte, sigB SigReader, trust map[string]string) error {
 	}
 
 	// read pubkey
-	pub, err := ReadVarblob(sigB)
+	pub, err := ReadVarblob(sigB, ed25519.PublicKeySize)
 	if err != nil {
 		return err
 	}
 
 	// read sig
-	blob, err := ReadVarblob(sigB)
+	blob, err := ReadVarblob(sigB, ed25519.SignatureSize)
 	if err != nil {
 		return err
 	}

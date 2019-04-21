@@ -145,26 +145,26 @@ func (d *DBData) index() error {
 		pkg.inodes = uint64(inodes)
 
 		// read name
-		name, err := tpkgsig.ReadVarblob(r)
+		name, err := tpkgsig.ReadVarblob(r, 256)
 		if err != nil {
 			return err
 		}
 
 		// read path
-		path, err := tpkgsig.ReadVarblob(r)
+		path, err := tpkgsig.ReadVarblob(r, 256)
 		if err != nil {
 			return err
 		}
 
-		pkg.rawHeader, err = tpkgsig.ReadVarblob(r)
+		pkg.rawHeader, err = tpkgsig.ReadVarblob(r, 256)
 		if err != nil {
 			return err
 		}
-		pkg.rawSig, err = tpkgsig.ReadVarblob(r)
+		pkg.rawSig, err = tpkgsig.ReadVarblob(r, tpkgsig.SignatureSize)
 		if err != nil {
 			return err
 		}
-		pkg.rawMeta, err = tpkgsig.ReadVarblob(r)
+		pkg.rawMeta, err = tpkgsig.ReadVarblob(r, 65536)
 		if err != nil {
 			return err
 		}

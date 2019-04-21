@@ -6,14 +6,14 @@ import (
 	"io"
 )
 
-func ReadVarblob(r SigReader) ([]byte, error) {
+func ReadVarblob(r SigReader, maxLen uint64) ([]byte, error) {
 	l, err := binary.ReadUvarint(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if l > 64 {
-		return nil, errors.New("invalid signature data (oversized blob)")
+	if l > maxLen {
+		return nil, errors.New("oversized blob")
 	}
 
 	b := make([]byte, l)
