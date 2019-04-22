@@ -82,4 +82,5 @@ Each data file contains a header, JSON-encoded metadata, a hash data descriptor,
 * 80 Hash descriptor hash (sha256)
 * 112 Signature offset uint32
 * 116 Data offset uint32
-* 120 end of header
+* 120 Data block size
+* 124 end of header

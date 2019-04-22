@@ -21,7 +21,7 @@ import (
 	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
-const HEADER_LEN = 120
+const HEADER_LEN = 124
 
 func process(k hsm.Key, filename string) error {
 	f, err := os.Open(filename)
@@ -46,11 +46,16 @@ func process(k hsm.Key, filename string) error {
 	var hashtable []byte
 
 	reserveIno := sb.InodeCnt
-	blockSize := sb.BlockSize
+	blockSize := int64(4096)
 	blocks := 0
 
+	// try to find a good ratio for block size vs table size
+	for ((fileSize / blockSize) > 1500) && blockSize < 131072 {
+		blockSize = blockSize << 1
+	}
+
 	buf := make([]byte, blockSize)
-	for i := int64(0); i < fileSize; i += int64(blockSize) {
+	for i := int64(0); i < fileSize; i += blockSize {
 		n, err := f.ReadAt(buf, i)
 		if err != nil {
 			if !(err == io.EOF && n != 0) {
@@ -154,6 +159,7 @@ func process(k hsm.Key, filename string) error {
 	header.Write(tableHash[:])
 	binary.Write(header, binary.BigEndian, uint32(signOffset))
 	binary.Write(header, binary.BigEndian, uint32(dataOffset))
+	binary.Write(header, binary.BigEndian, uint32(blockSize))
 
 	if header.Len() != HEADER_LEN {
 		return errors.New("invalid header length")
