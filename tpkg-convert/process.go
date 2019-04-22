@@ -50,7 +50,7 @@ func process(k hsm.Key, filename string) error {
 	blocks := 0
 
 	// try to find a good ratio for block size vs table size
-	for ((fileSize / blockSize) > 1500) && blockSize < 131072 {
+	for ((fileSize / blockSize) > 1500) && (blockSize < 131072) {
 		blockSize = blockSize << 1
 	}
 
