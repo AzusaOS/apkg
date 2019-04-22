@@ -39,7 +39,7 @@ func parsePkgHeader(f *os.File) (*pkginfo, error) {
 	p := &pkginfo{}
 
 	// read header, check file
-	header := make([]byte, 120)
+	header := make([]byte, 124)
 	_, err := f.ReadAt(header, 0)
 	if err != nil {
 		return nil, err

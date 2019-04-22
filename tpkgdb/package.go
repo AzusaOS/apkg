@@ -39,10 +39,11 @@ type Package struct {
 	flags   uint64
 	created time.Time
 
-	dl     sync.Once
-	f      *os.File
-	offset int64 // offset of data in file
-	squash *squashfs.Superblock
+	dl        sync.Once
+	f         *os.File
+	offset    int64 // offset of data in file
+	blockSize int64
+	squash    *squashfs.Superblock
 }
 
 type pkgindex uint64
@@ -165,7 +166,7 @@ func (p *Package) lpath() string {
 
 func (p *Package) validate() error {
 	// read header, check file
-	header := make([]byte, 120)
+	header := make([]byte, 124)
 	_, err := p.f.ReadAt(header, 0)
 	if err != nil {
 		return err
@@ -229,8 +230,8 @@ func (p *Package) validate() error {
 		return err
 	}
 
-	// read sign_offset + data_offset
-	last_offt := make([]uint32, 2)
+	// read sign_offset + data_offset + block size
+	last_offt := make([]uint32, 3)
 	err = binary.Read(r, binary.BigEndian, last_offt)
 	if err != nil {
 		return err
@@ -251,6 +252,7 @@ func (p *Package) validate() error {
 	// TODO store all that stuff
 
 	p.offset = int64(last_offt[1])
+	p.blockSize = int64(last_offt[2])
 
 	return nil
 }
