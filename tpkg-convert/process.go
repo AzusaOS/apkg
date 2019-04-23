@@ -199,6 +199,12 @@ func process(k hsm.Key, filename string) error {
 	headerHash := sha256.Sum256(header.Bytes())
 	headerHashHex := hex.EncodeToString(headerHash[:])
 
+	// remove old versions of the same version
+	l, _ := filepath.Glob(filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist/main", strings.Join(fn_a, "/"), filename_f+"*.tpkg"))
+	for _, fn := range l {
+		os.Remove(fn)
+	}
+
 	// generate output filename
 	out := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist/main", strings.Join(fn_a, "/"), filename_f+"-"+headerHashHex[:7]+".tpkg")
 	log.Printf("out filename = %s", out)
