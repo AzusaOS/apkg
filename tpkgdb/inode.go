@@ -15,7 +15,15 @@ func (i *DB) Lookup(name string) (uint64, error) {
 	}
 	var found *Package
 	i.nameIdx.AscendGreaterOrEqual(&llrbString{k: name}, func(i llrb.Item) bool {
-		found = i.(*llrbString).v
+		cur := i.(*llrbString).v
+		if name == cur.name {
+			found = cur
+			return false
+		}
+		if strings.HasPrefix(cur.name, name+".") {
+			found = cur
+			return true // continue searching so we return latest version
+		}
 		return false
 	})
 
@@ -24,10 +32,9 @@ func (i *DB) Lookup(name string) (uint64, error) {
 			// return root (ino+1)
 			return found.startIno + 1, nil
 		}
-		if strings.HasPrefix(found.name, name+".") {
-			return found.startIno, nil
-		}
+		return found.startIno, nil
 	}
+
 	return 0, os.ErrNotExist
 	// TODO
 }
