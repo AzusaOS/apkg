@@ -10,6 +10,9 @@ import (
 )
 
 func (i *DB) Lookup(name string) (uint64, error) {
+	if strings.IndexByte(name, '.') == -1 {
+		return 0, os.ErrNotExist
+	}
 	var found *Package
 	i.nameIdx.AscendGreaterOrEqual(&llrbString{k: name}, func(i llrb.Item) bool {
 		found = i.(*llrbString).v
@@ -22,12 +25,7 @@ func (i *DB) Lookup(name string) (uint64, error) {
 			return found.startIno + 1, nil
 		}
 		if strings.HasPrefix(found.name, name+".") {
-			// next character in found.name should be a digit
-			c := found.name[len(name)+1]
-			if c >= '0' && c <= '9' {
-				// return inode
-				return found.startIno, nil
-			}
+			return found.startIno, nil
 		}
 	}
 	return 0, os.ErrNotExist
