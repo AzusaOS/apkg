@@ -196,8 +196,11 @@ func process(k hsm.Key, filename string) error {
 
 	copy(signbuf, sigB.Bytes())
 
+	headerHash := sha256.Sum256(header.Bytes())
+	headerHashHex := hex.EncodeToString(headerHash[:])
+
 	// generate output filename
-	out := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist/main", strings.Join(fn_a, "/"), filename_f+".tpkg")
+	out := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist/main", strings.Join(fn_a, "/"), filename_f+"-"+headerHashHex[:7]+".tpkg")
 	log.Printf("out filename = %s", out)
 
 	err = os.MkdirAll(filepath.Dir(out), 0755)
