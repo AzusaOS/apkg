@@ -3,6 +3,7 @@ package tpkgdb
 import (
 	"errors"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -93,6 +94,8 @@ func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
 			log.Printf("tpkgdb: failed to update: %s", err)
 		}
 	}
+
+	http.Handle("/tpkgdb/"+name, res)
 
 	go res.updateThread()
 

@@ -60,6 +60,10 @@ func main() {
 	}
 
 	go updater(mp.Path())
+	l := listenUnix()
+	if l != nil {
+		defer l.Close()
+	}
 
 	<-shutdownChan
 }
