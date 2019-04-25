@@ -16,7 +16,8 @@ import (
 
 type DB struct {
 	*DBData
-	upd chan struct{}
+	upd    chan struct{}
+	refcnt uint64
 }
 
 type DBData struct {

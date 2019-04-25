@@ -23,6 +23,9 @@ type PkgFS struct {
 	inodesLock sync.RWMutex
 	server     *fuse.Server
 	mountPoint string
+
+	inoCache  map[uint64]Inode
+	inoCacheL sync.RWMutex
 }
 
 func New() (*PkgFS, error) {
@@ -45,6 +48,7 @@ func New() (*PkgFS, error) {
 		inodes:        map[uint64]Inode{1: root},
 		inodesIdx:     llrb.New(),
 		mountPoint:    mountPoint,
+		inoCache:      make(map[uint64]Inode),
 	}
 	root.parent = res
 
@@ -104,6 +108,9 @@ func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 		return toStatus(err)
 	}
 
+	subI.AddRef(1)
+	go p.addToCache(sub, subI)
+
 	out.NodeId, out.Generation = sub, 0
 	out.Ino = sub
 	subI.FillAttr(&out.Attr)
@@ -122,7 +129,7 @@ func (p *PkgFS) Forget(nodeid, nlookup uint64) {
 	// any moment, and since there is no return value, Forget
 	// should not do I/O, as there is no channel to report back
 	// I/O errors.
-	// TODO
+	p.removeFromCache(nodeid, nlookup)
 }
 
 func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse.AttrOut) (code fuse.Status) {

@@ -52,3 +52,13 @@ func (i symlinkInodeObj) OpenDir() error {
 func (i symlinkInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error {
 	return os.ErrInvalid
 }
+
+func (i symlinkInodeObj) AddRef(count uint64) uint64 {
+	// we do not actually store count
+	return 1
+}
+
+func (i symlinkInodeObj) DelRef(count uint64) uint64 {
+	// virtual symlink is always OK to purge from cache
+	return 0
+}

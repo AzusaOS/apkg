@@ -152,3 +152,13 @@ func (i *rootInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus 
 	})
 	return nil
 }
+
+func (i *rootInodeObj) AddRef(count uint64) uint64 {
+	// we do not actually store count
+	return 999
+}
+
+func (i *rootInodeObj) DelRef(count uint64) uint64 {
+	// virtual good is never good to forget
+	return 999
+}

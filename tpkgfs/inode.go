@@ -18,6 +18,10 @@ type Inode interface {
 	Open(flags uint32) error
 	OpenDir() error
 	ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error
+
+	// functions for refcount
+	AddRef(count uint64) uint64
+	DelRef(count uint64) uint64
 }
 
 // see: https://golang.org/src/os/stat_linux.go

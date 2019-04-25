@@ -43,6 +43,10 @@ func (p *PkgFS) allocateInode() uint64 {
 }
 
 func (p *PkgFS) getInode(ino uint64) (Inode, error) {
+	if i, ok := p.getInodeCache(ino); ok {
+		return i, nil
+	}
+
 	p.inodesLock.RLock()
 	defer p.inodesLock.RUnlock()
 

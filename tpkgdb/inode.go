@@ -3,6 +3,7 @@ package tpkgdb
 import (
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/petar/GoLLRB/llrb"
@@ -75,4 +76,12 @@ func (i *DB) OpenDir() error {
 
 func (i *DB) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error {
 	return os.ErrInvalid
+}
+
+func (i *DB) AddRef(count uint64) uint64 {
+	return atomic.AddUint64(&i.refcnt, count)
+}
+
+func (i *DB) DelRef(count uint64) uint64 {
+	return atomic.AddUint64(&i.refcnt, ^(count - 1))
 }
