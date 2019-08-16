@@ -17,7 +17,7 @@ import (
 )
 
 func (d *DBData) index() error {
-	if string(d.data[:4]) != "TPDB" {
+	if string(d.data[:4]) != "APDB" {
 		return errors.New("not a apkgdb file")
 	}
 

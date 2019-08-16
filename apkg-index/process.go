@@ -124,7 +124,7 @@ func processDb(name string, k hsm.Key) error {
 func (db *dbFile) init(now time.Time) error {
 	log.Printf("Initializing database file %s", db.path)
 	// write header to file
-	db.f.Write([]byte("TPDB"))
+	db.f.Write([]byte("APDB"))
 	binary.Write(db.f, binary.BigEndian, uint32(0x00000001)) // version
 	binary.Write(db.f, binary.BigEndian, uint64(0))          // flags
 	binary.Write(db.f, binary.BigEndian, uint64(now.Unix()))

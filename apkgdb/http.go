@@ -19,7 +19,7 @@ func (d *DBData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return true
 		})
 	default:
-		fmt.Fprintf(w, "TPKGDB STATUS\n\n")
+		fmt.Fprintf(w, "APKGDB STATUS\n\n")
 		fmt.Fprintf(w, "Name: %s\n", d.name)
 		fmt.Fprintf(w, "Prefix: %s\n", d.prefix)
 		fmt.Fprintf(w, "Version: %d\n", d.version)

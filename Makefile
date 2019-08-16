@@ -6,7 +6,7 @@ GOPATH:=$(shell go env GOPATH)
 SOURCES:=$(shell find . -name '*.go')
 AWS:=$(shell which 2>/dev/null aws)
 S3_TARGET=s3://dist-go
-TPKG_DB=main
+APKG_DB=main
 ifeq ($(DATE_TAG),)
 DATE_TAG:=$(shell date '+%Y%m%d%H%M%S')
 endif
@@ -88,9 +88,9 @@ endif
 dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2: dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%
 	@echo "Generating $@"
 	@bzip2 --stdout --compress --keep -9 "$<" >"$@"
-ifneq ($(TPKG_NAME),)
+ifneq ($(APKG_NAME),)
 	@mkdir -p dist/empty dist/apkg
-	@mksquashfs dist/empty "dist/apkg/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend -p 'apkg f 777 root root bzcat $@'
+	@mksquashfs dist/empty "dist/apkg/$(APKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend -p 'apkg f 777 root root bzcat $@'
 endif
 
 dist/$(PROJECT_NAME)_$(GIT_TAG):

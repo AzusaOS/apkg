@@ -28,7 +28,7 @@ func main() {
 	}
 
 	k := ks[0]
-	log.Printf("found TPDB key: %s", k)
+	log.Printf("found APDB key: %s", k)
 	blob, err := k.PublicBlob()
 	if err == nil {
 		log.Printf("Public key: %s", base64.RawURLEncoding.EncodeToString(blob))

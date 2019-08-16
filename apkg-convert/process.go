@@ -146,7 +146,7 @@ func process(k hsm.Key, filename string) error {
 	log.Printf("signature at %d, data at %d", signOffset, dataOffset)
 
 	header := &bytes.Buffer{}
-	header.Write([]byte("TPKG"))
+	header.Write([]byte("APKG"))
 	binary.Write(header, binary.BigEndian, uint32(1)) // version
 	binary.Write(header, binary.BigEndian, uint64(0)) // flags
 	binary.Write(header, binary.BigEndian, uint64(created.Unix()))

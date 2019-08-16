@@ -69,7 +69,7 @@ func New() (*PkgFS, error) {
 }
 
 func (p *PkgFS) String() string {
-	return "tPkgFS"
+	return "APkgFS"
 }
 
 func (p *PkgFS) Path() string {

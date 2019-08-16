@@ -49,7 +49,7 @@ Master DB: one file + signature.
 
 Header:
 
-* Magic "TPDB"
+* Magic "APDB"
 * File Format Version (0x00000001)
 * Flags int64 (beta, etc)
 * Creation date/time
@@ -70,7 +70,7 @@ Basic pkg info:
 
 Each data file contains a header, JSON-encoded metadata, a hash data descriptor, and data blocks
 
-* 0 Magic "TPKG"
+* 0 Magic "APKG"
 * 4 File Format Version (0x00000001)
 * 8 Flags int64
 * 16 Creation date/time int64 + int64 (unix + nano)

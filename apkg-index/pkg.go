@@ -48,8 +48,8 @@ func parsePkgHeader(f *os.File) (*pkginfo, error) {
 	p.rawHeader = header
 	p.headerHash = sha256.Sum256(header)
 
-	if string(header[:4]) != "TPKG" {
-		return nil, errors.New("not a TPKG file")
+	if string(header[:4]) != "APKG" {
+		return nil, errors.New("not a APKG file")
 	}
 
 	r := bytes.NewReader(header[4:])

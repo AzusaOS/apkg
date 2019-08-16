@@ -179,8 +179,8 @@ func (p *Package) validate() error {
 		return errors.New("header invalid or corrupted")
 	}
 
-	if string(header[:4]) != "TPKG" {
-		return errors.New("not a TPKG file")
+	if string(header[:4]) != "APKG" {
+		return errors.New("not a APKG file")
 	}
 
 	// we use readat + newreader to make sure so other process seeks this file
