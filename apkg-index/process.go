@@ -292,7 +292,7 @@ func (db *dbFile) finalize(k hsm.Key) error {
 
 func (db *dbFile) upload() error {
 	// upload file to s3
-	s3pfx := "s3:/" + path.Join("/apkg/db", db.name, db.os, db.arch)
+	s3pfx := "s3:/" + path.Join("/azusa-pkg/db", db.name, db.os, db.arch)
 	log.Printf("uploading files to %s", s3pfx)
 
 	//system('aws s3 cp --cache-control max-age=31536000 '.escapeshellarg($db_path.'/'.$datestamp.'.bin').' '.escapeshellarg($s3_prefix.'/'.$datestamp.'.bin'));
