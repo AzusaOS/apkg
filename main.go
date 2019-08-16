@@ -12,7 +12,7 @@ import (
 	"git.atonline.com/azusa/apkg/apkgfs"
 )
 
-const PKG_URL_PREFIX = "https://pkg.tardigradeos.com/"
+const PKG_URL_PREFIX = "https://pkg.azusa.jp/"
 
 var dbMain *apkgdb.DB
 var shutdownChan = make(chan struct{})
