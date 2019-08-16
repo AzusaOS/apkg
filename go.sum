@@ -12,6 +12,7 @@ github.com/MagicalTux/hsm v0.0.0-20190417085317-09f6dc690a49 h1:tvmk4hhy8SJVaJbf
 github.com/MagicalTux/hsm v0.0.0-20190417085317-09f6dc690a49/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
 github.com/MagicalTux/hsm v0.1.0 h1:CpZ9RVPGpkhKW+fClj1Zr7dBUia5MqGNtUofOQe3B/A=
 github.com/MagicalTux/hsm v0.1.0/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
+github.com/MagicalTux/hsm v0.1.3 h1:g+/dkri93IH2HF8i9CC/L/3LW9KdR2yOcsShUIPTqQA=
 github.com/MagicalTux/hsm v0.1.3/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
 github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
