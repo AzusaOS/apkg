@@ -1,4 +1,4 @@
-package tpkgfs
+package apkgfs
 
 import (
 	"strings"

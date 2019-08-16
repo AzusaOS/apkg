@@ -10,18 +10,18 @@ import (
 )
 
 func updater(p string) {
-	p = filepath.Join(p, "main/core.tpkg")
+	p = filepath.Join(p, "main/core.apkg")
 	v := DATE_TAG
 
 	for {
 		//
 		n, err := os.Readlink(p)
 		if err != nil {
-			log.Printf("tpkg: failed to read latest version: %s", err)
+			log.Printf("apkg: failed to read latest version: %s", err)
 			time.Sleep(1 * time.Hour)
 			continue
 		}
-		n = strings.TrimPrefix(n, "core.tpkg.")
+		n = strings.TrimPrefix(n, "core.apkg.")
 		n = strings.Split(n, ".")[0]
 		//log.Printf("version: %s self=%s", n, v)
 
@@ -29,24 +29,24 @@ func updater(p string) {
 		case 0:
 			// no change, do nothing
 		case 1:
-			log.Printf("tpkg: currently running version is more recent than latest, not doing update")
+			log.Printf("apkg: currently running version is more recent than latest, not doing update")
 		case -1:
-			log.Printf("tpkg: update to version %s required, copying...", n)
+			log.Printf("apkg: update to version %s required, copying...", n)
 
 			exec, err := os.Executable()
 			if err != nil {
-				log.Printf("tpkg: update failed, unknown executable: %s", err)
+				log.Printf("apkg: update failed, unknown executable: %s", err)
 				break
 			}
-			newV, err := os.Open(filepath.Join(p, "tpkg"))
+			newV, err := os.Open(filepath.Join(p, "apkg"))
 			if err != nil {
-				log.Printf("tpkg: update failed, failed to read new version: %s", err)
+				log.Printf("apkg: update failed, failed to read new version: %s", err)
 				break
 			}
 
 			f, err := os.Create(exec + "." + n)
 			if err != nil {
-				log.Printf("tpkg: update failed: %s", err)
+				log.Printf("apkg: update failed: %s", err)
 				newV.Close()
 				break
 			}
@@ -56,7 +56,7 @@ func updater(p string) {
 			f.Close()
 
 			if err != nil {
-				log.Printf("tpkg: update failed: failed to copy data: %s", err)
+				log.Printf("apkg: update failed: failed to copy data: %s", err)
 				os.Remove(exec + "." + n)
 				break
 			}
@@ -66,12 +66,12 @@ func updater(p string) {
 			// rename
 			err = os.Rename(exec+"."+n, exec)
 			if err != nil {
-				log.Printf("tpkg: update failed: %s", err)
+				log.Printf("apkg: update failed: %s", err)
 				os.Remove(exec + "." + n)
 				break
 			}
 
-			log.Printf("tpkg: updated to version %s, restart required", n)
+			log.Printf("apkg: updated to version %s, restart required", n)
 			// we update v so we don't update again unless needed
 			v = n
 		}

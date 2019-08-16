@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/MagicalTux/hsm"
-	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
 type fileKey struct {
@@ -47,7 +47,7 @@ type dbFile struct {
 }
 
 func processDb(name string, k hsm.Key) error {
-	dir := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist", name)
+	dir := filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist", name)
 	files := make(map[fileKey]*dbFile)
 	now := time.Now()
 	stamp := now.UTC().Format("20060102150405")
@@ -56,7 +56,7 @@ func processDb(name string, k hsm.Key) error {
 		if !info.Mode().IsRegular() {
 			return nil
 		}
-		if !strings.HasSuffix(path, ".tpkg") {
+		if !strings.HasSuffix(path, ".apkg") {
 			return nil
 		}
 		rpath := strings.TrimLeft(strings.TrimPrefix(path, dir), "/")
@@ -76,7 +76,7 @@ func processDb(name string, k hsm.Key) error {
 		db, ok := files[fk]
 		if !ok {
 			db = &dbFile{
-				path:   filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/db", name, fk.os, fk.arch, stamp+".bin"),
+				path:   filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/db", name, fk.os, fk.arch, stamp+".bin"),
 				stamp:  stamp,
 				arch:   fk.arch,
 				os:     fk.os,
@@ -165,7 +165,7 @@ func (db *dbFile) init(now time.Time) error {
 	emptyHash, _ := hex.DecodeString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 
 	// 76
-	binary.Write(db.f, binary.BigEndian, uint32(196+tpkgsig.SignatureSize)) // location of data
+	binary.Write(db.f, binary.BigEndian, uint32(196+apkgsig.SignatureSize)) // location of data
 	binary.Write(db.f, binary.BigEndian, uint32(0))                         // length of data
 	db.f.Write(emptyHash)                                                   // hash of data
 	// 110
@@ -183,7 +183,7 @@ func (db *dbFile) init(now time.Time) error {
 		return errors.New("invalid header length")
 	}
 
-	db.f.Write(make([]byte, tpkgsig.SignatureSize)) // reserved space for signature
+	db.f.Write(make([]byte, apkgsig.SignatureSize)) // reserved space for signature
 
 	db.hash = sha256.New()
 	db.w = io.MultiWriter(db.f, db.hash)
@@ -204,11 +204,11 @@ func (db *dbFile) index(rpath string, info os.FileInfo, p *pkginfo) {
 	binary.Write(db.w, binary.BigEndian, uint64(info.Size()))
 	binary.Write(db.w, binary.BigEndian, p.meta.Inodes)
 
-	tpkgsig.WriteVarblob(db.w, []byte(p.meta.FullName))
-	tpkgsig.WriteVarblob(db.w, []byte(rpath))
-	tpkgsig.WriteVarblob(db.w, p.rawHeader)
-	tpkgsig.WriteVarblob(db.w, p.rawSig)
-	tpkgsig.WriteVarblob(db.w, p.rawMeta)
+	apkgsig.WriteVarblob(db.w, []byte(p.meta.FullName))
+	apkgsig.WriteVarblob(db.w, []byte(rpath))
+	apkgsig.WriteVarblob(db.w, p.rawHeader)
+	apkgsig.WriteVarblob(db.w, p.rawSig)
+	apkgsig.WriteVarblob(db.w, p.rawMeta)
 }
 
 func (db *dbFile) finalize(k hsm.Key) error {
@@ -250,22 +250,22 @@ func (db *dbFile) finalize(k hsm.Key) error {
 		return err
 	}
 
-	tpkgsig.WriteVarblob(sigB, sig_pub)
+	apkgsig.WriteVarblob(sigB, sig_pub)
 
 	// use raw hash for ed25519
 	sig_blob, err := k.Sign(rand.Reader, header, crypto.Hash(0))
 	if err != nil {
 		return err
 	}
-	tpkgsig.WriteVarblob(sigB, sig_blob)
+	apkgsig.WriteVarblob(sigB, sig_blob)
 
 	// verify signature
-	_, err = tpkgsig.VerifyDb(header, bytes.NewReader(sigB.Bytes()))
+	_, err = apkgsig.VerifyDb(header, bytes.NewReader(sigB.Bytes()))
 	if err != nil {
 		return err
 	}
 
-	if sigB.Len() > tpkgsig.SignatureSize {
+	if sigB.Len() > apkgsig.SignatureSize {
 		return errors.New("signature buffer not large enough!")
 	}
 
@@ -292,7 +292,7 @@ func (db *dbFile) finalize(k hsm.Key) error {
 
 func (db *dbFile) upload() error {
 	// upload file to s3
-	s3pfx := "s3:/" + path.Join("/tpkg/db", db.name, db.os, db.arch)
+	s3pfx := "s3:/" + path.Join("/apkg/db", db.name, db.os, db.arch)
 	log.Printf("uploading files to %s", s3pfx)
 
 	//system('aws s3 cp --cache-control max-age=31536000 '.escapeshellarg($db_path.'/'.$datestamp.'.bin').' '.escapeshellarg($s3_prefix.'/'.$datestamp.'.bin'));

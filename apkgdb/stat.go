@@ -1,4 +1,4 @@
-package tpkgdb
+package apkgdb
 
 func (d *DBData) Length() uint64 {
 	return uint64(len(d.data))

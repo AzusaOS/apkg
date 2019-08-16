@@ -1,4 +1,4 @@
-# tpkg db generation
+# apkg db generation
 
 In order to generate tpdb file you need a valid signature key.
 
@@ -8,4 +8,4 @@ To generate with YubiHSM2:
 
 Install:
 
-	go get github.com/tardigradeos/tpkg/tpkg-index
+	go get git.atonline.com/azusa/apkg/apkg-index

@@ -1,4 +1,4 @@
-package tpkgdb
+package apkgdb
 
 import (
 	"strings"

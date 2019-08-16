@@ -1,8 +1,8 @@
-/tpkg
+/apkg
 /dist
 /main.bin
 .*.swp
 /data
-/tpkg-convert/tpkg-convert
-/tpkg-index/tpkg-index
-/tpkg-ctrl/tpkg-ctrl
+/apkg-convert/apkg-convert
+/apkg-index/apkg-index
+/apkg-ctrl/apkg-ctrl

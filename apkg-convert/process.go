@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
+	"git.atonline.com/azusa/apkg/apkgsig"
+	"git.atonline.com/azusa/apkg/squashfs"
 	"github.com/MagicalTux/hsm"
-	"github.com/tardigradeos/tpkg/squashfs"
-	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
 const HEADER_LEN = 124
@@ -137,7 +137,7 @@ func process(k hsm.Key, filename string) error {
 	metadataLen := len(metadataJson)
 	signOffset := HEADER_LEN + metadataLen + len(hashtable)
 	padding := 512 - (signOffset % 512)
-	if padding < tpkgsig.SignatureSize {
+	if padding < apkgsig.SignatureSize {
 		padding += 512
 	}
 	signbuf := make([]byte, padding)
@@ -175,17 +175,17 @@ func process(k hsm.Key, filename string) error {
 	if err != nil {
 		return err
 	}
-	tpkgsig.WriteVarblob(sigB, sig_pub)
+	apkgsig.WriteVarblob(sigB, sig_pub)
 
 	// use raw hash for ed25519
 	sig_blob, err := k.Sign(rand.Reader, header.Bytes(), crypto.Hash(0))
 	if err != nil {
 		return err
 	}
-	tpkgsig.WriteVarblob(sigB, sig_blob)
+	apkgsig.WriteVarblob(sigB, sig_blob)
 
 	// verify signature
-	_, err = tpkgsig.VerifyPkg(header.Bytes(), bytes.NewReader(sigB.Bytes()))
+	_, err = apkgsig.VerifyPkg(header.Bytes(), bytes.NewReader(sigB.Bytes()))
 	if err != nil {
 		return err
 	}
@@ -200,13 +200,13 @@ func process(k hsm.Key, filename string) error {
 	headerHashHex := hex.EncodeToString(headerHash[:])
 
 	// remove old versions of the same version
-	l, _ := filepath.Glob(filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist/main", strings.Join(fn_a, "/"), filename_f+"*.tpkg"))
+	l, _ := filepath.Glob(filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist/main", strings.Join(fn_a, "/"), filename_f+"*.apkg"))
 	for _, fn := range l {
 		os.Remove(fn)
 	}
 
 	// generate output filename
-	out := filepath.Join(os.Getenv("HOME"), "projects/tpkg-tools/repo/tpkg/dist/main", strings.Join(fn_a, "/"), filename_f+"-"+headerHashHex[:7]+".tpkg")
+	out := filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist/main", strings.Join(fn_a, "/"), filename_f+"-"+headerHashHex[:7]+".apkg")
 	log.Printf("out filename = %s", out)
 
 	err = os.MkdirAll(filepath.Dir(out), 0755)

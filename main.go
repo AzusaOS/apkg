@@ -8,18 +8,18 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/tardigradeos/tpkg/tpkgdb"
-	"github.com/tardigradeos/tpkg/tpkgfs"
+	"git.atonline.com/azusa/apkg/apkgdb"
+	"git.atonline.com/azusa/apkg/apkgfs"
 )
 
 const PKG_URL_PREFIX = "https://pkg.tardigradeos.com/"
 
-var dbMain *tpkgdb.DB
+var dbMain *apkgdb.DB
 var shutdownChan = make(chan struct{})
 var DATE_TAG = "unknown"
 
 func shutdown() {
-	log.Println("tpkg: shutting down...")
+	log.Println("apkg: shutting down...")
 	close(shutdownChan)
 }
 
@@ -35,10 +35,10 @@ func setupSignals() {
 }
 
 func main() {
-	log.Printf("tpkg: Starting tpkg daemon built on %s", DATE_TAG)
+	log.Printf("apkg: Starting apkg daemon built on %s", DATE_TAG)
 	setupSignals()
 
-	mp, err := tpkgfs.New()
+	mp, err := apkgfs.New()
 	if err != nil {
 		fmt.Printf("Mount fail: %s\n", err)
 		os.Exit(1)
@@ -46,14 +46,14 @@ func main() {
 	go mp.Serve()
 	defer mp.Unmount()
 
-	p := "/var/lib/tpkg"
+	p := "/var/lib/apkg"
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
 		if h != "" {
-			p = filepath.Join(h, ".cache/tpkg")
+			p = filepath.Join(h, ".cache/apkg")
 		}
 	}
-	dbMain, err = tpkgdb.New(PKG_URL_PREFIX, "main", p, mp)
+	dbMain, err = apkgdb.New(PKG_URL_PREFIX, "main", p, mp)
 	if err != nil {
 		log.Printf("db: failed to load: %s", err)
 		return

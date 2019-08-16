@@ -1,4 +1,4 @@
-package tpkgdb
+package apkgdb
 
 import (
 	"bytes"
@@ -11,14 +11,14 @@ import (
 	"os"
 	"time"
 
+	"git.atonline.com/azusa/apkg/apkgfs"
+	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/petar/GoLLRB/llrb"
-	"github.com/tardigradeos/tpkg/tpkgfs"
-	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
 func (d *DBData) index() error {
 	if string(d.data[:4]) != "TPDB" {
-		return errors.New("not a tpkgdb file")
+		return errors.New("not a apkgdb file")
 	}
 
 	r := bytes.NewReader(d.data)
@@ -45,7 +45,7 @@ func (d *DBData) index() error {
 	}
 	d.created = time.Unix(created[0], created[1])
 
-	log.Printf("tpkgdb: reading database generated on %s (%s ago)", d.created, time.Since(d.created))
+	log.Printf("apkgdb: reading database generated on %s (%s ago)", d.created, time.Since(d.created))
 
 	osarchcnt := make([]uint32, 3)
 	err = binary.Read(r, binary.BigEndian, osarchcnt)
@@ -96,7 +96,7 @@ func (d *DBData) index() error {
 	headerData := d.data[:196]
 	// seek at signature location
 	r.Seek(196, io.SeekStart)
-	_, err = tpkgsig.VerifyDb(headerData, r)
+	_, err = apkgsig.VerifyDb(headerData, r)
 	if err != nil {
 		return err
 	}
@@ -145,26 +145,26 @@ func (d *DBData) index() error {
 		pkg.inodes = uint64(inodes)
 
 		// read name
-		name, err := tpkgsig.ReadVarblob(r, 256)
+		name, err := apkgsig.ReadVarblob(r, 256)
 		if err != nil {
 			return err
 		}
 
 		// read path
-		path, err := tpkgsig.ReadVarblob(r, 256)
+		path, err := apkgsig.ReadVarblob(r, 256)
 		if err != nil {
 			return err
 		}
 
-		pkg.rawHeader, err = tpkgsig.ReadVarblob(r, 256)
+		pkg.rawHeader, err = apkgsig.ReadVarblob(r, 256)
 		if err != nil {
 			return err
 		}
-		pkg.rawSig, err = tpkgsig.ReadVarblob(r, tpkgsig.SignatureSize)
+		pkg.rawSig, err = apkgsig.ReadVarblob(r, apkgsig.SignatureSize)
 		if err != nil {
 			return err
 		}
-		pkg.rawMeta, err = tpkgsig.ReadVarblob(r, 65536)
+		pkg.rawMeta, err = apkgsig.ReadVarblob(r, 65536)
 		if err != nil {
 			return err
 		}
@@ -194,7 +194,7 @@ func (d *DBData) index() error {
 	return nil
 }
 
-func (d *DBData) lookupInode(reqino uint64) (tpkgfs.Inode, error) {
+func (d *DBData) lookupInode(reqino uint64) (apkgfs.Inode, error) {
 	var pkg *Package
 	d.ino.DescendLessOrEqual(pkgindex(reqino), func(i llrb.Item) bool {
 		pkg = i.(*Package)

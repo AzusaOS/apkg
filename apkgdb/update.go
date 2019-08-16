@@ -1,4 +1,4 @@
-package tpkgdb
+package apkgdb
 
 import (
 	"bytes"
@@ -35,7 +35,7 @@ func (d *DBData) download(v string) (bool, error) {
 		return false, nil
 	}
 
-	log.Printf("tpkgdb: Downloading %s database version %s ...", d.name, version)
+	log.Printf("apkgdb: Downloading %s database version %s ...", d.name, version)
 
 	resp, err = http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/" + string(version) + ".bin")
 	if err != nil {

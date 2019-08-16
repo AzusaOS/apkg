@@ -1,4 +1,4 @@
-package tpkgfs
+package apkgfs
 
 import (
 	"io"
@@ -56,14 +56,14 @@ func New() (*PkgFS, error) {
 	res.server, err = fuse.NewServer(res, mountPoint, &fuse.MountOptions{
 		AllowOther: os.Geteuid() == 0,
 		Debug:      false,
-		FsName:     "tpkg",
-		Name:       "tpkg",
+		FsName:     "apkg",
+		Name:       "apkg",
 	})
 
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("tpkgfs: filesystem mounted on %s", mountPoint)
+	log.Printf("apkgfs: filesystem mounted on %s", mountPoint)
 
 	return res, nil
 }

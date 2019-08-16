@@ -1,4 +1,4 @@
-module github.com/tardigradeos/tpkg
+module git.atonline.com/azusa/apkg
 
 require (
 	github.com/MagicalTux/hsm v0.1.0

@@ -1,4 +1,4 @@
-package tpkgsig
+package apkgsig
 
 import (
 	"encoding/binary"

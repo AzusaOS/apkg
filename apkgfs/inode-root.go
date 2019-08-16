@@ -1,4 +1,4 @@
-package tpkgfs
+package apkgfs
 
 import (
 	"log"
@@ -129,7 +129,7 @@ func (i *rootInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus 
 
 		ino, err := i.parent.getInode(v.v)
 		if err != nil {
-			log.Printf("tpkgfs: failed to get inode: %s", err)
+			log.Printf("apkgfs: failed to get inode: %s", err)
 			return false
 		}
 

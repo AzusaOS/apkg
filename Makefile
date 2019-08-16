@@ -89,8 +89,8 @@ dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2: dist/$(PROJECT_NAM
 	@echo "Generating $@"
 	@bzip2 --stdout --compress --keep -9 "$<" >"$@"
 ifneq ($(TPKG_NAME),)
-	@mkdir -p dist/empty dist/tpkg
-	@mksquashfs dist/empty "dist/tpkg/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend -p 'tpkg f 777 root root bzcat $@'
+	@mkdir -p dist/empty dist/apkg
+	@mksquashfs dist/empty "dist/apkg/$(TPKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend -p 'apkg f 777 root root bzcat $@'
 endif
 
 dist/$(PROJECT_NAME)_$(GIT_TAG):

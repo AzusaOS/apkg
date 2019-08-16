@@ -1,4 +1,4 @@
-package tpkgsig
+package apkgsig
 
 import (
 	"encoding/base64"
@@ -61,7 +61,7 @@ func verify(data []byte, sigB SigReader, trust map[string]string) (*VerifyResult
 		return nil, errors.New("valid signature from non trusted key")
 	}
 
-	//log.Printf("tpkgsig: Verified valid signature by %s (%s)", keyN, keyS)
+	//log.Printf("apkgsig: Verified valid signature by %s (%s)", keyN, keyS)
 
 	res := &VerifyResult{
 		Version: int(n),

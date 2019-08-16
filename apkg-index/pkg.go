@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tardigradeos/tpkg/tpkgsig"
+	"git.atonline.com/azusa/apkg/apkgsig"
 )
 
 type pkgMeta struct {
@@ -29,7 +29,7 @@ type pkginfo struct {
 	rawSig    []byte
 	rawMeta   []byte
 
-	sig *tpkgsig.VerifyResult
+	sig *apkgsig.VerifyResult
 
 	// details in signature
 	headerHash [32]byte // sha256 of header
@@ -106,14 +106,14 @@ func parsePkgHeader(f *os.File) (*pkginfo, error) {
 	}
 
 	// read sign
-	sig := make([]byte, tpkgsig.SignatureSize)
+	sig := make([]byte, apkgsig.SignatureSize)
 	_, err = f.ReadAt(sig, int64(last_offt[0]))
 	if err != nil {
 		return nil, err
 	}
 	p.rawSig = sig
 
-	p.sig, err = tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
+	p.sig, err = apkgsig.VerifyPkg(header, bytes.NewReader(sig))
 	if err != nil {
 		return nil, err
 	}

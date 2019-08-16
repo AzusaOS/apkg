@@ -12,11 +12,11 @@ import (
 
 func main() {
 	// detect location of socket
-	p := "/var/lib/tpkg/tpkg.sock"
+	p := "/var/lib/apkg/apkg.sock"
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
 		if h != "" {
-			p = filepath.Join(h, ".cache/tpkg/tpkg.sock")
+			p = filepath.Join(h, ".cache/apkg/apkg.sock")
 		}
 	}
 

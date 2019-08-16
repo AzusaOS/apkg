@@ -1,4 +1,4 @@
-package tpkgfs
+package apkgfs
 
 func (p *PkgFS) addToCache(ino uint64, o Inode) {
 	p.inoCacheL.Lock()

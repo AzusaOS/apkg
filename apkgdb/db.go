@@ -1,4 +1,4 @@
-package tpkgdb
+package apkgdb
 
 import (
 	"errors"
@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"git.atonline.com/azusa/apkg/apkgfs"
 	"github.com/petar/GoLLRB/llrb"
-	"github.com/tardigradeos/tpkg/tpkgfs"
 )
 
 type DB struct {
@@ -32,7 +32,7 @@ type DBData struct {
 	path     string
 
 	totalSize uint64
-	fs        *tpkgfs.PkgFS
+	fs        *apkgfs.PkgFS
 	inoCount  uint64
 	nameIdx   *llrb.LLRB
 	ino       *llrb.LLRB
@@ -40,7 +40,7 @@ type DBData struct {
 	ready uint32
 }
 
-func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
+func New(prefix, name, path string, fs *apkgfs.PkgFS) (*DB, error) {
 	r := &DBData{
 		prefix:  prefix,
 		name:    name,
@@ -64,7 +64,7 @@ func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
 	if err != nil {
 		if !isNew {
 			// may have more luck downloading again
-			log.Printf("tpkgdb: failed to load existing db, will try redownload: %s", err)
+			log.Printf("apkgdb: failed to load existing db, will try redownload: %s", err)
 			r.Close() // free any mmap resource
 			_, err = r.download("")
 			if err != nil {
@@ -92,11 +92,11 @@ func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
 		// check for updates
 		err = res.update()
 		if err != nil {
-			log.Printf("tpkgdb: failed to update: %s", err)
+			log.Printf("apkgdb: failed to update: %s", err)
 		}
 	}
 
-	http.Handle("/tpkgdb/"+name, res)
+	http.Handle("/apkgdb/"+name, res)
 
 	go res.updateThread()
 
@@ -105,7 +105,7 @@ func New(prefix, name, path string, fs *tpkgfs.PkgFS) (*DB, error) {
 
 func (d *DBData) load() error {
 	if d.data != nil {
-		return errors.New("tpkgdb: attempt to load an already loaded db")
+		return errors.New("apkgdb: attempt to load an already loaded db")
 	}
 
 	// we use mmap
@@ -119,11 +119,11 @@ func (d *DBData) load() error {
 	size := fi.Size()
 
 	if size <= 0 {
-		return errors.New("tpkgdb: file size is way too low")
+		return errors.New("apkgdb: file size is way too low")
 	}
 
 	if size != int64(int(size)) {
-		return errors.New("tpkgdb: file size is over 4GB")
+		return errors.New("apkgdb: file size is over 4GB")
 	}
 
 	runtime.SetFinalizer(d, (*DBData).Close)

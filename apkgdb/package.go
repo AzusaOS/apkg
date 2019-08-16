@@ -1,4 +1,4 @@
-package tpkgdb
+package apkgdb
 
 import (
 	"bytes"
@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
+	"git.atonline.com/azusa/apkg/apkgfs"
+	"git.atonline.com/azusa/apkg/apkgsig"
+	"git.atonline.com/azusa/apkg/squashfs"
 	"github.com/petar/GoLLRB/llrb"
-	"github.com/tardigradeos/tpkg/squashfs"
-	"github.com/tardigradeos/tpkg/tpkgfs"
-	"github.com/tardigradeos/tpkg/tpkgsig"
 )
 
 type Package struct {
@@ -69,9 +69,9 @@ func (p *Package) Value() uint64 {
 	return p.startIno
 }
 
-func (p *Package) handleLookup(ino uint64) (tpkgfs.Inode, error) {
+func (p *Package) handleLookup(ino uint64) (apkgfs.Inode, error) {
 	if ino == p.startIno {
-		return tpkgfs.NewSymlink([]byte(p.name)), nil
+		return apkgfs.NewSymlink([]byte(p.name)), nil
 	}
 
 	p.dl.Do(p.doDl)
@@ -98,7 +98,7 @@ func (p *Package) doDl() {
 	} else {
 		f, err := os.Open(lpath)
 		if err != nil {
-			log.Printf("tpkgdb: failed to open: %s", err)
+			log.Printf("apkgdb: failed to open: %s", err)
 			return
 		}
 		p.f = f
@@ -106,7 +106,7 @@ func (p *Package) doDl() {
 
 	err := p.validate()
 	if err != nil {
-		log.Printf("tpkgdb: failed to validate file: %s", err)
+		log.Printf("apkgdb: failed to validate file: %s", err)
 		go func() {
 			// cause download to be re-available in 10 seconds
 			time.Sleep(10 * time.Second)
@@ -119,7 +119,7 @@ func (p *Package) doDl() {
 
 	p.squash, err = squashfs.New(p, p.startIno, p.parent.fs)
 	if err != nil {
-		log.Printf("tpkgdb: failed to mount: %s", err)
+		log.Printf("apkgdb: failed to mount: %s", err)
 		defer p.f.Close()
 		p.f = nil
 		p.squash = nil
@@ -133,7 +133,7 @@ func (p *Package) dlFile() {
 	// download this package
 	resp, err := http.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + p.path)
 	if err != nil {
-		log.Printf("tpkgdb: failed to get package: %s", err)
+		log.Printf("apkgdb: failed to get package: %s", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -141,19 +141,19 @@ func (p *Package) dlFile() {
 	// Need to write to file
 	err = os.MkdirAll(path.Dir(lpath), 0755)
 	if err != nil {
-		log.Printf("tpkgdb: failed to make dir: %s", err)
+		log.Printf("apkgdb: failed to make dir: %s", err)
 		return
 	}
 
 	f, err := os.Create(lpath)
 	if err != nil {
-		log.Printf("tpkgdb: failed to create file: %s", err)
+		log.Printf("apkgdb: failed to create file: %s", err)
 		return
 	}
 
 	_, err = io.Copy(f, resp.Body)
 	if err != nil {
-		log.Printf("tpkgdb: failed to write file: %s", err)
+		log.Printf("apkgdb: failed to write file: %s", err)
 		return
 	}
 
@@ -243,11 +243,11 @@ func (p *Package) validate() error {
 	if err != nil {
 		return err
 	}
-	sigV, err := tpkgsig.VerifyPkg(header, bytes.NewReader(sig))
+	sigV, err := apkgsig.VerifyPkg(header, bytes.NewReader(sig))
 	if err != nil {
 		return err
 	}
-	log.Printf("tpkgdb: verified database signature, signed by %s", sigV.Name)
+	log.Printf("apkgdb: verified database signature, signed by %s", sigV.Name)
 
 	// TODO store all that stuff
 

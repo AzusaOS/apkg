@@ -1,4 +1,4 @@
-package tpkgsig
+package apkgsig
 
 // Trusted DB signatories
 var trustedDbSig = map[string]string{

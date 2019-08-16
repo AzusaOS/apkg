@@ -18,17 +18,17 @@ func init() {
 
 		w.Header().Set("Content-Type", "text/plain")
 
-		fmt.Fprintf(w, "tpkg control channel\n\n")
-		fmt.Fprintf(w, "tpkgdb: db related endpoints\n")
+		fmt.Fprintf(w, "apkg control channel\n\n")
+		fmt.Fprintf(w, "apkgdb: db related endpoints\n")
 	})
 }
 
 func listenUnix() net.Listener {
-	p := "/var/lib/tpkg/tpkg.sock"
+	p := "/var/lib/apkg/apkg.sock"
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
 		if h != "" {
-			p = filepath.Join(h, ".cache/tpkg/tpkg.sock")
+			p = filepath.Join(h, ".cache/apkg/apkg.sock")
 		}
 	}
 
