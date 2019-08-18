@@ -29,6 +29,12 @@ Additional sections can be added, and less-specific names will always point to t
 
 For example, package foobar v1.2.3 released as part of the core will be called core.foobar.1.2.3, however core.foobar will also work.
 
+## Collation
+
+In order for package names to be appropriately sorted, the following collation rules are applied when sorting keys are generated:
+
+* Series of digits are prefixed with a single byte which value is how many digits are following minus 1. For example "1" becomes "<00>1" and 42 becomes "<01>42", this ensures sorting for version numbers.
+
 # Installing
 
 	curl -s https://raw.githubusercontent.com/TrisTech/make-go/master/get.sh | /bin/sh -s apkg
