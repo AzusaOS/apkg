@@ -1,13 +1,19 @@
 package apkgdb
 
-func (d *DBData) Length() uint64 {
-	return uint64(len(d.data))
+import "github.com/boltdb/bolt"
+
+func (d *DB) Length() (sz uint64) {
+	d.db.View(func(tx *bolt.Tx) error {
+		sz = uint64(tx.Size())
+		return nil
+	})
+	return
 }
 
-func (d *DBData) Inodes() uint64 {
+func (d *DB) Inodes() uint64 {
 	return d.inoCount
 }
 
-func (d *DBData) PackagesSize() uint64 {
-	return d.totalSize
+func (d *DB) PackagesSize() uint64 {
+	return 0
 }

@@ -1,85 +1,72 @@
 package apkgdb
 
 import (
-	"errors"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
-	"syscall"
-	"time"
 
 	"git.atonline.com/azusa/apkg/apkgfs"
+	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )
 
 type DB struct {
-	*DBData
+	prefix string
+	path   string
+	name   string
+	db     *bolt.DB
 	upd    chan struct{}
-	refcnt uint64
-}
 
-type DBData struct {
-	prefix   string
-	name     string
-	data     []byte
-	version  uint32
-	flags    uint64
-	created  time.Time
-	os, arch uint32
-	count    uint32
-	path     string
-
-	totalSize uint64
-	fs        *apkgfs.PkgFS
-	inoCount  uint64
-	nameIdx   *llrb.LLRB
-	ino       *llrb.LLRB
-
-	ready uint32
+	fs  *apkgfs.PkgFS
+	ino *llrb.LLRB
 }
 
 func New(prefix, name, path string, fs *apkgfs.PkgFS) (*DB, error) {
-	r := &DBData{
-		prefix:  prefix,
-		name:    name,
-		path:    path,
-		fs:      fs,
-		ino:     llrb.New(),
-		nameIdx: llrb.New(),
+	os.MkdirAll(path, 0755) // make sure dir exists
+	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	isNew := false
-	if _, err := os.Stat(filepath.Join(r.path, r.name+".bin")); os.IsNotExist(err) {
-		// immediate download
-		_, err := r.download("")
+	res := &DB{
+		db:     db,
+		prefix: prefix,
+		path:   path,
+		name:   name,
+		fs:     fs,
+		ino:    llrb.New(),
+		upd:    make(chan struct{}),
+	}
+
+	if res.CurrentVersion() == "" {
+		log.Printf("apkgdb: no data yet, will download")
+		// need to perform download now
+		_, err = res.download("")
 		if err != nil {
 			return nil, err
 		}
-		isNew = true
 	}
 
-	err := r.load()
-	if err != nil {
-		if !isNew {
-			// may have more luck downloading again
-			log.Printf("apkgdb: failed to load existing db, will try redownload: %s", err)
-			r.Close() // free any mmap resource
-			_, err = r.download("")
-			if err != nil {
-				return nil, err
-			}
-			err = r.load()
-			if err != nil {
-				return nil, err
-			}
-			isNew = true
-		} else {
-			return nil, err
+	return res, nil
+}
+
+func (d *DB) CurrentVersion() (v string) {
+	// get current version from db
+	d.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("info"))
+		res := b.Get([]byte("version"))
+
+		// check if res is not nil & contains data
+		if len(res) > 0 {
+			// casting to string will cause a copy of the data :)
+			v = string(res)
 		}
-	}
+		return nil
+	})
+	return
+}
 
+/*
 	res := &DB{DBData: r, upd: make(chan struct{})}
 
 	ino, err := r.fs.AllocateInode(res)
@@ -103,49 +90,6 @@ func New(prefix, name, path string, fs *apkgfs.PkgFS) (*DB, error) {
 	return res, nil
 }
 
-func (d *DBData) load() error {
-	if d.data != nil {
-		return errors.New("apkgdb: attempt to load an already loaded db")
-	}
-
-	// we use mmap
-	f, err := os.Open(filepath.Join(d.path, d.name+".bin"))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	fi, err := f.Stat()
-	size := fi.Size()
-
-	if size <= 0 {
-		return errors.New("apkgdb: file size is way too low")
-	}
-
-	if size != int64(int(size)) {
-		return errors.New("apkgdb: file size is over 4GB")
-	}
-
-	runtime.SetFinalizer(d, (*DBData).Close)
-	d.data, err = syscall.Mmap(int(f.Fd()), 0, int(size), syscall.PROT_READ, syscall.MAP_SHARED)
-	if err != nil {
-		return err
-	}
-
-	err = d.index()
-	if err != nil {
-		d.Close()
-		return err
-	}
-
-	return nil
-}
-
-func (d *DB) Close() error {
-	d.DBData = nil
-	return nil
-}
-
 func (d *DBData) Close() error {
 	if d.data == nil {
 		return nil
@@ -154,4 +98,8 @@ func (d *DBData) Close() error {
 	d.data = nil
 	runtime.SetFinalizer(d, nil)
 	return syscall.Munmap(data)
+}*/
+
+func (d *DB) Close() error {
+	return d.db.Close()
 }

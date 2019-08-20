@@ -1,6 +1,7 @@
 package apkgdb
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
@@ -16,36 +17,44 @@ import (
 	"github.com/petar/GoLLRB/llrb"
 )
 
-func (d *DBData) index() error {
-	if string(d.data[:4]) != "APDB" {
+func (d *DB) index(f *os.File) error {
+	r := bufio.NewReader(f)
+	sig := make([]byte, 4)
+
+	var version uint32
+	var flags uint64
+
+	_, err := io.ReadFull(r, sig)
+	if err != nil {
+		return err
+	}
+	if string(sig) != "APDB" {
 		return errors.New("not a apkgdb file")
 	}
 
-	r := bytes.NewReader(d.data)
-	r.Seek(4, io.SeekStart)
-
 	// read version
-	err := binary.Read(r, binary.BigEndian, &d.version)
+	err = binary.Read(r, binary.BigEndian, &version)
 	if err != nil {
 		return err
 	}
-	if d.version != 1 {
+	if version != 1 {
 		return errors.New("unsupported db version")
 	}
 
-	err = binary.Read(r, binary.BigEndian, &d.flags)
+	// read flags
+	err = binary.Read(r, binary.BigEndian, &flags)
 	if err != nil {
 		return err
 	}
 
-	created := make([]int64, 2)
-	err = binary.Read(r, binary.BigEndian, created)
+	createdA := make([]int64, 2)
+	err = binary.Read(r, binary.BigEndian, createdA)
 	if err != nil {
 		return err
 	}
-	d.created = time.Unix(created[0], created[1])
+	created := time.Unix(createdA[0], createdA[1])
 
-	log.Printf("apkgdb: reading database generated on %s (%s ago)", d.created, time.Since(d.created))
+	log.Printf("apkgdb: reading database generated on %s (%s ago)", created, time.Since(created))
 
 	osarchcnt := make([]uint32, 3)
 	err = binary.Read(r, binary.BigEndian, osarchcnt)
@@ -54,9 +63,10 @@ func (d *DBData) index() error {
 	}
 
 	// TODO check values
-	d.os = osarchcnt[0]   // 0=linux 1=darwin 2=windows ...
-	d.arch = osarchcnt[1] // 0=i386 1=amd64 ...
-	d.count = osarchcnt[2]
+	os := osarchcnt[0]   // 0=linux 1=darwin 2=windows ...
+	arch := osarchcnt[1] // 0=i386 1=amd64 ...
+	count := osarchcnt[2]
+	_, _, _ = os, arch, count
 
 	name := make([]byte, 32)
 	_, err = io.ReadFull(r, name)
@@ -93,9 +103,15 @@ func (d *DBData) index() error {
 	}
 
 	// grab the header only
-	headerData := d.data[:196]
+	r.Seek(0, io.SeekStart)
+	headerData := make([]byte, 196)
+	err = io.ReadFull(r, headerData)
+	if err != nil {
+		return err
+	}
+
 	// seek at signature location
-	r.Seek(196, io.SeekStart)
+	//r.Seek(196, io.SeekStart)
 	_, err = apkgsig.VerifyDb(headerData, r)
 	if err != nil {
 		return err
@@ -194,7 +210,7 @@ func (d *DBData) index() error {
 	return nil
 }
 
-func (d *DBData) lookupInode(reqino uint64) (apkgfs.Inode, error) {
+func (d *DB) lookupInode(reqino uint64) (apkgfs.Inode, error) {
 	var pkg *Package
 	d.ino.DescendLessOrEqual(pkgindex(reqino), func(i llrb.Item) bool {
 		pkg = i.(*Package)

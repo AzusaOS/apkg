@@ -68,9 +68,14 @@ Header:
 Basic pkg info:
 
 * 0x00 (uint8)
-* ID (16 bytes)
-* File header signature (file header contains checksum of rest of file)
-* Size
+* Header hash (32 bytes)
+* Size (uint64)
+* Inode count (uint32)
+* Full package name (varblob)
+* File relative path (varblob)
+* Raw header (varblob)
+* Raw signature (varblob)
+* Raw meta data (varblob)
 
 ## Data File
 
@@ -90,3 +95,15 @@ Each data file contains a header, JSON-encoded metadata, a hash data descriptor,
 * 116 Data offset uint32
 * 120 Data block size
 * 124 end of header
+
+## Local bolt database
+
+Contains the following buckets
+
+* info → contains "version"
+* i2p → inode to package hash
+* p2i → package name to inode + package hash + package name
+* pkg → package hash → package info (0 + size + inode num + inode num) + package name
+* header → package hash → header
+* sig → package hash → signature
+* meta → package hash → meta data

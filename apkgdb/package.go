@@ -21,7 +21,7 @@ import (
 )
 
 type Package struct {
-	parent   *DBData
+	parent   *DB
 	startIno uint64
 	pos      int64  // position in archive of data
 	hash     []byte // typically sha256
