@@ -39,15 +39,9 @@ func main() {
 	setupSignals()
 
 	db := "main"
+	var err error
 
-	mp, err := apkgfs.New(db)
-	if err != nil {
-		fmt.Printf("Mount fail: %s\n", err)
-		os.Exit(1)
-	}
-	go mp.Serve()
-	defer mp.Unmount()
-
+	// instanciate database
 	p := "/var/lib/apkg"
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
@@ -60,6 +54,15 @@ func main() {
 		log.Printf("db: failed to load: %s", err)
 		return
 	}
+
+	// mount database
+	mp, err := apkgfs.New(db, dbMain)
+	if err != nil {
+		fmt.Printf("Mount fail: %s\n", err)
+		os.Exit(1)
+	}
+	go mp.Serve()
+	defer mp.Unmount()
 
 	go updater(mp.Path())
 	l := listenUnix()

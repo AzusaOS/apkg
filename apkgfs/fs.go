@@ -16,7 +16,7 @@ import (
 type PkgFS struct {
 	fuse.RawFileSystem
 
-	root       *rootInodeObj
+	root       Inode
 	inodes     map[uint64]Inode
 	inodesIdx  *llrb.LLRB
 	inodeLast  uint64 // last generated inode number (set to 1=root)
@@ -28,7 +28,7 @@ type PkgFS struct {
 	inoCacheL sync.RWMutex
 }
 
-func New(name string) (*PkgFS, error) {
+func New(name string, root Inode) (*PkgFS, error) {
 	mountPoint := filepath.Join("/pkg", name)
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
@@ -40,7 +40,6 @@ func New(name string) (*PkgFS, error) {
 		return nil, err
 	}
 
-	root := &rootInodeObj{children: llrb.New(), t: time.Now()}
 	res := &PkgFS{
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
 		root:          root,
@@ -50,7 +49,6 @@ func New(name string) (*PkgFS, error) {
 		mountPoint:    mountPoint,
 		inoCache:      make(map[uint64]Inode),
 	}
-	root.parent = res
 
 	var err error
 	res.server, err = fuse.NewServer(res, mountPoint, &fuse.MountOptions{
