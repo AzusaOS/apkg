@@ -1,8 +1,9 @@
 #!/bin/make
 
-GO_TAG:=$(shell /bin/sh -c 'eval `go tool dist env`; echo "$${GOOS}_$${GOARCH}"')
+GOROOT=$(shell PATH="/pkg/main/dev-lang.go/bin:$PATH" go env GOROOT)
+GO_TAG:=$(shell /bin/sh -c 'eval `$(GOROOT)/bin/go tool dist env`; echo "$${GOOS}_$${GOARCH}"')
 GIT_TAG:=$(shell git rev-parse --short HEAD)
-GOPATH:=$(shell go env GOPATH)
+GOPATH:=$(shell $(GOROOT)/bin/go env GOPATH)
 SOURCES:=$(shell find . -name '*.go')
 AWS:=$(shell which 2>/dev/null aws)
 S3_TARGET=s3://dist-go
@@ -36,37 +37,37 @@ all: $(PROJECT_NAME)
 
 $(PROJECT_NAME): $(SOURCES)
 	$(GOPATH)/bin/goimports -w -l .
-	go build -v -gcflags="-N -l" -ldflags=all="-X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=DEV -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) -X main.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
+	$(GOROOT)/bin/go build -v -gcflags="-N -l" -ldflags=all="-X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=DEV -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) -X main.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
 
 clean:
-	go clean
+	$(GOROOT)/bin/go clean
 
 deps:
-	go get -v .
+	$(GOROOT)/bin/go get -v .
 
 update:
-	go get -u .
+	$(GOROOT)/bin/go get -u .
 
 fmt:
-	go fmt ./...
+	$(GOROOT)/bin/go fmt ./...
 	$(GOPATH)/bin/goimports -w -l .
 
 test:
-	go test ./...
+	$(GOROOT)/bin/go test ./...
 
 gen:
-	go generate
+	$(GOROOT)/bin/go generate
 
 cov:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
+	$(GOROOT)/bin/go test -coverprofile=coverage.out ./...
+	$(GOROOT)/bin/go tool cover -html=coverage.out -o coverage.html
 
 check:
-	@if [ ! -f $(GOPATH)/bin/gometalinter ]; then go get github.com/alecthomas/gometalinter; fi
+	@if [ ! -f $(GOPATH)/bin/gometalinter ]; then $(GOROOT)/bin/go get github.com/alecthomas/gometalinter; fi
 	$(GOPATH)/bin/gometalinter ./...
 
 doc:
-	@if [ ! -f $(GOPATH)/bin/godoc ]; then go get golang.org/x/tools/cmd/godoc; fi
+	@if [ ! -f $(GOPATH)/bin/godoc ]; then $(GOROOT)/bin/go get golang.org/x/tools/cmd/godoc; fi
 	$(GOPATH)/bin/godoc -v -http=:6060 -index -play
 
 dist:
@@ -109,7 +110,7 @@ dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%: $(SOURCES)
 
 ifneq ($(TARGET_ARCH),)
 dist/$(PROJECT_NAME)_$(GIT_TAG)/build_$(PROJECT_NAME).$(TARGET_ARCH): $(SOURCES)
-	@GOOS="$(TARGET_GOOS)" GOARCH="$(TARGET_GOARCH)" go build -a -o "$@" -gcflags="-N -l -trimpath=$(shell pwd)" -ldflags=all="-s -w -X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=PROD -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) -X main.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
+	@GOOS="$(TARGET_GOOS)" GOARCH="$(TARGET_GOARCH)" $(GOROOT)/bin/go build -a -o "$@" -gcflags="-N -l -trimpath=$(shell pwd)" -ldflags=all="-s -w -X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=PROD -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) -X main.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
 endif
 
 update-make:
