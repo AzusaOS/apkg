@@ -61,7 +61,6 @@ Header:
 * Creation date/time
 * OS (linux, darwin, windows, etc)
 * Architecture (amd64, i386, etc)
-* Download URL prefix (should contain architecture?)
 * Location in file of indices, length, all int32 (file should never reach 4GB)
 * ... more?
 
@@ -103,9 +102,8 @@ Contains the following buckets
 * info → contains "version", "next_inode"
 * i2p → inode to package hash
 * p2i → package name to inode + package hash + package name
-* pkg → package hash → package info (0 + size + inode num + inode num) + package name
+* pkg → package hash → package info (0 + size + inode num + inode count + package name)
 * header → package hash → header
 * sig → package hash → signature
 * meta → package hash → meta data
 * path → package hash → file relative path
-* url → package hash → file absolute url
