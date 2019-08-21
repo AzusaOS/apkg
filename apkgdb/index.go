@@ -287,8 +287,9 @@ func (d *DB) index(r *os.File) error {
 	return nil
 }
 
-func (d *DB) lookupInode(reqino uint64) (apkgfs.Inode, error) {
+func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 	var pkg *Package
+	// TODO FIXME need to check a lot of stuff to fix this
 	d.ino.DescendLessOrEqual(pkgindex(reqino), func(i llrb.Item) bool {
 		pkg = i.(*Package)
 		return false

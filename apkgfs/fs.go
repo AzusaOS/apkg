@@ -10,16 +10,12 @@ import (
 	"time"
 
 	"github.com/hanwen/go-fuse/fuse"
-	"github.com/petar/GoLLRB/llrb"
 )
 
 type PkgFS struct {
 	fuse.RawFileSystem
 
-	root       Inode
-	inodes     map[uint64]Inode
-	inodesIdx  *llrb.LLRB
-	inodeLast  uint64 // last generated inode number (set to 1=root)
+	root       RootInode
 	inodesLock sync.RWMutex
 	server     *fuse.Server
 	mountPoint string
@@ -28,7 +24,7 @@ type PkgFS struct {
 	inoCacheL sync.RWMutex
 }
 
-func New(name string, root Inode) (*PkgFS, error) {
+func New(name string, root RootInode) (*PkgFS, error) {
 	mountPoint := filepath.Join("/pkg", name)
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
@@ -43,9 +39,6 @@ func New(name string, root Inode) (*PkgFS, error) {
 	res := &PkgFS{
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
 		root:          root,
-		inodeLast:     2, // values below 2 are reserved for special inodes
-		inodes:        map[uint64]Inode{1: root},
-		inodesIdx:     llrb.New(),
 		mountPoint:    mountPoint,
 		inoCache:      make(map[uint64]Inode),
 	}

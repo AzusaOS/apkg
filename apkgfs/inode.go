@@ -24,6 +24,12 @@ type Inode interface {
 	DelRef(count uint64) uint64
 }
 
+type RootInode interface {
+	Inode
+
+	GetInode(ino uint64) (Inode, error)
+}
+
 // see: https://golang.org/src/os/stat_linux.go
 func ModeToUnix(mode os.FileMode) uint32 {
 	res := uint32(mode.Perm())
@@ -60,4 +66,18 @@ func ModeToUnix(mode os.FileMode) uint32 {
 	}
 
 	return res
+}
+
+func (p *PkgFS) getInode(ino uint64) (Inode, error) {
+	if ino == 1 {
+		return p.root, nil
+	}
+
+	// check cache
+	if i, ok := p.getInodeCache(ino); ok {
+		return i, nil
+	}
+
+	// grab inode from root (caller will do the add to cache)
+	return p.root.GetInode(ino)
 }
