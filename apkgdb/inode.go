@@ -1,43 +1,59 @@
 package apkgdb
 
 import (
+	"bytes"
+	"encoding/binary"
 	"os"
 	"strings"
 	"sync/atomic"
 
 	"git.atonline.com/azusa/apkg/apkgfs"
+	"github.com/boltdb/bolt"
 	"github.com/hanwen/go-fuse/fuse"
-	"github.com/petar/GoLLRB/llrb"
 )
 
-func (i *DB) Lookup(name string) (uint64, error) {
+func (i *DB) Lookup(name string) (n uint64, err error) {
 	if strings.IndexByte(name, '.') == -1 {
 		return 0, os.ErrNotExist
 	}
-	var found *Package
-	i.nameIdx.AscendGreaterOrEqual(&llrbString{k: name}, func(i llrb.Item) bool {
-		cur := i.(*llrbString).v
-		if name == cur.name {
-			found = cur
-			return false
+
+	err = i.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("p2i"))
+		if b == nil {
+			return os.ErrNotExist
 		}
-		if strings.HasPrefix(cur.name, name+".") {
-			found = cur
-			return true // continue searching so we return latest version
+
+		c := b.Cursor()
+
+		nameC := collatedVersion(name)
+		k, v := c.Seek(nameC)
+
+		if k == nil {
+			return os.ErrNotExist
 		}
-		return false
+
+		if bytes.Equal(k, nameC) {
+			// found exact, return ino+1
+			n = binary.BigEndian.Uint64(v) + 1
+			return nil
+		}
+
+		// rewind one
+		k, v = c.Prev()
+		if k == nil {
+			return os.ErrNotExist
+		}
+
+		// compare name
+		if !strings.HasPrefix(string(v[8+32:]), name+".") {
+			return os.ErrNotExist
+		}
+
+		n = binary.BigEndian.Uint64(v)
+		return nil
 	})
 
-	if found != nil {
-		if name == found.name {
-			// return root (ino+1)
-			return found.startIno + 1, nil
-		}
-		return found.startIno, nil
-	}
-
-	return 0, os.ErrNotExist
-	// TODO
+	return
 }
 
 func (i *DB) Mode() os.FileMode {
@@ -50,7 +66,7 @@ func (i *DB) IsDir() bool {
 
 func (i *DB) FillAttr(attr *fuse.Attr) error {
 	attr.Ino = 1
-	attr.Size = i.totalSize
+	attr.Size = 4096
 	attr.Blocks = 1
 	attr.Mode = apkgfs.ModeToUnix(i.Mode())
 	attr.Nlink = 1 // 1 required

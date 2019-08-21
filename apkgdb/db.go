@@ -18,8 +18,9 @@ type DB struct {
 	db     *bolt.DB
 	upd    chan struct{}
 
-	fs  *apkgfs.PkgFS
-	ino *llrb.LLRB
+	fs     *apkgfs.PkgFS
+	ino    *llrb.LLRB
+	refcnt uint64
 }
 
 func New(prefix, name, path string, fs *apkgfs.PkgFS) (*DB, error) {

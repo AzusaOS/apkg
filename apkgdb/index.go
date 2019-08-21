@@ -121,8 +121,6 @@ func (d *DB) index(r *os.File) error {
 
 	// TODO → use indices
 
-	pkgList := make(map[uint64]*Package)
-
 	r.Seek(int64(dataLoc[0]), io.SeekStart)
 
 	// let's use a limited read buffer so we don't expand over hashed area
@@ -165,8 +163,6 @@ func (d *DB) index(r *os.File) error {
 		if err != nil {
 			return err
 		}
-
-		r := 0
 
 		// OK now let's read each package
 		for i := uint32(0); i < count; i++ {
@@ -288,7 +284,7 @@ func (d *DB) index(r *os.File) error {
 		return err
 	}
 
-	offt, err := d.fs.AllocateInodes(d.nextInode(), d.lookupInode)
+	_, err = d.fs.AllocateInodes(d.nextInode(), d.lookupInode)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ func (d *DB) Length() (sz uint64) {
 }
 
 func (d *DB) Inodes() uint64 {
-	return d.inoCount
+	return d.nextInode() - 1
 }
 
 func (d *DB) PackagesSize() uint64 {
