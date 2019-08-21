@@ -284,11 +284,6 @@ func (d *DB) index(r *os.File) error {
 		return err
 	}
 
-	_, err = d.fs.AllocateInodes(d.nextInode(), d.lookupInode)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

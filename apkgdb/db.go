@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"git.atonline.com/azusa/apkg/apkgfs"
 	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )
@@ -18,12 +17,11 @@ type DB struct {
 	db     *bolt.DB
 	upd    chan struct{}
 
-	fs     *apkgfs.PkgFS
 	ino    *llrb.LLRB
 	refcnt uint64
 }
 
-func New(prefix, name, path string, fs *apkgfs.PkgFS) (*DB, error) {
+func New(prefix, name, path string) (*DB, error) {
 	os.MkdirAll(path, 0755) // make sure dir exists
 	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, nil)
 	if err != nil {
@@ -35,7 +33,6 @@ func New(prefix, name, path string, fs *apkgfs.PkgFS) (*DB, error) {
 		prefix: prefix,
 		path:   path,
 		name:   name,
-		fs:     fs,
 		ino:    llrb.New(),
 		upd:    make(chan struct{}),
 	}

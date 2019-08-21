@@ -55,7 +55,7 @@ func main() {
 			p = filepath.Join(h, ".cache/apkg")
 		}
 	}
-	dbMain, err = apkgdb.New(PKG_URL_PREFIX, db, p, mp)
+	dbMain, err = apkgdb.New(PKG_URL_PREFIX, db, p)
 	if err != nil {
 		log.Printf("db: failed to load: %s", err)
 		return
