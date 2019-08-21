@@ -17,7 +17,7 @@ func ReadVarblob(r SigReader, maxLen uint64) ([]byte, error) {
 	}
 
 	b := make([]byte, l)
-	_, err = r.Read(b)
+	_, err = io.ReadFull(r, b)
 	if err != nil {
 		return nil, err
 	}

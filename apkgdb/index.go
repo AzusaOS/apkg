@@ -172,7 +172,7 @@ func (d *DB) index(r *os.File) error {
 				return err
 			}
 			if t != 0 {
-				return errors.New("invalid data in db, couldn't open it")
+				return fmt.Errorf("invalid data in db (invalid package type %d)", t)
 			}
 
 			inoBin := make([]byte, 8)
@@ -266,7 +266,7 @@ func (d *DB) index(r *os.File) error {
 				return err
 			}
 
-			//log.Printf("read package %s size=%d", pkg.name, pkg.size)
+			//log.Printf("read package %s size=%d", name, size)
 
 			startIno += uint64(inodes) + 1
 		}
