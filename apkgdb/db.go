@@ -1,6 +1,7 @@
 package apkgdb
 
 import (
+	"encoding/binary"
 	"log"
 	"os"
 	"path/filepath"
@@ -60,6 +61,24 @@ func (d *DB) CurrentVersion() (v string) {
 		if len(res) > 0 {
 			// casting to string will cause a copy of the data :)
 			v = string(res)
+		}
+		return nil
+	})
+	return
+}
+
+func (d *DB) nextInode() (n uint64) {
+	// grab next inode id
+	d.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("info"))
+		res := b.Get([]byte("next_inode"))
+
+		// check if res is not nil & contains data
+		if len(res) == 8 {
+			// casting to string will cause a copy of the data :)
+			n = binary.BigEndian.Uint64(res)
+		} else {
+			n = 2 // 1 is reserved for root
 		}
 		return nil
 	})

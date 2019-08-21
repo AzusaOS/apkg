@@ -100,10 +100,12 @@ Each data file contains a header, JSON-encoded metadata, a hash data descriptor,
 
 Contains the following buckets
 
-* info → contains "version"
+* info → contains "version", "next_inode"
 * i2p → inode to package hash
 * p2i → package name to inode + package hash + package name
 * pkg → package hash → package info (0 + size + inode num + inode num) + package name
 * header → package hash → header
 * sig → package hash → signature
 * meta → package hash → meta data
+* path → package hash → file relative path
+* url → package hash → file absolute url

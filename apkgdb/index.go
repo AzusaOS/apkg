@@ -14,11 +14,11 @@ import (
 
 	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )
 
-func (d *DB) index(f *os.File) error {
-	r := bufio.NewReader(f)
+func (d *DB) index(r *os.File) error {
 	sig := make([]byte, 4)
 
 	var version uint32
@@ -94,8 +94,10 @@ func (d *DB) index(f *os.File) error {
 		return err
 	}
 
+	// hash the data area
 	hash := sha256.New()
-	hash.Write(d.data[dataLoc[0] : dataLoc[0]+dataLoc[1]])
+	r.Seek(int64(dataLoc[0]), io.SeekStart)
+	io.CopyN(hash, r, int64(dataLoc[1]))
 	dataHashChk := hash.Sum(nil)
 
 	if !bytes.Equal(dataHash, dataHashChk) {
@@ -105,14 +107,14 @@ func (d *DB) index(f *os.File) error {
 	// grab the header only
 	r.Seek(0, io.SeekStart)
 	headerData := make([]byte, 196)
-	err = io.ReadFull(r, headerData)
+	_, err = io.ReadFull(r, headerData)
 	if err != nil {
 		return err
 	}
 
 	// seek at signature location
-	//r.Seek(196, io.SeekStart)
-	_, err = apkgsig.VerifyDb(headerData, r)
+	r.Seek(196, io.SeekStart)
+	_, err = apkgsig.VerifyDb(headerData, bufio.NewReader(r))
 	if err != nil {
 		return err
 	}
@@ -122,89 +124,173 @@ func (d *DB) index(f *os.File) error {
 	pkgList := make(map[uint64]*Package)
 
 	r.Seek(int64(dataLoc[0]), io.SeekStart)
-	// OK now let's read each package
-	for i := uint32(0); i < d.count; i++ {
-		var t uint8
-		pos, _ := r.Seek(0, io.SeekCurrent)
-		err = binary.Read(r, binary.BigEndian, &t)
+
+	// let's use a limited read buffer so we don't expand over hashed area
+	b := bufio.NewReader(&io.LimitedReader{R: r, N: int64(dataLoc[1])})
+
+	startIno := d.nextInode()
+
+	// initialize a write transaction
+	err = d.db.Update(func(tx *bolt.Tx) error {
+		// create/get buckets
+		infoB, err := tx.CreateBucketIfNotExists([]byte("info"))
 		if err != nil {
 			return err
 		}
-		if t != 0 {
-			return errors.New("invalid data in db, couldn't open it")
-		}
-
-		pkg := &Package{
-			parent:   d,
-			startIno: d.inoCount,
-			pos:      pos,
-		}
-
-		// let's read the package hash & other info
-		pkg.hash = make([]byte, 32)
-		_, err = io.ReadFull(r, pkg.hash)
+		i2pB, err := tx.CreateBucketIfNotExists([]byte("i2p"))
 		if err != nil {
 			return err
 		}
-
-		// read size
-		err = binary.Read(r, binary.BigEndian, &pkg.size)
+		p2iB, err := tx.CreateBucketIfNotExists([]byte("p2i"))
 		if err != nil {
 			return err
 		}
-
-		var inodes uint32
-		err = binary.Read(r, binary.BigEndian, &inodes)
+		pkgB, err := tx.CreateBucketIfNotExists([]byte("pkg"))
 		if err != nil {
 			return err
 		}
-		pkg.inodes = uint64(inodes)
-
-		// read name
-		name, err := apkgsig.ReadVarblob(r, 256)
+		headerB, err := tx.CreateBucketIfNotExists([]byte("header"))
 		if err != nil {
 			return err
 		}
-
-		// read path
-		path, err := apkgsig.ReadVarblob(r, 256)
+		sigB, err := tx.CreateBucketIfNotExists([]byte("sig"))
+		if err != nil {
+			return err
+		}
+		metaB, err := tx.CreateBucketIfNotExists([]byte("meta"))
+		if err != nil {
+			return err
+		}
+		pathB, err := tx.CreateBucketIfNotExists([]byte("path"))
 		if err != nil {
 			return err
 		}
 
-		pkg.rawHeader, err = apkgsig.ReadVarblob(r, 256)
-		if err != nil {
-			return err
+		r := 0
+
+		// OK now let's read each package
+		for i := uint32(0); i < count; i++ {
+			var t uint8
+			err = binary.Read(b, binary.BigEndian, &t)
+			if err != nil {
+				return err
+			}
+			if t != 0 {
+				return errors.New("invalid data in db, couldn't open it")
+			}
+
+			inoBin := make([]byte, 8)
+			binary.BigEndian.PutUint64(inoBin, startIno)
+
+			// let's read the package hash & other info
+			hash := make([]byte, 32)
+			_, err = io.ReadFull(b, hash)
+			if err != nil {
+				return err
+			}
+
+			// read size
+			var size uint64
+			err = binary.Read(b, binary.BigEndian, &size)
+			if err != nil {
+				return err
+			}
+
+			var inodes uint32
+			err = binary.Read(b, binary.BigEndian, &inodes)
+			if err != nil {
+				return err
+			}
+
+			// read name
+			name, err := apkgsig.ReadVarblob(b, 256)
+			if err != nil {
+				return err
+			}
+
+			// read path
+			path, err := apkgsig.ReadVarblob(b, 256)
+			if err != nil {
+				return err
+			}
+
+			rawHeader, err := apkgsig.ReadVarblob(b, 256)
+			if err != nil {
+				return err
+			}
+			rawSig, err := apkgsig.ReadVarblob(b, apkgsig.SignatureSize)
+			if err != nil {
+				return err
+			}
+			rawMeta, err := apkgsig.ReadVarblob(b, 65536)
+			if err != nil {
+				return err
+			}
+
+			// do we already have this hash?
+			exInfo := pkgB.Get(hash)
+			if exInfo != nil {
+				// TODO Check if same package or not
+				continue
+			}
+
+			nameC := collatedVersion(string(name))
+			sizeB := make([]byte, 8)
+			binary.BigEndian.PutUint64(sizeB, size)
+			inoCountB := make([]byte, 8)
+			binary.BigEndian.PutUint64(inoCountB, uint64(inodes))
+
+			// store stuff
+			err = i2pB.Put(inoBin, hash)
+			if err != nil {
+				return err
+			}
+			err = p2iB.Put(nameC, append(append(append([]byte(nil), inoBin...), hash...), name...))
+			if err != nil {
+				return err
+			}
+			err = pkgB.Put(hash, append(append(append(append([]byte{0}, sizeB...), inoBin...), inoCountB...), name...))
+			if err != nil {
+				return err
+			}
+			err = headerB.Put(hash, rawHeader)
+			if err != nil {
+				return err
+			}
+			err = sigB.Put(hash, rawSig)
+			if err != nil {
+				return err
+			}
+			err = metaB.Put(hash, rawMeta)
+			if err != nil {
+				return err
+			}
+			err = pathB.Put(hash, path)
+			if err != nil {
+				return err
+			}
+
+			//log.Printf("read package %s size=%d", pkg.name, pkg.size)
+
+			startIno += uint64(inodes) + 1
 		}
-		pkg.rawSig, err = apkgsig.ReadVarblob(r, apkgsig.SignatureSize)
-		if err != nil {
-			return err
-		}
-		pkg.rawMeta, err = apkgsig.ReadVarblob(r, 65536)
-		if err != nil {
-			return err
-		}
 
-		pkg.name = string(name)
-		pkg.path = string(path)
+		// store new value for startIno
+		nextInoB := make([]byte, 8)
+		binary.BigEndian.PutUint64(nextInoB, startIno)
+		infoB.Put([]byte("next_inode"), nextInoB)
 
-		pkgList[pkg.startIno] = pkg
+		// cause commit to happen
+		return nil
+	})
 
-		//log.Printf("read package %s size=%d", pkg.name, pkg.size)
-		d.inoCount += uint64(pkg.inodes) + 1
-		d.totalSize += pkg.size
-	}
-
-	offt, err := d.fs.AllocateInodes(d.inoCount, d.lookupInode)
 	if err != nil {
 		return err
 	}
 
-	// register inodes in root
-	for ino, pkg := range pkgList {
-		pkg.startIno = ino + offt
-		d.ino.ReplaceOrInsert(pkg)
-		d.nameIdx.ReplaceOrInsert(&llrbString{k: pkg.name, v: pkg})
+	offt, err := d.fs.AllocateInodes(d.nextInode(), d.lookupInode)
+	if err != nil {
+		return err
 	}
 
 	return nil
