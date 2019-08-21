@@ -1,5 +1,6 @@
 # Stuff to do in the future
 
+* Remove apkgfs root and directly plug the database
 * Remove old inode allocations upon db update so data can be freed
 * Partial package file download handling
 * Inode and name indexes in db file

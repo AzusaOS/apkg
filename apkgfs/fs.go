@@ -28,12 +28,12 @@ type PkgFS struct {
 	inoCacheL sync.RWMutex
 }
 
-func New() (*PkgFS, error) {
-	mountPoint := "/pkg"
+func New(name string) (*PkgFS, error) {
+	mountPoint := filepath.Join("/pkg", name)
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
 		if h != "" {
-			mountPoint = filepath.Join(h, "pkg")
+			mountPoint = filepath.Join(h, "pkg", name)
 		}
 	}
 	if err := os.MkdirAll(mountPoint, 0755); err != nil {
@@ -44,7 +44,7 @@ func New() (*PkgFS, error) {
 	res := &PkgFS{
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
 		root:          root,
-		inodeLast:     100, // values below 100 are reserved for special inodes
+		inodeLast:     2, // values below 2 are reserved for special inodes
 		inodes:        map[uint64]Inode{1: root},
 		inodesIdx:     llrb.New(),
 		mountPoint:    mountPoint,

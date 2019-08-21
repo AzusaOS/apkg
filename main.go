@@ -38,7 +38,9 @@ func main() {
 	log.Printf("apkg: Starting apkg daemon built on %s", DATE_TAG)
 	setupSignals()
 
-	mp, err := apkgfs.New()
+	db := "main"
+
+	mp, err := apkgfs.New(db)
 	if err != nil {
 		fmt.Printf("Mount fail: %s\n", err)
 		os.Exit(1)
@@ -53,7 +55,7 @@ func main() {
 			p = filepath.Join(h, ".cache/apkg")
 		}
 	}
-	dbMain, err = apkgdb.New(PKG_URL_PREFIX, "main", p, mp)
+	dbMain, err = apkgdb.New(PKG_URL_PREFIX, db, p, mp)
 	if err != nil {
 		log.Printf("db: failed to load: %s", err)
 		return
