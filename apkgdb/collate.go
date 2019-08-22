@@ -18,6 +18,9 @@ func collatedVersion(v string) (r []byte) {
 		// calculate how many digits
 		var i int
 		for i = 1; i <= 32; i++ {
+			if len(v) <= i {
+				break
+			}
 			if v[i] < '0' || v[i] > '9' {
 				break
 			}

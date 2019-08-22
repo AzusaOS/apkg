@@ -53,6 +53,9 @@ func (d *DB) CurrentVersion() (v string) {
 	// get current version from db
 	d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("info"))
+		if b == nil {
+			return nil
+		}
 		res := b.Get([]byte("version"))
 
 		// check if res is not nil & contains data
@@ -69,6 +72,10 @@ func (d *DB) nextInode() (n uint64) {
 	// grab next inode id
 	d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("info"))
+		if b == nil {
+			n = 2 // 1 is reserved for root
+			return nil
+		}
 		res := b.Get([]byte("next_inode"))
 
 		// check if res is not nil & contains data
