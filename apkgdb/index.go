@@ -289,11 +289,24 @@ func (d *DB) index(r *os.File) error {
 
 func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 	var pkg *Package
-	// TODO FIXME need to check a lot of stuff to fix this
+
+	// check if we have this in loaded cache
 	d.ino.DescendLessOrEqual(pkgindex(reqino), func(i llrb.Item) bool {
 		pkg = i.(*Package)
 		return false
 	})
+	if pkg != nil {
+		return pkg.handleLookup(reqino)
+	}
+
+	// load from database
+	err := d.db.View(func(tx *bolt.Tx) error {
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
 	if pkg != nil {
 		return pkg.handleLookup(reqino)
 	}
