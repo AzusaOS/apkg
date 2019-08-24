@@ -12,10 +12,8 @@ import (
 	"os"
 	"time"
 
-	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/boltdb/bolt"
-	"github.com/petar/GoLLRB/llrb"
 )
 
 func (d *DB) index(r *os.File) error {
@@ -285,18 +283,4 @@ func (d *DB) index(r *os.File) error {
 	}
 
 	return nil
-}
-
-func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
-	var pkg *Package
-	// TODO FIXME need to check a lot of stuff to fix this
-	d.ino.DescendLessOrEqual(pkgindex(reqino), func(i llrb.Item) bool {
-		pkg = i.(*Package)
-		return false
-	})
-	if pkg != nil {
-		return pkg.handleLookup(reqino)
-	}
-
-	return nil, os.ErrInvalid
 }
