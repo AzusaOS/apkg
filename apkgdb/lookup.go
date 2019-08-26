@@ -33,7 +33,8 @@ func (i *DB) Lookup(name string) (n uint64, err error) {
 
 		// try to find value prefix
 		c := b.Cursor()
-		k, v := c.Seek(nameC)
+		c.Seek(append(nameC, 0xff))
+		k, v := c.Prev()
 
 		if k == nil {
 			return os.ErrNotExist
