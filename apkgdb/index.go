@@ -12,10 +12,8 @@ import (
 	"os"
 	"time"
 
-	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/boltdb/bolt"
-	"github.com/petar/GoLLRB/llrb"
 )
 
 func (d *DB) index(r *os.File) error {
