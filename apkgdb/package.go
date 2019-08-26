@@ -17,13 +17,13 @@ import (
 	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"git.atonline.com/azusa/apkg/squashfs"
+	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )
 
 type Package struct {
 	parent   *DB
 	startIno uint64
-	pos      int64  // position in archive of data
 	hash     []byte // typically sha256
 	size     uint64
 	inodes   uint64
@@ -67,6 +67,38 @@ func (i pkgindex) Value() uint64 {
 
 func (p *Package) Value() uint64 {
 	return p.startIno
+}
+
+func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
+	// load a package based on its hash (from within a bolt transaction)
+
+	b := tx.Bucket([]byte("pkg"))
+	if b == nil {
+		return nil, os.ErrInvalid
+	}
+
+	v := b.Get(hash)
+	if v == nil {
+		return nil, os.ErrInvalid
+	}
+
+	pkg := &Package{
+		parent:   d,
+		size:     binary.BigEndian.Uint64(v[1:8]),
+		startIno: binary.BigEndian.Uint64(v[9:17]),
+		inodes:   binary.BigEndian.Uint64(v[17:25]),
+		name:     string(v[25:]),
+		path:     string(tx.Bucket([]byte("path")).Get(hash)),
+		hash:     bytesDup(hash),
+	}
+
+	// read raw values (assuming buckets will exist)
+	pkg.rawHeader = bytesDup(tx.Bucket([]byte("header")).Get(hash))
+	pkg.rawSig = bytesDup(tx.Bucket([]byte("sig")).Get(hash))
+	pkg.rawMeta = bytesDup(tx.Bucket([]byte("meta")).Get(hash))
+
+	// * pkg → package hash → package info (0 + size + inode num + inode count + package name)
+	return pkg, nil
 }
 
 func (p *Package) handleLookup(ino uint64) (apkgfs.Inode, error) {

@@ -235,7 +235,7 @@ func (d *DB) index(r *os.File) error {
 			binary.BigEndian.PutUint64(inoCountB, uint64(inodes))
 
 			// store stuff
-			err = i2pB.Put(inoBin, hash)
+			err = i2pB.Put(inoBin, append(append(append([]byte(nil), hash...), inoCountB...), name...))
 			if err != nil {
 				return err
 			}
@@ -273,6 +273,9 @@ func (d *DB) index(r *os.File) error {
 		nextInoB := make([]byte, 8)
 		binary.BigEndian.PutUint64(nextInoB, startIno)
 		infoB.Put([]byte("next_inode"), nextInoB)
+
+		// store version
+		infoB.Put([]byte("version"), []byte(created.UTC().Format("20060102150405")))
 
 		// cause commit to happen
 		return nil
