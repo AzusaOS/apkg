@@ -43,10 +43,13 @@ func main() {
 
 	// instanciate database
 	p := "/var/lib/apkg"
+	base := "/pkg"
+
 	if os.Geteuid() != 0 {
 		h := os.Getenv("HOME")
 		if h != "" {
 			p = filepath.Join(h, ".cache/apkg")
+			base = filepath.Join(h, "pkg")
 		}
 	}
 	dbMain, err = apkgdb.New(PKG_URL_PREFIX, db, p)
@@ -56,7 +59,7 @@ func main() {
 	}
 
 	// mount database
-	mp, err := apkgfs.New(db, dbMain)
+	mp, err := apkgfs.New(filepath.Join(base, db), dbMain)
 	if err != nil {
 		fmt.Printf("Mount fail: %s\n", err)
 		os.Exit(1)
@@ -64,7 +67,8 @@ func main() {
 	go mp.Serve()
 	defer mp.Unmount()
 
-	go updater(mp.Path())
+	// now that database is mounted, run updater
+	go updater(base)
 	l := listenUnix()
 	if l != nil {
 		defer l.Close()

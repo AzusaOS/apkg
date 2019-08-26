@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -24,14 +23,7 @@ type PkgFS struct {
 	inoCacheL sync.RWMutex
 }
 
-func New(name string, root RootInode) (*PkgFS, error) {
-	mountPoint := filepath.Join("/pkg", name)
-	if os.Geteuid() != 0 {
-		h := os.Getenv("HOME")
-		if h != "" {
-			mountPoint = filepath.Join(h, "pkg", name)
-		}
-	}
+func New(mountPoint string, root RootInode) (*PkgFS, error) {
 	if err := os.MkdirAll(mountPoint, 0755); err != nil {
 		return nil, err
 	}

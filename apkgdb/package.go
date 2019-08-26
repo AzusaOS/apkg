@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"io"
 	"log"
@@ -84,13 +85,15 @@ func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
 
 	pkg := &Package{
 		parent:   d,
-		size:     binary.BigEndian.Uint64(v[1:8]),
+		size:     binary.BigEndian.Uint64(v[1:9]),
 		startIno: binary.BigEndian.Uint64(v[9:17]),
 		inodes:   binary.BigEndian.Uint64(v[17:25]),
 		name:     string(v[25:]),
 		path:     string(tx.Bucket([]byte("path")).Get(hash)),
 		hash:     bytesDup(hash),
 	}
+
+	log.Printf("apkgdb: spawning package %s (hash=%s)", pkg.name, hex.EncodeToString(hash))
 
 	// read raw values (assuming buckets will exist)
 	pkg.rawHeader = bytesDup(tx.Bucket([]byte("header")).Get(hash))
