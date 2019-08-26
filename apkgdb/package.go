@@ -70,8 +70,22 @@ func (p *Package) Value() uint64 {
 	return p.startIno
 }
 
+var (
+	pkgCache  = make(map[[32]byte]*Package)
+	pkgCacheL sync.RWMutex
+)
+
 func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
+	var hashB [32]byte
+	copy(hashB[:], hash)
+
 	// load a package based on its hash (from within a bolt transaction)
+	pkgCacheL.RLock()
+	if v, ok := pkgCache[hashB]; ok {
+		pkgCacheL.RUnlock()
+		return v, nil
+	}
+	pkgCacheL.RUnlock()
 
 	b := tx.Bucket([]byte("pkg"))
 	if b == nil {
@@ -93,12 +107,21 @@ func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
 		hash:     bytesDup(hash),
 	}
 
-	log.Printf("apkgdb: spawning package %s (hash=%s)", pkg.name, hex.EncodeToString(hash))
-
 	// read raw values (assuming buckets will exist)
 	pkg.rawHeader = bytesDup(tx.Bucket([]byte("header")).Get(hash))
 	pkg.rawSig = bytesDup(tx.Bucket([]byte("sig")).Get(hash))
 	pkg.rawMeta = bytesDup(tx.Bucket([]byte("meta")).Get(hash))
+
+	// keep pkg in cache
+	pkgCacheL.Lock()
+	if v, ok := pkgCache[hashB]; ok {
+		pkgCacheL.Unlock()
+		return v, nil
+	}
+	pkgCache[hashB] = pkg
+	pkgCacheL.Unlock()
+
+	log.Printf("apkgdb: spawned package %s (hash=%s)", pkg.name, hex.EncodeToString(hash))
 
 	// * pkg → package hash → package info (0 + size + inode num + inode count + package name)
 	return pkg, nil
