@@ -3,6 +3,7 @@ package apkgdb
 import (
 	"encoding/binary"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -38,13 +39,22 @@ func New(prefix, name, path string) (*DB, error) {
 	}
 
 	if res.CurrentVersion() == "" {
-		log.Printf("apkgdb: no data yet, will download")
+		log.Printf("apkgdb: no data yet, download initial database")
 		// need to perform download now
 		_, err = res.download("")
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		// check for updates
+		err = res.update()
+		if err != nil {
+			log.Printf("apkgdb: failed to update: %s", err)
+		}
 	}
+
+	go res.updateThread()
+	http.Handle("/apkgdb/"+name, res)
 
 	return res, nil
 }
@@ -89,40 +99,6 @@ func (d *DB) nextInode() (n uint64) {
 	})
 	return
 }
-
-/*
-	res := &DB{DBData: r, upd: make(chan struct{})}
-
-	ino, err := r.fs.AllocateInode(res)
-	if err != nil {
-		return nil, err
-	}
-	r.fs.RegisterRootInode(ino, r.name)
-
-	if !isNew {
-		// check for updates
-		err = res.update()
-		if err != nil {
-			log.Printf("apkgdb: failed to update: %s", err)
-		}
-	}
-
-	http.Handle("/apkgdb/"+name, res)
-
-	go res.updateThread()
-
-	return res, nil
-}
-
-func (d *DBData) Close() error {
-	if d.data == nil {
-		return nil
-	}
-	data := d.data
-	d.data = nil
-	runtime.SetFinalizer(d, nil)
-	return syscall.Munmap(data)
-}*/
 
 func (d *DB) Close() error {
 	return d.db.Close()

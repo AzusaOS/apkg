@@ -61,8 +61,9 @@ func (d *DB) download(v string) (bool, error) {
 	return true, err
 }
 
-func (d *DB) update() {
-	d.download(d.CurrentVersion())
+func (d *DB) update() error {
+	_, err := d.download(d.CurrentVersion())
+	return err
 }
 
 func (d *DB) updateThread() {
