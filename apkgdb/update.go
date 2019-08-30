@@ -2,6 +2,7 @@ package apkgdb
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -20,24 +21,53 @@ func (d *DB) download(v string) (bool, error) {
 	version, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		return false, fmt.Errorf("failed to fetch information on latest database version: %s", resp.Status)
+	}
+
 	if err != nil {
 		return false, err
 	}
 
 	version = bytes.TrimSpace(version)
 
-	if v != "" && v == string(version) {
-		// no update needed
-		return false, nil
+	resp = nil
+
+	if v != "" {
+		if v == string(version) {
+			// no update needed
+			return false, nil
+		}
+
+		// check for delta
+		log.Printf("apkgdb: Downloading %s database delta to version %s ...", d.name, version)
+
+		resp, err = http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/" + v + "-" + string(version) + ".bin")
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			log.Printf("apkgdb: Delta download failed with error %s, will download full database", resp.Status)
+			// fallback to downloading the whole db
+			resp = nil
+		}
 	}
 
-	log.Printf("apkgdb: Downloading %s database version %s ...", d.name, version)
+	if resp == nil {
+		log.Printf("apkgdb: Downloading %s database version %s ...", d.name, version)
 
-	resp, err = http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/" + string(version) + ".bin")
-	if err != nil {
-		return false, err
+		resp, err = http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/" + string(version) + ".bin")
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			return false, fmt.Errorf("failed to fetch latest database: %s", resp.Status)
+		}
 	}
-	defer resp.Body.Close()
 
 	out, err := ioutil.TempFile("", "apkg")
 	if err != nil {
