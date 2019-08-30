@@ -100,8 +100,8 @@ func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 
 	// TODO sub addref()
 
-	out.SetEntryTimeout(time.Second)
-	out.SetAttrTimeout(time.Second)
+	out.SetEntryTimeout(30 * time.Second)
+	out.SetAttrTimeout(30 * time.Second)
 	return fuse.OK
 }
 
@@ -123,7 +123,7 @@ func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 
 	out.Ino = input.NodeId
 	ino.FillAttr(&out.Attr)
-	out.SetTimeout(time.Second)
+	out.SetTimeout(30 * time.Second)
 	return fuse.OK
 }
 
@@ -150,7 +150,7 @@ func (p *PkgFS) Open(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.OpenO
 	}
 
 	// check if can open
-	err = ino.Open(input.Flags)
+	out.OpenFlags, err = ino.Open(input.Flags)
 	if err != nil {
 		return toStatus(err)
 	}
@@ -193,7 +193,7 @@ func (p *PkgFS) OpenDir(cancel <-chan struct{}, input *fuse.OpenIn, out *fuse.Op
 		return fuse.ENOTDIR
 	}
 
-	err = ino.OpenDir()
+	out.OpenFlags, err = ino.OpenDir()
 	return toStatus(err)
 }
 

@@ -15,8 +15,8 @@ type Inode interface {
 	FillAttr(attr *fuse.Attr) error
 	Readlink() ([]byte, error)
 
-	Open(flags uint32) error
-	OpenDir() error
+	Open(flags uint32) (uint32, error)
+	OpenDir() (uint32, error)
 	ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error
 
 	// functions for refcount

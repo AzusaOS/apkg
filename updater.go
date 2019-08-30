@@ -14,7 +14,6 @@ func updater(p string) {
 	v := DATE_TAG
 
 	for {
-		//
 		n, err := os.Readlink(p)
 		if err != nil {
 			log.Printf("apkg: failed to read latest version: %s", err)
@@ -38,6 +37,8 @@ func updater(p string) {
 				log.Printf("apkg: update failed, unknown executable: %s", err)
 				break
 			}
+
+			// TODO: use output of readlink instead to build path?
 			newV, err := os.Open(filepath.Join(p, "apkg"))
 			if err != nil {
 				log.Printf("apkg: update failed, failed to read new version: %s", err)

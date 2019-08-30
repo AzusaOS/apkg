@@ -41,12 +41,12 @@ func (i symlinkInodeObj) Readlink() ([]byte, error) {
 	return []byte(i), nil
 }
 
-func (i symlinkInodeObj) Open(flags uint32) error {
-	return os.ErrInvalid
+func (i symlinkInodeObj) Open(flags uint32) (uint32, error) {
+	return 0, os.ErrInvalid
 }
 
-func (i symlinkInodeObj) OpenDir() error {
-	return os.ErrInvalid
+func (i symlinkInodeObj) OpenDir() (uint32, error) {
+	return 0, os.ErrInvalid
 }
 
 func (i symlinkInodeObj) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error {

@@ -34,12 +34,12 @@ func (i *DB) Readlink() ([]byte, error) {
 	return nil, os.ErrInvalid
 }
 
-func (i *DB) Open(flags uint32) error {
-	return os.ErrInvalid
+func (i *DB) Open(flags uint32) (uint32, error) {
+	return 0, os.ErrInvalid
 }
 
-func (i *DB) OpenDir() error {
-	return os.ErrPermission
+func (i *DB) OpenDir() (uint32, error) {
+	return 0, os.ErrPermission
 }
 
 func (i *DB) ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error {
