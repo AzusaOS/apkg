@@ -45,26 +45,25 @@ Note: this is EXPERIMENTAL. A lot of stuff is missing. Do not use unless you kno
 
 Encoding is big endian unless specified.
 
-## Master DB
+## DB file
 
-Master DB: one file + signature.
-
-* Header
-* ID & basic pkg info for each package (inode range, etc)
-* Signature
+DB file: one file + signature.
 
 Header:
 
-* Magic "APDB"
-* File Format Version (0x00000001)
-* Flags int64 (beta, etc)
-* Creation date/time
-* OS (linux, darwin, windows, etc)
-* Architecture (amd64, i386, etc)
-* Location in file of indices, length, all int32 (file should never reach 4GB)
-* ... more?
+* 0 Magic "APDB"
+* 4 File Format Version uint32 (0x00000002)
+* 8 Flags uint64 (reserved for future use)
+* 16 Creation date/time
+* 32 OS (linux, darwin, windows, etc)
+* 36 Architecture (amd64, i386, etc)
+* 40 Package count uint32
+* 44 archive name (32 bytes, NUL padded)
+* 76 data location (always headerlen+apkgsig.SignatureSize)
+* 80 data length
+* 84 data sha256 (32 bytes)
 
-Basic pkg info:
+Basic pkg info (starts at data):
 
 * 0x00 (uint8)
 * Header hash (32 bytes)
@@ -74,7 +73,8 @@ Basic pkg info:
 * File relative path (varblob)
 * Raw header (varblob)
 * Raw signature (varblob)
-* Raw meta data (varblob)
+* Raw meta data (json, varblob)
+* database metadata (json, varblob)
 
 ## Data File
 
