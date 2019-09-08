@@ -88,7 +88,7 @@ func processDb(name string, k hsm.Key) error {
 		db, ok := files[fk]
 		if !ok {
 			// invoking db here will cause download of the whole db as currently known
-			db, err := apkgdb.NewOsArch(apkgdb.PKG_URL_PREFIX, name, path.Join(tempDir, meta.Os, meta.Arch), meta.Os, meta.Arch)
+			db, err = apkgdb.NewOsArch(apkgdb.PKG_URL_PREFIX, name, path.Join(tempDir, meta.Os, meta.Arch), meta.Os, meta.Arch)
 			if err != nil {
 				return err
 			}
