@@ -102,10 +102,10 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 			// write package data to disk
 			w.Write([]byte{0})
 			w.Write(h)
-			w.Write(pkg[:8])        // size is already bigendian in our database
-			w.Write(pkg[8*2 : 8*3]) // inodes count, already big endian
+			w.Write(pkg[1:9])   // size is already bigendian in our database
+			w.Write(pkg[17:25]) // inodes count, already big endian
 
-			apkgsig.WriteVarblob(w, v[8+32:]) // name
+			apkgsig.WriteVarblob(w, pkg[25:]) // name
 			apkgsig.WriteVarblob(w, pathB.Get(h))
 			apkgsig.WriteVarblob(w, headerB.Get(h))
 			apkgsig.WriteVarblob(w, sigB.Get(h))
@@ -176,6 +176,8 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	f.Write(sigB.Bytes())
 
 	f.Close()
+
+	// TODO: call index on file to check if the generated file is 100% valid
 
 	// Generate LATEST.txt
 	lat, err := os.Create(path.Join(d.path, "LATEST.txt"))
