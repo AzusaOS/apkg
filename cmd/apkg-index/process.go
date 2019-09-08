@@ -96,8 +96,10 @@ func processDb(name string, k hsm.Key) error {
 			files[fk] = db
 		}
 
-		db.AddPackage(rpath, info, p)
-		_ = p
+		err = db.AddPackage(rpath, info, p)
+		if err != nil {
+			log.Printf("failed to index package: %s", err)
+		}
 		return nil
 	})
 	if err != nil {

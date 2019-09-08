@@ -23,6 +23,13 @@ import (
 	"github.com/petar/GoLLRB/llrb"
 )
 
+type packageMetaInfo struct {
+	FullName string `json:"full_name"`
+	Inodes   uint64 `json:"inodes"`
+	Arch     string `json:"arch"`
+	Os       string `json:"os"`
+}
+
 type Package struct {
 	parent   *DB
 	startIno uint64
@@ -247,6 +254,16 @@ func (d *DB) OpenPackage(f *os.File) (*Package, error) {
 	if !bytes.Equal(hth[:], table_hash) {
 		return nil, errors.New("corrupted hash table")
 	}
+
+	// set name & inodes from meta
+	var meta packageMetaInfo
+	err = p.Meta(&meta)
+	if err != nil {
+		return nil, err
+	}
+
+	p.name = meta.FullName
+	p.inodes = meta.Inodes
 
 	return p, nil
 }
