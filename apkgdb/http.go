@@ -14,8 +14,9 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "list":
 		// return list of packages
 		d.db.View(func(tx *bolt.Tx) error {
-			return tx.Bucket([]byte("pkg")).ForEach(func(k, v []byte) error {
-				_, err := fmt.Fprintf(w, "%s\n", k)
+			// use p2i for correct package ordering
+			return tx.Bucket([]byte("p2i")).ForEach(func(k, v []byte) error {
+				_, err := fmt.Fprintf(w, "%s\n", v[32+8:])
 				return err
 			})
 		})
