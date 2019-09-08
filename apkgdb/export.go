@@ -2,8 +2,6 @@ package apkgdb
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -102,8 +100,8 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 			// write package data to disk
 			w.Write([]byte{0})
 			w.Write(h)
-			w.Write(pkg[1:9])   // size is already bigendian in our database
-			w.Write(pkg[17:25]) // inodes count, already big endian
+			w.Write(pkg[1:9])       // size is already bigendian in our database
+			w.Write(pkg[17+4 : 25]) // inodes count, already big endian but needs to be made uint32
 
 			apkgsig.WriteVarblob(w, pkg[25:]) // name
 			apkgsig.WriteVarblob(w, pathB.Get(h))
@@ -142,38 +140,20 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 
-	log.Printf("apkgdb: Signing exported database...")
-	sigB := &bytes.Buffer{}
-	vInt := make([]byte, binary.MaxVarintLen64)
-	vIntL := binary.PutUvarint(vInt, 0x0001) // Signature type 1 = ed25519
-	sigB.Write(vInt[:vIntL])
-
-	sig_pub, err := k.PublicBlob()
+	log.Printf("apkgdb: Exported %d packages, signing...", count)
+	sigB, err := apkgsig.Sign(k, header)
 	if err != nil {
 		return err
 	}
-
-	apkgsig.WriteVarblob(sigB, sig_pub)
-
-	// use raw hash for ed25519
-	sig_blob, err := k.Sign(rand.Reader, header, crypto.Hash(0))
-	if err != nil {
-		return err
-	}
-	apkgsig.WriteVarblob(sigB, sig_blob)
 
 	// verify signature
-	_, err = apkgsig.VerifyDb(header, bytes.NewReader(sigB.Bytes()))
+	_, err = apkgsig.VerifyDb(header, bytes.NewReader(sigB))
 	if err != nil {
 		return err
-	}
-
-	if sigB.Len() > apkgsig.SignatureSize {
-		return errors.New("signature buffer not large enough!")
 	}
 
 	f.Seek(196, io.SeekStart)
-	f.Write(sigB.Bytes())
+	f.Write(sigB)
 
 	f.Close()
 

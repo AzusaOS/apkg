@@ -221,7 +221,7 @@ func (d *DB) index(r *os.File) error {
 				return err
 			}
 
-			log.Printf("apkgdb: read from db pkg %s size=%d inodes=%d", name, size, inodes)
+			//log.Printf("apkgdb: read from db pkg %s size=%d inodes=%d", name, size, inodes)
 
 			// do we already have this hash?
 			exInfo := pkgB.Get(hash)
