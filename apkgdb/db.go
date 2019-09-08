@@ -49,7 +49,6 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	}
 
 	if res.CurrentVersion() == "" {
-		log.Printf("apkgdb: no data yet, download initial database")
 		// need to perform download now
 		_, err = res.download("")
 		if err != nil {
