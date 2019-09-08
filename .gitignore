@@ -3,6 +3,6 @@
 /main.bin
 .*.swp
 /data
-/apkg-convert/apkg-convert
-/apkg-index/apkg-index
-/apkg-ctrl/apkg-ctrl
+/cmd/apkg-convert/apkg-convert
+/cmd/apkg-index/apkg-index
+/cmd/apkg-ctrl/apkg-ctrl

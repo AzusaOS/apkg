@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -19,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"git.atonline.com/azusa/apkg/apkgdb"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/MagicalTux/hsm"
 )
@@ -47,60 +49,54 @@ type dbFile struct {
 }
 
 func processDb(name string, k hsm.Key) error {
-	dir := filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist", name)
-	files := make(map[fileKey]*dbFile)
-	now := time.Now()
-	stamp := now.UTC().Format("20060102150405")
+	// instanciate db
+	tempDir, err := ioutil.TempDir("", "apkgidx")
+	if err != nil {
+		return err
+	}
 
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	dir := filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist", name)
+	files := make(map[fileKey]*apkgdb.DB)
+
+	err = filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
 		if !info.Mode().IsRegular() {
 			return nil
 		}
-		if !strings.HasSuffix(path, ".apkg") {
+		if !strings.HasSuffix(fpath, ".apkg") {
 			return nil
 		}
-		rpath := strings.TrimLeft(strings.TrimPrefix(path, dir), "/")
-		f, err := os.Open(path)
+		rpath := strings.TrimLeft(strings.TrimPrefix(fpath, dir), "/")
+		f, err := os.Open(fpath)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 
 		log.Printf("Indexing: %s", rpath)
-		p, err := parsePkgHeader(f)
+		p, err := (*apkgdb.DB)(nil).OpenPackage(f)
 		if err != nil {
 			return err
 		}
 
-		fk := fileKey{arch: p.meta.Arch, os: p.meta.Os}
+		var meta pkgMeta
+		err = p.Meta(&meta)
+		if err != nil {
+			return err
+		}
+
+		fk := fileKey{arch: meta.Arch, os: meta.Os}
 		db, ok := files[fk]
 		if !ok {
-			db = &dbFile{
-				path:   filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/db", name, fk.os, fk.arch, stamp+".bin"),
-				stamp:  stamp,
-				arch:   fk.arch,
-				os:     fk.os,
-				name:   name,
-				idxFN:  make(map[string]int64),
-				idxIno: make(map[uint64]int64),
-			}
-
-			// make sure dir exists
-			os.MkdirAll(filepath.Dir(db.path), 0755)
-
-			// open db
-			db.f, err = os.Create(db.path + "~")
+			// invoking db here will cause download of the whole db as currently known
+			db, err := apkgdb.NewOsArch(apkgdb.PKG_URL_PREFIX, name, path.Join(tempDir, meta.Os, meta.Arch), meta.Os, meta.Arch)
 			if err != nil {
 				return err
 			}
-			err = db.init(now)
-			if err != nil {
-				return err
-			}
+
 			files[fk] = db
 		}
 
-		db.index(rpath, info, p)
+		db.AddPackage(rpath, info, p)
 		_ = p
 		return nil
 	})
@@ -109,13 +105,10 @@ func processDb(name string, k hsm.Key) error {
 	}
 
 	for _, db := range files {
-		err = db.finalize(k)
+		err = db.ExportAndUpload(k)
 		if err != nil {
 			return err
 		}
-	}
-	for _, db := range files {
-		db.upload()
 	}
 
 	return nil

@@ -287,3 +287,99 @@ func (d *DB) index(r *os.File) error {
 
 	return nil
 }
+
+func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
+	// add package to database if not exist
+	startIno := d.nextInode()
+
+	// initialize a write transaction
+	return d.db.Update(func(tx *bolt.Tx) error {
+		// create/get buckets
+		infoB, err := tx.CreateBucketIfNotExists([]byte("info"))
+		if err != nil {
+			return err
+		}
+		i2pB, err := tx.CreateBucketIfNotExists([]byte("i2p"))
+		if err != nil {
+			return err
+		}
+		p2iB, err := tx.CreateBucketIfNotExists([]byte("p2i"))
+		if err != nil {
+			return err
+		}
+		pkgB, err := tx.CreateBucketIfNotExists([]byte("pkg"))
+		if err != nil {
+			return err
+		}
+		headerB, err := tx.CreateBucketIfNotExists([]byte("header"))
+		if err != nil {
+			return err
+		}
+		sigB, err := tx.CreateBucketIfNotExists([]byte("sig"))
+		if err != nil {
+			return err
+		}
+		metaB, err := tx.CreateBucketIfNotExists([]byte("meta"))
+		if err != nil {
+			return err
+		}
+		pathB, err := tx.CreateBucketIfNotExists([]byte("path"))
+		if err != nil {
+			return err
+		}
+
+		exInfo := pkgB.Get(p.hash)
+		if exInfo != nil {
+			// we already have this package
+			return errors.New("package already in database")
+		}
+
+		inoBin := make([]byte, 8)
+		binary.BigEndian.PutUint64(inoBin, startIno)
+
+		nameC := collatedVersion(string(p.name))
+		sizeB := make([]byte, 8)
+		binary.BigEndian.PutUint64(sizeB, p.size)
+		inoCountB := make([]byte, 8)
+		binary.BigEndian.PutUint64(inoCountB, uint64(p.inodes))
+
+		// store all
+		err = i2pB.Put(inoBin, append(append(append([]byte(nil), p.hash...), inoCountB...), p.name...))
+		if err != nil {
+			return err
+		}
+		err = p2iB.Put(nameC, append(append(append([]byte(nil), inoBin...), p.hash...), p.name...))
+		if err != nil {
+			return err
+		}
+		err = pkgB.Put(p.hash, append(append(append(append([]byte{0}, sizeB...), inoBin...), inoCountB...), p.name...))
+		if err != nil {
+			return err
+		}
+		err = headerB.Put(p.hash, p.rawHeader)
+		if err != nil {
+			return err
+		}
+		err = sigB.Put(p.hash, p.rawSig)
+		if err != nil {
+			return err
+		}
+		err = metaB.Put(p.hash, p.rawMeta)
+		if err != nil {
+			return err
+		}
+		err = pathB.Put(p.hash, []byte(rpath))
+		if err != nil {
+			return err
+		}
+
+		//log.Printf("read package %s size=%d", name, size)
+
+		startIno += uint64(p.inodes) + 1
+
+		nextInoB := make([]byte, 8)
+		binary.BigEndian.PutUint64(nextInoB, startIno)
+		infoB.Put([]byte("next_inode"), nextInoB)
+		return nil
+	})
+}
