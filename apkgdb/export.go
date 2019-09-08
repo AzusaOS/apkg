@@ -178,6 +178,16 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	f.Close()
 
 	// TODO: call index on file to check if the generated file is 100% valid
+	f, err = os.Open(fn)
+	if err != nil {
+		return err // ???
+	}
+
+	err = d.index(f)
+	f.Close()
+	if err != nil {
+		return err // failed to index: must be an error in file creation
+	}
 
 	// Generate LATEST.txt
 	lat, err := os.Create(path.Join(d.path, "LATEST.txt"))
