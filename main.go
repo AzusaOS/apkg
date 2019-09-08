@@ -12,8 +12,6 @@ import (
 	"git.atonline.com/azusa/apkg/apkgfs"
 )
 
-const PKG_URL_PREFIX = "https://pkg.azusa.jp/"
-
 var dbMain *apkgdb.DB
 var shutdownChan = make(chan struct{})
 var DATE_TAG = "unknown"
@@ -52,7 +50,7 @@ func main() {
 			base = filepath.Join(h, "pkg")
 		}
 	}
-	dbMain, err = apkgdb.New(PKG_URL_PREFIX, db, p)
+	dbMain, err = apkgdb.New(apkgdb.PKG_URL_PREFIX, db, p)
 	if err != nil {
 		log.Printf("db: failed to load: %s", err)
 		return

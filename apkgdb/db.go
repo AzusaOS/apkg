@@ -6,15 +6,20 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )
 
+const PKG_URL_PREFIX = "https://pkg.azusa.jp/"
+
 type DB struct {
 	prefix string
 	path   string
 	name   string
+	os     string
+	arch   string
 	db     *bolt.DB
 	upd    chan struct{}
 
@@ -23,6 +28,10 @@ type DB struct {
 }
 
 func New(prefix, name, path string) (*DB, error) {
+	return NewOsArch(prefix, name, path, runtime.GOOS, runtime.GOARCH)
+}
+
+func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	os.MkdirAll(path, 0755) // make sure dir exists
 	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, nil)
 	if err != nil {
@@ -34,6 +43,8 @@ func New(prefix, name, path string) (*DB, error) {
 		prefix: prefix,
 		path:   path,
 		name:   name,
+		os:     dbos,
+		arch:   dbarch,
 		ino:    llrb.New(),
 		upd:    make(chan struct{}),
 	}

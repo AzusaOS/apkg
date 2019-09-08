@@ -8,12 +8,11 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"time"
 )
 
 func (d *DB) download(v string) (bool, error) {
-	resp, err := http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/LATEST.txt")
+	resp, err := http.Get(d.prefix + "db/" + d.name + "/" + d.os + "/" + d.arch + "/LATEST.txt")
 	if err != nil {
 		return false, err
 	}
@@ -42,7 +41,7 @@ func (d *DB) download(v string) (bool, error) {
 		// check for delta
 		log.Printf("apkgdb: Downloading %s database delta to version %s ...", d.name, version)
 
-		resp, err = http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/" + v + "-" + string(version) + ".bin")
+		resp, err = http.Get(d.prefix + "db/" + d.name + "/" + d.os + "/" + d.arch + "/" + v + "-" + string(version) + ".bin")
 		if err != nil {
 			return false, err
 		}
@@ -58,7 +57,7 @@ func (d *DB) download(v string) (bool, error) {
 	if resp == nil {
 		log.Printf("apkgdb: Downloading %s database version %s ...", d.name, version)
 
-		resp, err = http.Get(d.prefix + "db/" + d.name + "/" + runtime.GOOS + "/" + runtime.GOARCH + "/" + string(version) + ".bin")
+		resp, err = http.Get(d.prefix + "db/" + d.name + "/" + d.os + "/" + d.arch + "/" + string(version) + ".bin")
 		if err != nil {
 			return false, err
 		}
