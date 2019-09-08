@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -55,6 +56,7 @@ func main() {
 		log.Printf("db: failed to load: %s", err)
 		return
 	}
+	http.Handle("/apkgdb/"+db, dbMain)
 
 	// mount database
 	mp, err := apkgfs.New(filepath.Join(base, db), dbMain)

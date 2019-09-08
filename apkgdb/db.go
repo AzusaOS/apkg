@@ -3,7 +3,6 @@ package apkgdb
 import (
 	"encoding/binary"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -65,7 +64,6 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	}
 
 	go res.updateThread()
-	http.Handle("/apkgdb/"+name, res)
 
 	return res, nil
 }
