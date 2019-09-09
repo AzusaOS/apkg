@@ -1,11 +1,12 @@
 module git.atonline.com/azusa/apkg
 
 require (
+	github.com/MagicalTux/go-fuse v2.0.3-0.20190909094407-0195843ac9d5+incompatible
 	github.com/MagicalTux/hsm v0.1.3
 	github.com/boltdb/bolt v1.3.1
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/hanwen/go-fuse v1.0.1-0.20190404190931-928afa1cac8a
+	github.com/hanwen/go-fuse/v2 v2.0.2 // indirect
 	github.com/petar/GoLLRB v0.0.0-20190514000832-33fb24c13b99
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect

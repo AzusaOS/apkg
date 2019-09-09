@@ -4,7 +4,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/hanwen/go-fuse/fuse"
+	"github.com/MagicalTux/go-fuse/fuse"
 )
 
 type Inode interface {

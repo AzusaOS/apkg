@@ -1,7 +1,7 @@
 package apkgfs
 
 import (
-	"github.com/hanwen/go-fuse/fuse"
+	"github.com/MagicalTux/go-fuse/fuse"
 )
 
 func toStatus(err error) fuse.Status {

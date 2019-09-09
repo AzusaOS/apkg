@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hanwen/go-fuse/fuse"
+	"github.com/MagicalTux/go-fuse/fuse"
 )
 
 type PkgFS struct {

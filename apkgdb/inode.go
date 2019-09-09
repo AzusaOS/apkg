@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 
 	"git.atonline.com/azusa/apkg/apkgfs"
-	"github.com/hanwen/go-fuse/fuse"
+	"github.com/MagicalTux/go-fuse/fuse"
 )
 
 func (i *DB) Mode() os.FileMode {
