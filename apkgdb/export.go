@@ -24,7 +24,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	// generate a binary file with the full db, and upload it
 
 	now := time.Now()
-	stamp := now.Format("20060102150405")
+	stamp := now.UTC().Format("20060102150405")
 
 	fn := path.Join(d.path, stamp+".bin")
 
