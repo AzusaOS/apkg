@@ -9,7 +9,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -330,7 +329,7 @@ func (p *Package) dlFile() {
 	lpath := p.lpath()
 
 	// download this package
-	resp, err := http.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + p.path)
+	resp, err := hClient.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + p.path)
 	if err != nil {
 		log.Printf("apkgdb: failed to get package: %s", err)
 		return

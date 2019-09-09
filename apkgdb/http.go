@@ -1,9 +1,11 @@
 package apkgdb
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 
+	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/boltdb/bolt"
 )
 
@@ -27,4 +29,11 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Version: %d\n", d.CurrentVersion())
 		//fmt.Fprintf(w, "Package count: %d\n", d.count)
 	}
+}
+
+// http client (global)
+var hClient = &http.Client{
+	Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{RootCAs: apkgsig.CACerts()},
+	},
 }
