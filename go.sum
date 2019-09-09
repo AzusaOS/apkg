@@ -14,6 +14,8 @@ github.com/MagicalTux/go-fuse v2.0.3-0.20190909090532-f887d72fbbd7+incompatible 
 github.com/MagicalTux/go-fuse v2.0.3-0.20190909090532-f887d72fbbd7+incompatible/go.mod h1:VCRtF2RVNeF2iff/4pMctOIrHuyQbVBoeHTYy4xg3mg=
 github.com/MagicalTux/go-fuse v2.0.3-0.20190909094407-0195843ac9d5+incompatible h1:IqNVa7aflmMguUD8SUIg2frXDTWjuDU86V6KF6BUW2o=
 github.com/MagicalTux/go-fuse v2.0.3-0.20190909094407-0195843ac9d5+incompatible/go.mod h1:VCRtF2RVNeF2iff/4pMctOIrHuyQbVBoeHTYy4xg3mg=
+github.com/MagicalTux/go-fuse v2.0.3-0.20190909095800-945c2db8ef22+incompatible h1:cI+1keSkLxCj0x0yW5FmeY20jFEvIkt6rggEjIBIx4o=
+github.com/MagicalTux/go-fuse v2.0.3-0.20190909095800-945c2db8ef22+incompatible/go.mod h1:VCRtF2RVNeF2iff/4pMctOIrHuyQbVBoeHTYy4xg3mg=
 github.com/MagicalTux/hsm v0.0.0-20190417000233-acc02c30d85b h1:awCeRTl7uxqBXkcybATvLeDbsGjBal8TIB4A89lw8UM=
 github.com/MagicalTux/hsm v0.0.0-20190417000233-acc02c30d85b/go.mod h1:Uo/8co2QL8ce5ZOh/bin8+GXspO0XdGakH8nn0Qz+F8=
 github.com/MagicalTux/hsm v0.0.0-20190417072830-ecaa5045b2ab h1:EfljpKm4+AGILgC8xYm1zEkAfe76XcQD/V9GKAsNw2Q=
