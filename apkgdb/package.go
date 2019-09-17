@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -329,7 +330,8 @@ func (p *Package) dlFile() {
 	lpath := p.lpath()
 
 	// download this package
-	resp, err := hClient.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + p.path)
+	// need to replace "+" with "%2B" for S3
+	resp, err := hClient.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + strings.ReplaceAll(p.path, "+", "%2B"))
 	if err != nil {
 		log.Printf("apkgdb: failed to get package: %s", err)
 		return
