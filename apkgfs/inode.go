@@ -28,6 +28,7 @@ type RootInode interface {
 	Inode
 
 	GetInode(ino uint64) (Inode, error)
+	StatFs(out *fuse.StatfsOut) error
 }
 
 // see: https://golang.org/src/os/stat_linux.go
