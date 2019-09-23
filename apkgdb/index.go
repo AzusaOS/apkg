@@ -385,3 +385,15 @@ func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
 		return nil
 	})
 }
+
+func (d *DB) RemovePackage(name string) error {
+	// lookup & remove package
+	log.Printf("apkgdb: removing %s", name)
+
+	return d.db.Update(func(tx *bolt.Tx) error {
+		p2iB := tx.Bucket([]byte("p2i")) // we use p2i for the foreach in export too, removing from here is enough
+		nameC := collatedVersion(name)
+
+		return p2iB.Delete(nameC)
+	})
+}
