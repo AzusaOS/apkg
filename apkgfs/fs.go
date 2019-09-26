@@ -230,20 +230,8 @@ func (p *PkgFS) ReadDirPlus(cancel <-chan struct{}, input *fuse.ReadIn, out *fus
 //
 
 func (p *PkgFS) StatFs(cancel <-chan struct{}, input *fuse.InHeader, out *fuse.StatfsOut) (code fuse.Status) {
-	return fuse.ENOTSUP
-	/*
-		loadDb() // ensure db is ready
-
-		out.Blocks = (uint64(dbMain.Length()+dbMain.PackagesSize()) / 4096) + 1
-		out.Bfree = 0
-		out.Bavail = 0
-		out.Files = dbMain.Inodes() + 2 // root & INFO
-		out.Ffree = 0
-		out.Bsize = 4096
-		out.NameLen = 255
-		out.Frsize = 4096 // Fragment size
-
-		return fuse.OK*/
+	err := p.root.StatFs(out)
+	return toStatus(err)
 }
 
 // Write methods
