@@ -27,7 +27,8 @@ func collatedVersion(v string) (r []byte) {
 		}
 
 		// add digits len in string
-		r = append(r, byte(i-1))
+		// add 0x7f so that digit strings are ranked after letters (ie a < 1)
+		r = append(r, byte(0x7f+i))
 		r = append(r, []byte(v[:i])...)
 		v = v[i:]
 	}

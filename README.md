@@ -33,7 +33,7 @@ For example, package foobar v1.2.3 released as part of the core will be called c
 
 In order for package names to be appropriately sorted, the following collation rules are applied when sorting keys are generated:
 
-* Series of digits are prefixed with a single byte which value is how many digits are following minus 1. For example "1" becomes "<00>1" and 42 becomes "<01>42", this ensures sorting for version numbers.
+* Series of digits are prefixed with a single byte which value is how many digits are following plus 0x7f. For example "1" becomes "<80>1" and 42 becomes "<81>42", this ensures sorting for version numbers.
 
 # Installing
 
