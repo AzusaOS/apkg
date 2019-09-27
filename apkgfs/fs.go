@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -28,6 +29,21 @@ func New(mountPoint string, root RootInode) (*PkgFS, error) {
 		return nil, err
 	}
 
+	mkPath := filepath.Dir(mountPoint)
+	mkName := filepath.Base(mountPoint)
+	mountOverlay := false
+
+	if s, err := os.Stat(filepath.Join(mkPath, "."+mkName+"-rw")); os.Geteuid() == 0 && err == nil && s.IsDir() {
+		// mount as an overlay
+		if err = os.MkdirAll(filepath.Join(mkPath, "."+mkName+"-ro"), 0755); err == nil {
+			if err = os.MkdirAll(filepath.Join(mkPath, "."+mkName+"-work"), 0755); err == nil {
+				// proceed with overlay
+				mountOverlay = true
+				mountPoint = filepath.Join(mkPath, "."+mkName+"-ro")
+			}
+		}
+	}
+
 	res := &PkgFS{
 		RawFileSystem: fuse.NewDefaultRawFileSystem(),
 		root:          root,
@@ -46,6 +62,17 @@ func New(mountPoint string, root RootInode) (*PkgFS, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if mountOverlay {
+		// now we need to mount an overlay fs
+		// mount -t overlay overlay -o lowerdir=/pkg/main,upperdir="$tmp_dir/.pkg-main-rw",workdir="$tmp_dir/.pkg-main-work" "$tmp_dir/pkg/main"
+		err = syscall.Mount("overlay", filepath.Join(mkPath, mkName), "overlay", syscall.MS_NOATIME, "lowerdir="+mountPoint+",upperdir="+filepath.Join(mkPath, "."+mkName+"-rw")+",workdir="+filepath.Join(mkPath, "."+mkName+"-work"))
+		if err != nil {
+			res.server.Unmount()
+			return nil, err
+		}
+	}
+
 	log.Printf("apkgfs: filesystem mounted on %s", mountPoint)
 
 	return res, nil
