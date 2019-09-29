@@ -53,10 +53,12 @@ func New(mountPoint string, root RootInode) (*PkgFS, error) {
 
 	var err error
 	res.server, err = fuse.NewServer(res, mountPoint, &fuse.MountOptions{
-		AllowOther: os.Geteuid() == 0,
-		Debug:      false,
-		FsName:     "apkg",
-		Name:       "apkg",
+		AllowOther:       os.Geteuid() == 0,
+		Debug:            false,
+		FsName:           "apkg",
+		Name:             "apkg",
+		DirectMount:      true,
+		DirectMountFlags: 0,
 	})
 
 	if err != nil {
