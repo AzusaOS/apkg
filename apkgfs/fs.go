@@ -58,7 +58,7 @@ func New(mountPoint string, root RootInode) (*PkgFS, error) {
 		FsName:           "apkg",
 		Name:             "apkg",
 		DirectMount:      true,
-		DirectMountFlags: 0,
+		DirectMountFlags: syscall.MS_NOATIME,
 	})
 
 	if err != nil {
