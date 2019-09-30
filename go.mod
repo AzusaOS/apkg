@@ -1,7 +1,7 @@
 module git.atonline.com/azusa/apkg
 
 require (
-	github.com/MagicalTux/go-fuse v2.0.3-0.20190909095800-945c2db8ef22+incompatible
+	github.com/MagicalTux/go-fuse v2.0.3-0.20190929043104-d29435ddebb4+incompatible
 	github.com/MagicalTux/hsm v0.1.3
 	github.com/boltdb/bolt v1.3.1
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
