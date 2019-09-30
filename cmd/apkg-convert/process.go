@@ -37,7 +37,7 @@ func process(k hsm.Key, filename string) error {
 	fileSize := s.Size()
 
 	log.Printf("preparing %s ...", filename)
-	sb, err := squashfs.New(f, 0, nil)
+	sb, err := squashfs.New(f, 0)
 	if err != nil {
 		return err
 	}
@@ -74,27 +74,18 @@ func process(k hsm.Key, filename string) error {
 	filename_f := strings.TrimSuffix(filepath.Base(filename), ".squashfs")
 
 	fn_a := strings.Split(filename_f, ".")
-	// cat.name.1.2.3.linux.amd64
+	// cat.name.subcat.1.2.3.linux.amd64
 
 	arch_s := fn_a[len(fn_a)-1]
 	os_s := fn_a[len(fn_a)-2]
 	fn_a = fn_a[:len(fn_a)-2]
 
-	var fn_v []string
+	cat_s := fn_a[0]
+	name_s := fn_a[1]
+	subcat_s := fn_a[2]
 
-	for {
-		frag := fn_a[len(fn_a)-1]
-		if frag[0] < '0' || frag[0] > '9' {
-			break
-		}
-		fn_a = fn_a[:len(fn_a)-1]
-		fn_v = append(fn_v, frag)
-	}
-
-	// https://github.com/golang/go/wiki/SliceTricks
-	for left, right := 0, len(fn_v)-1; left < right; left, right = left+1, right-1 {
-		fn_v[left], fn_v[right] = fn_v[right], fn_v[left]
-	}
+	fn_v := fn_a[3:]
+	fn_a = fn_a[:2]
 
 	names := []string{strings.Join(fn_a, ".")}
 	tmp := fn_a
@@ -106,11 +97,11 @@ func process(k hsm.Key, filename string) error {
 	created := time.Now()
 
 	// TODO scan squashfs file for the following kind of files:
-	// pkgconfig/*.pc
-	// bin/* (with +x)
-	// sbin/* (with +x)
-	// lib/* (with +x, or symlinks)
-	// lib32|64/* (with +x, or symlinks)
+	// pkgconfig/*.pc (if subcat_s = dev)
+	// bin/* (with +x) (if subcat_s = core|dev)
+	// sbin/* (with +x) (if subcat_s = core|dev)
+	// lib/* (with +x, or symlinks) (if subcat_s = libs)
+	// lib32|64/* (with +x, or symlinks) (if subcat_s = libs)
 	// those are to be added to metadata in "provides"
 
 	metadata := map[string]interface{}{
@@ -120,6 +111,9 @@ func process(k hsm.Key, filename string) error {
 		"names":      names,
 		"os":         os_s,
 		"arch":       arch_s,
+		"category":   cat_s,
+		"base_name":  name_s,
+		"subcat":     subcat_s,
 		"size":       s.Size(),
 		"hash":       hex.EncodeToString(tableHash[:]),
 		"blocks":     blocks,
