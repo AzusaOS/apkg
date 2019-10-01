@@ -2,6 +2,15 @@
 
 Work in progress
 
+# Required minimum system
+
+The following files or devices are required to run apkg
+
+* /dev/null
+* /dev/fuse
+* /etc/resolv.conf
+* /tmp
+
 # Structure
 
 * /pkg/ directories each containing a database (main, etc)
