@@ -31,6 +31,40 @@ type RootInode interface {
 	StatFs(out *fuse.StatfsOut) error
 }
 
+func UnixToMode(mode uint32) os.FileMode {
+	res := os.FileMode(mode & 0777)
+
+	switch {
+	case mode&syscall.S_IFCHR == syscall.S_IFCHR:
+		res |= os.ModeCharDevice
+	case mode&syscall.S_IFBLK == syscall.S_IFBLK:
+		res |= os.ModeDevice
+	case mode&syscall.S_IFDIR == syscall.S_IFDIR:
+		res |= os.ModeDir
+	case mode&syscall.S_IFIFO == syscall.S_IFIFO:
+		res |= os.ModeNamedPipe
+	case mode&syscall.S_IFLNK == syscall.S_IFLNK:
+		res |= os.ModeSymlink
+	case mode&syscall.S_IFSOCK == syscall.S_IFSOCK:
+		res |= os.ModeSocket
+	}
+
+	// extra flags
+	if mode&syscall.S_ISGID == syscall.S_ISGID {
+		res |= os.ModeSetgid
+	}
+
+	if mode&syscall.S_ISUID == syscall.S_ISUID {
+		res |= os.ModeSetuid
+	}
+
+	if mode&syscall.S_ISVTX == syscall.S_ISVTX {
+		res |= os.ModeSticky
+	}
+
+	return res
+}
+
 // see: https://golang.org/src/os/stat_linux.go
 func ModeToUnix(mode os.FileMode) uint32 {
 	res := uint32(mode.Perm())
