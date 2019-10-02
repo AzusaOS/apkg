@@ -6,9 +6,15 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"time"
 )
+
+func init() {
+	// force usage of go resolver since using libc's one causes random crashes on ubuntu
+	net.DefaultResolver.PreferGo = true
+}
 
 func (d *DB) download(v string) (bool, error) {
 	resp, err := hClient.Get(d.prefix + "db/" + d.name + "/" + d.os + "/" + d.arch + "/LATEST.txt")
