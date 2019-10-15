@@ -443,7 +443,7 @@ func (p *Package) validate() error {
 	if err != nil {
 		return err
 	}
-	sigV, err := apkgsig.VerifyPkg(header, bytes.NewReader(sig))
+	_, err = apkgsig.VerifyPkg(header, bytes.NewReader(sig))
 	if err != nil {
 		return err
 	}
