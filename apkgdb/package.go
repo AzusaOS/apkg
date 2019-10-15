@@ -447,7 +447,7 @@ func (p *Package) validate() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("apkgdb: verified package signature, signed by %s", sigV.Name)
+	//log.Printf("apkgdb: verified package signature, signed by %s", sigV.Name)
 
 	// TODO store all that stuff
 
