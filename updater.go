@@ -10,7 +10,7 @@ import (
 )
 
 func updater(p string) {
-	p = filepath.Join(p, "main/core.apkg")
+	p = filepath.Join(p, "main/azusa.apkg.core")
 	v := DATE_TAG
 
 	for {
@@ -20,7 +20,7 @@ func updater(p string) {
 			time.Sleep(1 * time.Hour)
 			continue
 		}
-		n = strings.TrimPrefix(n, "core.apkg.")
+		n = strings.TrimPrefix(n, "azusa.apkg.core.")
 		n = strings.Split(n, ".")[0]
 		//log.Printf("version: %s self=%s", n, v)
 
