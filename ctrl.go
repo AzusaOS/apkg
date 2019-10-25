@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
+
+	"golang.org/x/sys/unix"
 )
 
 func init() {
@@ -23,41 +25,68 @@ func init() {
 	})
 }
 
-func listenUnix() net.Listener {
-	p := "/var/lib/apkg/apkg.sock"
-	if os.Geteuid() != 0 {
-		h := os.Getenv("HOME")
-		if h != "" {
-			p = filepath.Join(h, ".cache/apkg/apkg.sock")
-		}
+func listenCtrl() {
+	p := 100
+
+	if uid := os.Getuid(); uid != 0 {
+		p = 10000
 	}
 
-	if _, err := os.Stat(filepath.Dir(p)); os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(p), 0755)
-		if err != nil {
-			log.Printf("ctrl: failed to create %s control socket: %s", p, err)
-			return nil
-		}
-	}
-
-	s, _ := net.ResolveUnixAddr("unix", p)
-
-	os.Remove(p)
-
-	l, err := net.ListenUnix("unix", s)
+	lTcp, err := net.ListenTCP("tcp", &net.TCPAddr{Port: p})
 	if err != nil {
-		log.Printf("ctrl: failed to create %s control socket: %s", p, err)
-		return nil
+		log.Printf("ctrl: failed to create control socket on port %d: %s", p, err)
+		return
+		// we don't make a udp listener if tcp failed
 	}
-
-	log.Printf("ctrl: control socket ready at %s", p)
+	log.Printf("ctrl: control socket ready")
 
 	go func() {
-		err = http.Serve(l, nil)
+		err = http.Serve(lTcp, nil)
 		if err != nil {
 			log.Printf("ctrl: control socket failed: %s", err)
 		}
 	}()
 
-	return l
+	lUdp, err := net.ListenUDP("udp", &net.UDPAddr{Port: p})
+
+	if err != nil {
+		log.Printf("ctrl: failed to create udp listener: %s", err)
+		return
+	}
+
+	// set SO_REUSEPORT (if it fails we don't really care, shouldn't anyway)
+	sc, err := lUdp.SyscallConn()
+	if err == nil {
+		sc.Control(func(fd uintptr) {
+			unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+		})
+	}
+
+	go udpHandler(lUdp, p)
+
+	return
+}
+
+func udpHandler(l *net.UDPConn, tcp_port int) {
+	defer l.Close()
+	buf := make([]byte, 1500)
+
+	for {
+		ln, addr, err := l.ReadFromUDP(buf)
+
+		if err != nil {
+			log.Printf("failed to read from udp: %s", err)
+			return // give it up
+		}
+
+		// TODO: analyze packet & provide response
+		b := buf[:ln]
+
+		if bytes.Equal(b, []byte("DISCOVER")) {
+			// send response
+			res := fmt.Sprintf("tcp/%d", tcp_port) // TODO
+			l.WriteToUDP([]byte(res), addr)
+			continue
+		}
+	}
 }

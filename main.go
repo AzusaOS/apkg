@@ -69,10 +69,7 @@ func main() {
 
 	// now that database is mounted, run updater
 	go updater(base)
-	l := listenUnix()
-	if l != nil {
-		defer l.Close()
-	}
+	listenCtrl()
 
 	<-shutdownChan
 }
