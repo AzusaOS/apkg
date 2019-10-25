@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -44,7 +45,19 @@ func main() {
 	p := "/var/lib/apkg"
 	base := "/pkg"
 
-	if os.Geteuid() != 0 {
+	if os.Getuid() == 0 {
+		dl, err := ioutil.ReadDir("/mnt")
+		if err == nil {
+			for _, d := range dl {
+				// for each dir in /mnt, check if /mnt/<d>/AZUSA exists, and if so, use that as prefix
+				n := d.Name()
+				if st, err := os.Stat("/mnt/" + n + "/AZUSA"); err == nil && st.IsDir() {
+					p = "/mnt/" + n + "/AZUSA/apkg"
+					break
+				}
+			}
+		}
+	} else {
 		h := os.Getenv("HOME")
 		if h != "" {
 			p = filepath.Join(h, ".cache/apkg")
