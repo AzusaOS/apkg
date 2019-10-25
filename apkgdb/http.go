@@ -26,7 +26,7 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "APKGDB STATUS\n\n")
 		fmt.Fprintf(w, "Name: %s\n", d.name)
 		fmt.Fprintf(w, "Prefix: %s\n", d.prefix)
-		fmt.Fprintf(w, "Version: %d\n", d.CurrentVersion())
+		fmt.Fprintf(w, "Version: %s\n", d.CurrentVersion())
 		//fmt.Fprintf(w, "Package count: %d\n", d.count)
 	}
 }
