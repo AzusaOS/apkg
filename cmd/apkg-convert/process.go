@@ -193,12 +193,6 @@ func process(k hsm.Key, filename string) error {
 	headerHash := sha256.Sum256(header.Bytes())
 	headerHashHex := hex.EncodeToString(headerHash[:])
 
-	// remove old versions of the same version
-	l, _ := filepath.Glob(filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist/main", strings.Join(fn_a, "/"), filename_f+"*.apkg"))
-	for _, fn := range l {
-		os.Remove(fn)
-	}
-
 	// generate output filename
 	out := filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist/main", strings.Join(fn_a, "/"), filename_f+"-"+headerHashHex[:7]+".apkg")
 	log.Printf("out filename = %s", out)
@@ -212,6 +206,7 @@ func process(k hsm.Key, filename string) error {
 	if err != nil {
 		return err
 	}
+	defer outf.Close()
 
 	// write stuff
 	_, err = outf.Write(header.Bytes())
@@ -236,7 +231,6 @@ func process(k hsm.Key, filename string) error {
 	if err != nil {
 		return err
 	}
-	outf.Close()
 
 	return nil
 }
