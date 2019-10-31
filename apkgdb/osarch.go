@@ -12,6 +12,8 @@ const (
 const (
 	X86 Arch = iota
 	AMD64
+	ARM
+	ARM64
 )
 
 func ParseOS(os string) OS {
@@ -33,6 +35,10 @@ func ParseArch(arch string) Arch {
 		return X86
 	case "amd64":
 		return AMD64
+	case "arm":
+		return ARM
+	case "arm64":
+		return ARM64
 	default:
 		return Arch(0xffffffff) // unknown
 	}
@@ -57,6 +63,10 @@ func (arch Arch) String() string {
 		return "386"
 	case AMD64:
 		return "amd64"
+	case ARM:
+		return "arm"
+	case ARM64:
+		return "arm64"
 	default:
 		return "unknown"
 	}

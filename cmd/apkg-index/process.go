@@ -153,27 +153,8 @@ func (db *dbFile) init(now time.Time) error {
 	binary.Write(db.f, binary.BigEndian, uint64(now.Unix()))
 	binary.Write(db.f, binary.BigEndian, uint64(now.Nanosecond()))
 
-	var os uint32
-	var arch uint32
-	switch db.os {
-	case "linux":
-		os = 0
-	case "darwin":
-		os = 1
-	case "windows":
-		os = 2
-	default:
-		return errors.New("unsupported os")
-	}
-
-	switch db.arch {
-	case "386":
-		arch = 0
-	case "amd64":
-		arch = 1
-	default:
-		return errors.New("unsupported arch")
-	}
+	os := apkgdb.ParseOS(db.os)
+	arch := apkgdb.ParseArch(db.arch)
 
 	binary.Write(db.f, binary.BigEndian, os)
 	binary.Write(db.f, binary.BigEndian, arch)
