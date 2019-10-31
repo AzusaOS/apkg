@@ -35,6 +35,11 @@ func (d *DB) download(v string) (bool, error) {
 
 	version = bytes.TrimSpace(version)
 
+	if version == "NEW" {
+		// special case, this is a new database
+		return false, nil
+	}
+
 	resp = nil
 
 	if v != "" {
