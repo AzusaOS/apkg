@@ -101,7 +101,7 @@ func processDb(name string, k hsm.Key) error {
 		defer f.Close()
 
 		log.Printf("Indexing: %s", rpath)
-		p, err := (*apkgdb.DB)(nil).OpenPackage(f)
+		p, err := apkgdb.OpenPackage(f)
 		if err != nil {
 			return err
 		}

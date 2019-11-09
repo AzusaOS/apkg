@@ -135,16 +135,14 @@ func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
 	return pkg, nil
 }
 
-func (d *DB) OpenPackage(f *os.File) (*Package, error) {
+func OpenPackage(f *os.File) (*Package, error) {
 	st, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
 
-	// we only use DB to populate package parent (and it can be nil in the case of the apkg-index tool)
 	p := &Package{
-		parent: d,
-		size:   uint64(st.Size()),
+		size: uint64(st.Size()),
 	}
 
 	// read header, check file
