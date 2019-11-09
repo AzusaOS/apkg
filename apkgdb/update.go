@@ -119,5 +119,8 @@ func (d *DB) updateThread() {
 }
 
 func (d *DB) Update() {
-	d.upd <- struct{}{}
+	select {
+	case d.upd <- struct{}{}:
+	default:
+	}
 }
