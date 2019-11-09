@@ -117,3 +117,7 @@ func (d *DB) updateThread() {
 		}
 	}
 }
+
+func (d *DB) Update() {
+	d.upd <- struct{}{}
+}
