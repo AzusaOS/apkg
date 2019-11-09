@@ -15,7 +15,10 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch act {
 	case "list":
 		// return list of packages
-		d.db.View(func(tx *bolt.Tx) error {
+		d.dbrw.RLock()
+		defer d.dbrw.RUnlock()
+
+		d.dbptr.View(func(tx *bolt.Tx) error {
 			// use p2i for correct package ordering
 			return tx.Bucket([]byte("p2i")).ForEach(func(k, v []byte) error {
 				_, err := fmt.Fprintf(w, "%s\n", v[32+8:])

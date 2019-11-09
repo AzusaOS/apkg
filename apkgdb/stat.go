@@ -3,7 +3,10 @@ package apkgdb
 import "github.com/boltdb/bolt"
 
 func (d *DB) Length() (sz uint64) {
-	d.db.View(func(tx *bolt.Tx) error {
+	d.dbrw.RLock()
+	defer d.dbrw.RUnlock()
+
+	d.dbptr.View(func(tx *bolt.Tx) error {
 		sz = uint64(tx.Size())
 		return nil
 	})

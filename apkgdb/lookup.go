@@ -16,7 +16,10 @@ func (i *DB) Lookup(name string) (n uint64, err error) {
 		return 0, os.ErrNotExist
 	}
 
-	err = i.db.View(func(tx *bolt.Tx) error {
+	i.dbrw.RLock()
+	defer i.dbrw.RUnlock()
+
+	err = i.dbptr.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("p2i"))
 		if b == nil {
 			return os.ErrNotExist
@@ -74,8 +77,11 @@ func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 
 	var ino apkgfs.Inode
 
+	d.dbrw.RLock()
+	defer d.dbrw.RUnlock()
+
 	// load from database
-	err := d.db.View(func(tx *bolt.Tx) error {
+	err := d.dbptr.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("i2p")) // inode to package
 		if b == nil {
 			return os.ErrInvalid // nothing yet

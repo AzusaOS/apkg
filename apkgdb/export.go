@@ -81,8 +81,11 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	w := io.MultiWriter(f, hash)
 	var count uint32 // packages count
 
+	d.dbrw.RLock()
+	defer d.dbrw.RUnlock()
+
 	// write files
-	err = d.db.View(func(tx *bolt.Tx) error {
+	err = d.dbptr.View(func(tx *bolt.Tx) error {
 		// get all the buckets we need
 		p2iB := tx.Bucket([]byte("p2i")) // we use p2i for the foreach in order to get packages in the right order
 		pkgB := tx.Bucket([]byte("pkg"))

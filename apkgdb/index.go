@@ -124,10 +124,15 @@ func (d *DB) index(r *os.File) error {
 	// let's use a limited read buffer so we don't expand over hashed area
 	b := bufio.NewReader(&io.LimitedReader{R: r, N: int64(dataLoc[1])})
 
+	if err := d.writeStart(); err != nil {
+		return err
+	}
+	defer d.writeEnd()
+
 	startIno := d.nextInode()
 
 	// initialize a write transaction
-	err = d.db.Update(func(tx *bolt.Tx) error {
+	err = d.dbptr.Update(func(tx *bolt.Tx) error {
 		// create/get buckets
 		infoB, err := tx.CreateBucketIfNotExists([]byte("info"))
 		if err != nil {
@@ -291,11 +296,16 @@ func (d *DB) index(r *os.File) error {
 }
 
 func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
+	if err := d.writeStart(); err != nil {
+		return err
+	}
+	defer d.writeEnd()
+
 	// add package to database if not exist
 	startIno := d.nextInode()
 
 	// initialize a write transaction
-	return d.db.Update(func(tx *bolt.Tx) error {
+	return d.dbptr.Update(func(tx *bolt.Tx) error {
 		// create/get buckets
 		infoB, err := tx.CreateBucketIfNotExists([]byte("info"))
 		if err != nil {
@@ -390,7 +400,12 @@ func (d *DB) RemovePackage(name string) error {
 	// lookup & remove package
 	log.Printf("apkgdb: removing %s", name)
 
-	return d.db.Update(func(tx *bolt.Tx) error {
+	if err := d.writeStart(); err != nil {
+		return err
+	}
+	defer d.writeEnd()
+
+	return d.dbptr.Update(func(tx *bolt.Tx) error {
 		p2iB := tx.Bucket([]byte("p2i")) // we use p2i for the foreach in export too, removing from here is enough
 		nameC := collatedVersion(name)
 

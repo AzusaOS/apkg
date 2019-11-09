@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
@@ -19,11 +20,12 @@ type DB struct {
 	name   string
 	os     string
 	arch   string
-	db     *bolt.DB
+	dbptr  *bolt.DB
 	upd    chan struct{}
 
 	ino    *llrb.LLRB
 	refcnt uint64
+	dbrw   sync.RWMutex
 }
 
 func New(prefix, name, path string) (*DB, error) {
@@ -32,13 +34,13 @@ func New(prefix, name, path string) (*DB, error) {
 
 func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	os.MkdirAll(path, 0755) // make sure dir exists
-	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, nil)
+	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, &bolt.Options{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
 
 	res := &DB{
-		db:     db,
+		dbptr:  db,
 		prefix: prefix,
 		path:   path,
 		name:   name,
@@ -68,8 +70,11 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 }
 
 func (d *DB) CurrentVersion() (v string) {
+	d.dbrw.RLock()
+	defer d.dbrw.RUnlock()
+
 	// get current version from db
-	d.db.View(func(tx *bolt.Tx) error {
+	d.dbptr.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("info"))
 		if b == nil {
 			return nil
@@ -87,8 +92,10 @@ func (d *DB) CurrentVersion() (v string) {
 }
 
 func (d *DB) nextInode() (n uint64) {
+	// NOTE: d.dbrw should be locked first
+
 	// grab next inode id
-	d.db.View(func(tx *bolt.Tx) error {
+	d.dbptr.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("info"))
 		if b == nil {
 			n = 2 // 1 is reserved for root
@@ -109,5 +116,14 @@ func (d *DB) nextInode() (n uint64) {
 }
 
 func (d *DB) Close() error {
-	return d.db.Close()
+	d.dbrw.Lock()
+	defer d.dbrw.Unlock()
+
+	if err := d.dbptr.Close(); err != nil {
+		return err
+	}
+
+	d.dbptr = nil
+
+	return nil
 }
