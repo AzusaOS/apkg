@@ -34,7 +34,15 @@ func New(prefix, name, path string) (*DB, error) {
 
 func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	os.MkdirAll(path, 0755) // make sure dir exists
-	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, &bolt.Options{ReadOnly: true})
+	fn := filepath.Join(path, name+".db")
+
+	opts := &bolt.Options{ReadOnly: true}
+
+	if _, err := os.Stat(fn); os.IsNotExist(err) {
+		opts = nil
+	}
+
+	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, opts)
 	if err != nil {
 		return nil, err
 	}
