@@ -35,7 +35,8 @@ func New(mountPoint string, root RootInode) (*PkgFS, error) {
 		inoCache:      make(map[uint64]Inode),
 	}
 
-	if err := res.doMount(); res != nil {
+	if err := res.doMount(); err != nil {
+		log.Printf("apkgfs: failed to mount: %s", err)
 		return nil, err
 	}
 
