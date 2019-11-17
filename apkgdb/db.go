@@ -29,11 +29,21 @@ type DB struct {
 }
 
 func New(prefix, name, path string) (*DB, error) {
-	return NewOsArch(prefix, name, path, runtime.GOOS, runtime.GOARCH)
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
+
+	if val := os.Getenv("GOOS"); val != "" {
+		goos = val
+	}
+	if val := os.Getenv("GOARCH"); val != "" {
+		goarch = val
+	}
+
+	return NewOsArch(prefix, name, path, goos, goarch)
 }
 
 func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
-	os.MkdirAll(path, 0755) // make sure dir exists
+	_ = os.MkdirAll(path, 0755) // make sure dir exists
 	fn := filepath.Join(path, name+".db")
 
 	opts := &bolt.Options{ReadOnly: true}
@@ -82,7 +92,7 @@ func (d *DB) CurrentVersion() (v string) {
 	defer d.dbrw.RUnlock()
 
 	// get current version from db
-	d.dbptr.View(func(tx *bolt.Tx) error {
+	_ = d.dbptr.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("info"))
 		if b == nil {
 			return nil
@@ -103,7 +113,7 @@ func (d *DB) nextInode() (n uint64) {
 	// NOTE: d.dbrw should be locked first
 
 	// grab next inode id
-	d.dbptr.View(func(tx *bolt.Tx) error {
+	_ = d.dbptr.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("info"))
 		if b == nil {
 			n = 2 // 1 is reserved for root
