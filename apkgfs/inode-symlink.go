@@ -24,19 +24,6 @@ func (i symlinkInodeObj) IsDir() bool {
 	return false
 }
 
-func (i symlinkInodeObj) FillAttr(attr *fuse.Attr) error {
-	attr.Size = 4096
-	attr.Blocks = 1
-	attr.Mode = ModeToUnix(i.Mode())
-	attr.Nlink = 1 // 1 required
-	attr.Rdev = 1
-	attr.Blksize = 4096
-	attr.Atimensec = 0
-	attr.Mtimensec = 0
-	attr.Ctimensec = 0
-	return nil
-}
-
 func (i symlinkInodeObj) Readlink() ([]byte, error) {
 	return []byte(i), nil
 }
