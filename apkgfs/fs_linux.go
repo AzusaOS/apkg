@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/MagicalTux/go-fuse/fuse"
+	"github.com/hanwen/go-fuse/v2/fuse"
 )
 
 func (res *PkgFS) doMount() error {

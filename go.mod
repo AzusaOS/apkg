@@ -8,7 +8,8 @@ require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/hanwen/go-fuse/v2 v2.0.2 // indirect
+	github.com/hanwen/go-fuse v1.0.0
+	github.com/hanwen/go-fuse/v2 v2.0.3-0.20200103165319-0e3c45fc4899
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/petar/GoLLRB v0.0.0-20190514000832-33fb24c13b99
 	golang.org/x/crypto v0.0.0-20190923035154-9ee001bba392

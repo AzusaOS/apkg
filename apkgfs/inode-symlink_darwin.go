@@ -1,6 +1,6 @@
 package apkgfs
 
-import "github.com/MagicalTux/go-fuse/fuse"
+import "github.com/hanwen/go-fuse/v2/fuse"
 
 func (i symlinkInodeObj) FillAttr(attr *fuse.Attr) error {
 	attr.Size = uint64(len(i))

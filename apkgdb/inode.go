@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"git.atonline.com/azusa/apkg/apkgfs"
-	"github.com/MagicalTux/go-fuse/fuse"
 	"github.com/boltdb/bolt"
+	"github.com/hanwen/go-fuse/v2/fuse"
 )
 
 func (i *DB) Mode() os.FileMode {
