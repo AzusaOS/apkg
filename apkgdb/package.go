@@ -19,6 +19,7 @@ import (
 	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"git.atonline.com/azusa/apkg/squashfs"
+	"github.com/MagicalTux/smartremote"
 	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )
@@ -49,7 +50,7 @@ type Package struct {
 	created time.Time
 
 	dl        sync.Once
-	f         *os.File
+	f         *smartremote.File
 	offset    int64 // offset of data in file
 	blockSize int64
 	squash    *squashfs.Superblock
@@ -289,19 +290,26 @@ func (p *Package) handleLookup(ino uint64) (apkgfs.Inode, error) {
 func (p *Package) doDl() {
 	lpath := p.lpath()
 
-	if _, err := os.Stat(lpath); os.IsNotExist(err) {
-		p.dlFile()
-		// TODO: check size, checksum, etc
-	} else {
-		f, err := os.Open(lpath)
-		if err != nil {
-			log.Printf("apkgdb: failed to open: %s", err)
-			return
-		}
-		p.f = f
+	// Need to prepare path
+	err := os.MkdirAll(path.Dir(lpath), 0755)
+	if err != nil {
+		log.Printf("apkgdb: failed to make dir: %s", err)
+		return
 	}
 
-	err := p.validate()
+	// download this package
+	// need to replace "+" with "%2B" for S3
+	u := p.parent.prefix + "dist/" + p.parent.name + "/" + strings.ReplaceAll(p.path, "+", "%2B")
+
+	f, err := smartremote.DefaultDownloadManager.OpenTo(u, lpath)
+	if err != nil {
+		log.Printf("apkgdb: failed to get package: %s", err)
+		return
+	}
+
+	p.f = f
+
+	err = p.validate()
 	if err != nil {
 		log.Printf("apkgdb: failed to validate file: %s", err)
 		go func() {
@@ -322,40 +330,6 @@ func (p *Package) doDl() {
 		p.squash = nil
 		return
 	}
-}
-
-func (p *Package) dlFile() {
-	lpath := p.lpath()
-
-	// download this package
-	// need to replace "+" with "%2B" for S3
-	resp, err := hClient.Get(p.parent.prefix + "dist/" + p.parent.name + "/" + strings.ReplaceAll(p.path, "+", "%2B"))
-	if err != nil {
-		log.Printf("apkgdb: failed to get package: %s", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Need to write to file
-	err = os.MkdirAll(path.Dir(lpath), 0755)
-	if err != nil {
-		log.Printf("apkgdb: failed to make dir: %s", err)
-		return
-	}
-
-	f, err := os.Create(lpath)
-	if err != nil {
-		log.Printf("apkgdb: failed to create file: %s", err)
-		return
-	}
-
-	_, err = io.Copy(f, resp.Body)
-	if err != nil {
-		log.Printf("apkgdb: failed to write file: %s", err)
-		return
-	}
-
-	p.f = f
 }
 
 func (p *Package) lpath() string {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/MagicalTux/smartremote"
 	"github.com/boltdb/bolt"
 )
 
@@ -39,4 +40,9 @@ var hClient = &http.Client{
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{RootCAs: apkgsig.CACerts()},
 	},
+}
+
+func init() {
+	// make smartremote use our http client
+	smartremote.DefaultDownloadManager.Client = hClient
 }
