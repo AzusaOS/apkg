@@ -7,9 +7,23 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 
 	"golang.org/x/sys/unix"
 )
+
+// Stack returns a formatted stack trace of all the goroutines.
+// It calls runtime.Stack with a large enough buffer to capture the entire trace.
+func Stack() []byte {
+	buf := make([]byte, 1024*1024)
+	for {
+		n := runtime.Stack(buf, true)
+		if n < len(buf) {
+			return buf[:n]
+		}
+		buf = make([]byte, 2*len(buf))
+	}
+}
 
 func init() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +36,12 @@ func init() {
 
 		fmt.Fprintf(w, "apkg control channel\n\n")
 		fmt.Fprintf(w, "apkgdb: db related endpoints\n")
+	})
+
+	http.HandleFunc("/_stack", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write(Stack())
+		return
 	})
 }
 
