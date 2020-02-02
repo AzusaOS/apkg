@@ -48,6 +48,8 @@ github.com/MagicalTux/smartremote v0.0.10 h1:jfLaHC/Bj57RhJKMrKefMFygQKyKK//G9At
 github.com/MagicalTux/smartremote v0.0.10/go.mod h1:nNsMb0JPuAi9jC+84D898Gm0AtwKmYGiDrvCweyJn1o=
 github.com/MagicalTux/smartremote v0.0.12 h1:6CjntRd6Js6tPXvlFLuOWm09RYa3e3SstjNv56SFi/Q=
 github.com/MagicalTux/smartremote v0.0.12/go.mod h1:nNsMb0JPuAi9jC+84D898Gm0AtwKmYGiDrvCweyJn1o=
+github.com/MagicalTux/smartremote v0.0.13 h1:nlDtcRN//xF6SDQ0kGe3pMulDJhtGtspIjIGcWJlaW4=
+github.com/MagicalTux/smartremote v0.0.13/go.mod h1:nNsMb0JPuAi9jC+84D898Gm0AtwKmYGiDrvCweyJn1o=
 github.com/RoaringBitmap/roaring v0.4.21 h1:WJ/zIlNX4wQZ9x8Ey33O1UaD9TCTakYsdLFSBcTwH+8=
 github.com/RoaringBitmap/roaring v0.4.21/go.mod h1:D0gp8kJQgE1A4LQ5wFLggQEyvDi06Mq5mKs52e1TwOo=
 github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
