@@ -306,6 +306,7 @@ func (p *Package) doDl() {
 		log.Printf("apkgdb: failed to get package: %s", err)
 		return
 	}
+	f.SetSize(int64(p.size))
 
 	p.f = f
 
