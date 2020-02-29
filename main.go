@@ -43,8 +43,16 @@ func setupSignals() {
 	}()
 }
 
+func setRlimit() {
+	var rLimit syscall.Rlimit
+	rLimit.Cur = 65536
+	rLimit.Max = 65536
+	syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+}
+
 func main() {
 	log.Printf("apkg: Starting apkg daemon built on %s", DATE_TAG)
+	setRlimit()
 	setupSignals()
 
 	db := "main"
