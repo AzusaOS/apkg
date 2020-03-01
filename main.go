@@ -30,14 +30,17 @@ func setupSignals() {
 	signal.Notify(c, syscall.SIGHUP)
 
 	go func() {
-		select {
-		case sig := <-c:
-			switch sig {
-			case os.Interrupt, syscall.SIGTERM:
-				shutdown()
-			case syscall.SIGHUP:
-				// reload
-				dbMain.Update()
+		for {
+			select {
+			case sig := <-c:
+				switch sig {
+				case os.Interrupt, syscall.SIGTERM:
+					shutdown()
+					return
+				case syscall.SIGHUP:
+					// reload
+					dbMain.Update()
+				}
 			}
 		}
 	}()
