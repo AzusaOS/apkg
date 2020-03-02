@@ -5,4 +5,5 @@
 * Optimize stuff
 * When doing update, make sure new version is actually newer, and reject if not
 * Improve the new web API
+* Implement check against hash table upon block access on packages
 
