@@ -39,7 +39,7 @@ func setupSignals() {
 					return
 				case syscall.SIGHUP:
 					// reload
-					dbMain.Update()
+					go dbMain.Update()
 				}
 			}
 		}
