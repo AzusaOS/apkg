@@ -439,6 +439,12 @@ func (p *Package) ReadAt(b []byte, off int64) (int, error) {
 		return 0, os.ErrInvalid // should return E_IO
 	}
 	//log.Printf("converted read = %d", off+p.offset)
+	// we need to align offset to lower blockSize, and size to higher blockSize
+	/*
+		offDelta = p.blockSize - (off % p.blockSize)
+		if offDelta == p.blockSize {
+			offDelta = 0
+		}*/
 
 	return p.f.ReadAt(b, off+p.offset)
 }

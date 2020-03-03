@@ -45,4 +45,5 @@ var hClient = &http.Client{
 func init() {
 	// make smartremote use our http client
 	smartremote.DefaultDownloadManager.Client = hClient
+	smartremote.DefaultDownloadManager.MaxDataJump = 16 * 1024 * 1024
 }
