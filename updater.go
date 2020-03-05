@@ -13,6 +13,8 @@ func updater(p string) {
 	p = filepath.Join(p, "main/azusa.apkg.core")
 	v := DATE_TAG
 
+	time.Sleep(30 * time.Second)
+
 	for {
 		n, err := os.Readlink(p)
 		if err != nil {

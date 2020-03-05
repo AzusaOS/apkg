@@ -2,7 +2,6 @@ package apkgdb
 
 import (
 	"encoding/binary"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -68,21 +67,18 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		upd:    make(chan struct{}),
 	}
 
+	updateReq := true
+
 	if res.CurrentVersion() == "" {
 		// need to perform download now
 		_, err = res.download("")
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		// check for updates
-		err = res.update()
-		if err != nil {
-			log.Printf("apkgdb: failed to update: %s", err)
-		}
+		updateReq = false // since we updated now, no need for updateThread to check immediately
 	}
 
-	go res.updateThread()
+	go res.updateThread(updateReq)
 
 	return res, nil
 }

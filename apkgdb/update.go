@@ -105,15 +105,30 @@ func (d *DB) update() error {
 	return err
 }
 
-func (d *DB) updateThread() {
+func (d *DB) updateThread(updateReq bool) {
+	if updateReq {
+		// perform an update now
+		err := d.update()
+		if err != nil {
+			log.Printf("apkgdb: update failed: %s", err)
+		}
+	}
+
 	// keep running & check for updates
 	t := time.NewTicker(1 * time.Hour)
 	for {
 		select {
 		case <-t.C:
-			d.update()
+			err := d.update()
+			if err != nil {
+
+				log.Printf("apkgdb: update failed: %s", err)
+			}
 		case <-d.upd:
-			d.update()
+			err := d.update()
+			if err != nil {
+				log.Printf("apkgdb: update failed: %s", err)
+			}
 		}
 	}
 }
