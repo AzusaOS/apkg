@@ -3,6 +3,7 @@ package apkgdb
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
 	"os"
 	"strings"
 
@@ -12,7 +13,51 @@ import (
 )
 
 func (i *DB) Lookup(name string) (n uint64, err error) {
+	v := strings.LastIndexByte(name, '.')
+	if v == -1 {
+		// there can be no filename without a '.'
+		return 0, os.ErrNotExist
+	}
+
+	// name can be suffixed by cpu/OS
+	// eg: azusa.symlinks.core.0.0.3.20210216.linux.amd64
+	arch := ParseArch(name[v+1:])
+	if arch == BadArch {
+		// failed, just do normal lookup
+		return i.internalLookup(name)
+	}
+
+	sname := name[:v]
+	v = strings.LastIndexByte(sname, '.')
+	if v == -1 {
+		// failed, just do normal lookup
+		return i.internalLookup(name)
+	}
+	osV := ParseOS(sname[v+1:])
+	if osV == BadOS {
+		// failed, just do normal lookup
+		return i.internalLookup(name)
+	}
+	sname = sname[:v]
+
+	// ok we got an OS & arch
+	if i.osV == osV && i.archV == arch {
+		// this is us.
+		n, err = i.internalLookup(name)
+		if err == os.ErrNotExist {
+			// if error, try without the OS/arch suffix
+			n, err = i.internalLookup(sname)
+		}
+		return
+	}
+
+	log.Printf("TODO external OS/ARCH lookup: %s/%s", osV, arch)
+	return 0, os.ErrNotExist
+}
+
+func (i *DB) internalLookup(name string) (n uint64, err error) {
 	if strings.IndexByte(name, '.') == -1 {
+		// there can be no filename without a '.'
 		return 0, os.ErrNotExist
 	}
 
@@ -50,6 +95,7 @@ func (i *DB) Lookup(name string) (n uint64, err error) {
 
 		// TODO scroll to next until no match anymore so we use latest version
 		// OR seek past (adding 0xff at end of string) and go prev once
+		// TODO handle versionning through profiles and other methods
 
 		n = binary.BigEndian.Uint64(v)
 		return nil

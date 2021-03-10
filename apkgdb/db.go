@@ -25,6 +25,10 @@ type DB struct {
 	ino    *llrb.LLRB
 	refcnt uint64
 	dbrw   sync.RWMutex
+	parent *DB // if this is called from another db
+
+	osV   OS
+	archV Arch
 }
 
 func New(prefix, name, path string) (*DB, error) {
@@ -62,7 +66,9 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		path:   path,
 		name:   name,
 		os:     dbos,
+		osV:    ParseOS(dbos),
 		arch:   dbarch,
+		archV:  ParseArch(dbarch),
 		ino:    llrb.New(),
 		upd:    make(chan struct{}),
 	}

@@ -8,6 +8,7 @@ const (
 	Linux
 	Darwin
 	Windows
+	BadOS OS = 0xffffffff
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 	AMD64
 	ARM
 	ARM64
+	BadArch Arch = 0xffffffff
 )
 
 func ParseOS(os string) OS {
@@ -29,7 +31,7 @@ func ParseOS(os string) OS {
 	case "windows":
 		return Windows
 	default:
-		return OS(0xffffffff) // unknown
+		return BadOS // unknown
 	}
 }
 
@@ -46,7 +48,7 @@ func ParseArch(arch string) Arch {
 	case "arm64":
 		return ARM64
 	default:
-		return Arch(0xffffffff) // unknown
+		return BadArch // unknown
 	}
 }
 
