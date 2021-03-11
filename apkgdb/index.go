@@ -129,8 +129,6 @@ func (d *DB) index(r *os.File) error {
 	}
 	defer d.writeEnd()
 
-	startIno := d.nextInode()
-
 	// initialize a write transaction
 	err = d.dbptr.Update(func(tx *bolt.Tx) error {
 		// create/get buckets
@@ -138,11 +136,7 @@ func (d *DB) index(r *os.File) error {
 		if err != nil {
 			return err
 		}
-		i2pB, err := tx.CreateBucketIfNotExists([]byte("i2p"))
-		if err != nil {
-			return err
-		}
-		p2iB, err := tx.CreateBucketIfNotExists([]byte("p2i"))
+		p2pB, err := tx.CreateBucketIfNotExists([]byte("p2p"))
 		if err != nil {
 			return err
 		}
@@ -177,9 +171,6 @@ func (d *DB) index(r *os.File) error {
 			if t != 0 {
 				return fmt.Errorf("invalid data in db (invalid package type %d)", t)
 			}
-
-			inoBin := make([]byte, 8)
-			binary.BigEndian.PutUint64(inoBin, startIno)
 
 			// let's read the package hash & other info
 			hash := make([]byte, 32)
@@ -242,14 +233,11 @@ func (d *DB) index(r *os.File) error {
 			binary.BigEndian.PutUint64(inoCountB, uint64(inodes))
 
 			// store stuff
-			err = i2pB.Put(inoBin, append(append(append([]byte(nil), hash...), inoCountB...), name...))
+			err = p2pB.Put(nameC, append(append(append([]byte(nil), hash...), inoCountB...), name...))
 			if err != nil {
 				return err
 			}
-			err = p2iB.Put(nameC, append(append(append([]byte(nil), inoBin...), hash...), name...))
-			if err != nil {
-				return err
-			}
+			inoBin := make([]byte, 8)
 			err = pkgB.Put(hash, append(append(append(append([]byte{0}, sizeB...), inoBin...), inoCountB...), name...))
 			if err != nil {
 				return err
@@ -272,14 +260,7 @@ func (d *DB) index(r *os.File) error {
 			}
 
 			//log.Printf("read package %s size=%d", name, size)
-
-			startIno += uint64(inodes) + 1
 		}
-
-		// store new value for startIno
-		nextInoB := make([]byte, 8)
-		binary.BigEndian.PutUint64(nextInoB, startIno)
-		infoB.Put([]byte("next_inode"), nextInoB)
 
 		// store version
 		infoB.Put([]byte("version"), []byte(created.UTC().Format("20060102150405")))
@@ -302,20 +283,11 @@ func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
 	defer d.writeEnd()
 
 	// add package to database if not exist
-	startIno := d.nextInode()
 
 	// initialize a write transaction
 	return d.dbptr.Update(func(tx *bolt.Tx) error {
 		// create/get buckets
-		infoB, err := tx.CreateBucketIfNotExists([]byte("info"))
-		if err != nil {
-			return err
-		}
-		i2pB, err := tx.CreateBucketIfNotExists([]byte("i2p"))
-		if err != nil {
-			return err
-		}
-		p2iB, err := tx.CreateBucketIfNotExists([]byte("p2i"))
+		p2pB, err := tx.CreateBucketIfNotExists([]byte("p2p"))
 		if err != nil {
 			return err
 		}
@@ -346,9 +318,6 @@ func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
 			return errors.New("package already in database")
 		}
 
-		inoBin := make([]byte, 8)
-		binary.BigEndian.PutUint64(inoBin, startIno)
-
 		nameC := collatedVersion(string(p.name))
 		sizeB := make([]byte, 8)
 		binary.BigEndian.PutUint64(sizeB, p.size)
@@ -356,14 +325,11 @@ func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
 		binary.BigEndian.PutUint64(inoCountB, uint64(p.inodes))
 
 		// store all
-		err = i2pB.Put(inoBin, append(append(append([]byte(nil), p.hash...), inoCountB...), p.name...))
+		err = p2pB.Put(nameC, append(append(append([]byte(nil), p.hash...), inoCountB...), p.name...))
 		if err != nil {
 			return err
 		}
-		err = p2iB.Put(nameC, append(append(append([]byte(nil), inoBin...), p.hash...), p.name...))
-		if err != nil {
-			return err
-		}
+		inoBin := make([]byte, 8)
 		err = pkgB.Put(p.hash, append(append(append(append([]byte{0}, sizeB...), inoBin...), inoCountB...), p.name...))
 		if err != nil {
 			return err
@@ -386,12 +352,6 @@ func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
 		}
 
 		//log.Printf("read package %s size=%d", name, size)
-
-		startIno += uint64(p.inodes) + 1
-
-		nextInoB := make([]byte, 8)
-		binary.BigEndian.PutUint64(nextInoB, startIno)
-		infoB.Put([]byte("next_inode"), nextInoB)
 		return nil
 	})
 }
@@ -406,9 +366,9 @@ func (d *DB) RemovePackage(name string) error {
 	defer d.writeEnd()
 
 	return d.dbptr.Update(func(tx *bolt.Tx) error {
-		p2iB := tx.Bucket([]byte("p2i")) // we use p2i for the foreach in export too, removing from here is enough
+		p2pB := tx.Bucket([]byte("p2p")) // we use p2p for the foreach in export too, removing from here is enough
 		nameC := collatedVersion(name)
 
-		return p2iB.Delete(nameC)
+		return p2pB.Delete(nameC)
 	})
 }

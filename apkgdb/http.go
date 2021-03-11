@@ -20,9 +20,9 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer d.dbrw.RUnlock()
 
 		d.dbptr.View(func(tx *bolt.Tx) error {
-			// use p2i for correct package ordering
-			return tx.Bucket([]byte("p2i")).ForEach(func(k, v []byte) error {
-				_, err := fmt.Fprintf(w, "%s\n", v[32+8:])
+			// use p2p for correct package ordering
+			return tx.Bucket([]byte("p2p")).ForEach(func(k, v []byte) error {
+				_, err := fmt.Fprintf(w, "%s\n", v[8+32:])
 				return err
 			})
 		})

@@ -1,7 +1,6 @@
 package apkgdb
 
 import (
-	"bytes"
 	"encoding/binary"
 	"log"
 	"os"
@@ -65,7 +64,7 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 	defer i.dbrw.RUnlock()
 
 	err = i.dbptr.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("p2i"))
+		b := tx.Bucket([]byte("p2p"))
 		if b == nil {
 			return os.ErrNotExist
 		}
@@ -75,7 +74,14 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 		v := b.Get(nameC)
 		if v != nil {
 			// exact match, return ino+1
-			n = binary.BigEndian.Uint64(v) + 1
+			n = i.pkgIno(v) + 1
+
+			// we need to instanciate pkg at this point
+			pkg, err := i.getPkgTx(tx, n-1, v[:32])
+			if err != nil {
+				return err
+			}
+			i.ino.ReplaceOrInsert(pkg)
 			return nil
 		}
 
@@ -89,7 +95,7 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 		}
 
 		// compare name
-		if !strings.HasPrefix(string(v[8+32:]), name+".") {
+		if !strings.HasPrefix(string(v[32+8:]), name+".") {
 			return os.ErrNotExist
 		}
 
@@ -97,15 +103,49 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 		// OR seek past (adding 0xff at end of string) and go prev once
 		// TODO handle versionning through profiles and other methods
 
-		n = binary.BigEndian.Uint64(v)
+		n = i.pkgIno(v)
+		// we need to instanciate pkg at this point
+		pkg, err := i.getPkgTx(tx, n, v[:32])
+		if err != nil {
+			return err
+		}
+		i.ino.ReplaceOrInsert(pkg)
+
 		return nil
 	})
 
 	return
 }
 
+func (i *DB) pkgIno(pkg []byte) uint64 {
+	var pkgHash [32]byte
+	copy(pkgHash[:], pkg[:32])
+
+	i.pkgIlk.RLock()
+	v, ok := i.pkgI[pkgHash]
+	i.pkgIlk.RUnlock()
+
+	if ok {
+		return v
+	}
+
+	i.pkgIlk.Lock()
+	defer i.pkgIlk.Unlock()
+
+	v, ok = i.pkgI[pkgHash]
+	if ok {
+		return v
+	}
+
+	inoCnt := binary.BigEndian.Uint64(pkg[32 : 32+8])
+	v = i.allocInodes(inoCnt + 1) // +1 for symlink
+
+	i.pkgI[pkgHash] = v
+	return v
+}
+
 func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
-	var pkg *Package
+	var val pkgindexItem
 
 	if reqino == 1 {
 		// shouldn't happen
@@ -114,74 +154,31 @@ func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 
 	// check if we have this in loaded cache
 	d.ino.DescendLessOrEqual(pkgindex(reqino), func(i llrb.Item) bool {
-		pkg = i.(*Package)
+		val = i.(pkgindexItem)
 		return false
 	})
-	if pkg != nil && reqino < pkg.startIno+pkg.inodes {
-		return pkg.handleLookup(reqino)
-	}
 
-	var ino apkgfs.Inode
-
-	d.dbrw.RLock()
-	defer d.dbrw.RUnlock()
-
-	// load from database
-	err := d.dbptr.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("i2p")) // inode to package
-		if b == nil {
-			return os.ErrInvalid // nothing yet
+	switch pkg := val.(type) {
+	case *Package:
+		if pkg != nil && reqino < pkg.startIno+pkg.inodes+1 {
+			return pkg.handleLookup(reqino)
 		}
-
-		inoBin := make([]byte, 8)
-		binary.BigEndian.PutUint64(inoBin, reqino)
-
-		c := b.Cursor()
-
-		k, v := c.Seek(inoBin)
-
-		if k != nil {
-			if bytes.Equal(k, inoBin) {
-				// exact match means we should return a symlink
-				// note: we duplicate the value because bolt
-				ino = apkgfs.NewSymlink(bytesDup(v[32+8:]))
-				return nil
-			}
-		}
-
-		// unless we managed to seek exactly where we wanted, we should go back a bit
-		k, v = c.Prev()
-
-		if k == nil {
-			return os.ErrInvalid
-		}
-
-		// get startIno + inoCount
-		startIno := binary.BigEndian.Uint64(k)
-		inoCount := binary.BigEndian.Uint64(v[32:40])
-
-		// check range
-		if reqino <= startIno || reqino > startIno+inoCount {
-			return os.ErrInvalid
-		}
-
-		// load package
-		var err error
-		pkg, err = d.getPkgTx(tx, v[:32])
-		return err
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if ino != nil {
-		return ino, nil
-	}
-
-	if pkg != nil {
-		return pkg.handleLookup(reqino)
 	}
 
 	return nil, os.ErrInvalid
+}
+
+func (d *DB) nextInode() (n uint64) {
+	d.nextIlk.RLock()
+	defer d.nextIlk.RUnlock()
+	return d.nextI
+}
+
+func (d *DB) allocInodes(c uint64) uint64 {
+	d.nextIlk.Lock()
+	defer d.nextIlk.Unlock()
+
+	r := d.nextI
+	d.nextI += c
+	return r
 }

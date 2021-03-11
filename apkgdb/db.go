@@ -1,7 +1,6 @@
 package apkgdb
 
 import (
-	"encoding/binary"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -23,12 +22,18 @@ type DB struct {
 	upd    chan struct{}
 
 	ino    *llrb.LLRB
+	inoLk  sync.RWMutex
 	refcnt uint64
 	dbrw   sync.RWMutex
 	parent *DB // if this is called from another db
 
 	osV   OS
 	archV Arch
+
+	nextIlk sync.RWMutex
+	nextI   uint64 // next unallocated inode #
+	pkgIlk  sync.RWMutex
+	pkgI    map[[32]byte]uint64 // maps package hash → initial inode number
 }
 
 func New(prefix, name, path string) (*DB, error) {
@@ -70,6 +75,8 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		arch:   dbarch,
 		archV:  ParseArch(dbarch),
 		ino:    llrb.New(),
+		pkgI:   make(map[[32]byte]uint64),
+		nextI:  2, // 1=root
 		upd:    make(chan struct{}),
 	}
 
@@ -105,30 +112,6 @@ func (d *DB) CurrentVersion() (v string) {
 		if len(res) > 0 {
 			// casting to string will cause a copy of the data :)
 			v = string(res)
-		}
-		return nil
-	})
-	return
-}
-
-func (d *DB) nextInode() (n uint64) {
-	// NOTE: d.dbrw should be locked first
-
-	// grab next inode id
-	_ = d.dbptr.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("info"))
-		if b == nil {
-			n = 2 // 1 is reserved for root
-			return nil
-		}
-		res := b.Get([]byte("next_inode"))
-
-		// check if res is not nil & contains data
-		if len(res) == 8 {
-			// casting to string will cause a copy of the data :)
-			n = binary.BigEndian.Uint64(res)
-		} else {
-			n = 2 // 1 is reserved for root
 		}
 		return nil
 	})

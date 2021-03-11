@@ -87,15 +87,15 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	// write files
 	err = d.dbptr.View(func(tx *bolt.Tx) error {
 		// get all the buckets we need
-		p2iB := tx.Bucket([]byte("p2i")) // we use p2i for the foreach in order to get packages in the right order
+		p2pB := tx.Bucket([]byte("p2p")) // we use p2p for the foreach in order to get packages in the right order
 		pkgB := tx.Bucket([]byte("pkg"))
 		headerB := tx.Bucket([]byte("header"))
 		sigB := tx.Bucket([]byte("sig"))
 		metaB := tx.Bucket([]byte("meta"))
 		pathB := tx.Bucket([]byte("path"))
 
-		return p2iB.ForEach(func(k, v []byte) error {
-			h := v[8 : 8+32]
+		return p2pB.ForEach(func(k, v []byte) error {
+			h := v[:32]
 
 			// load info
 			pkg := pkgB.Get(h)

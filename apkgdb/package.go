@@ -80,11 +80,12 @@ func (p *Package) Value() uint64 {
 }
 
 var (
+	// TODO move to inside DB
 	pkgCache  = make(map[[32]byte]*Package)
 	pkgCacheL sync.RWMutex
 )
 
-func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
+func (d *DB) getPkgTx(tx *bolt.Tx, startIno uint64, hash []byte) (*Package, error) {
 	var hashB [32]byte
 	copy(hashB[:], hash)
 
@@ -109,7 +110,7 @@ func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
 	pkg := &Package{
 		parent:   d,
 		size:     binary.BigEndian.Uint64(v[1:9]),
-		startIno: binary.BigEndian.Uint64(v[9:17]),
+		startIno: startIno,
 		inodes:   binary.BigEndian.Uint64(v[17:25]),
 		name:     string(v[25:]),
 		path:     string(tx.Bucket([]byte("path")).Get(hash)),
@@ -123,12 +124,11 @@ func (d *DB) getPkgTx(tx *bolt.Tx, hash []byte) (*Package, error) {
 
 	// keep pkg in cache
 	pkgCacheL.Lock()
+	defer pkgCacheL.Unlock()
 	if v, ok := pkgCache[hashB]; ok {
-		pkgCacheL.Unlock()
 		return v, nil
 	}
 	pkgCache[hashB] = pkg
-	pkgCacheL.Unlock()
 
 	log.Printf("apkgdb: spawned package %s (hash=%s)", pkg.name, hex.EncodeToString(hash))
 
