@@ -130,6 +130,12 @@ func (d *DB) getPkgTx(tx *bolt.Tx, startIno uint64, hash []byte) (*Package, erro
 	}
 	pkgCache[hashB] = pkg
 
+	if d.parent != nil {
+		d.parent.ino.ReplaceOrInsert(pkg)
+	} else {
+		d.ino.ReplaceOrInsert(pkg)
+	}
+
 	log.Printf("apkgdb: spawned package %s (hash=%s)", pkg.name, hex.EncodeToString(hash))
 
 	// * pkg → package hash → package info (0 + size + inode num + inode count + package name)

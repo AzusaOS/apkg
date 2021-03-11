@@ -11,11 +11,11 @@ func (d *DB) writeStart() error {
 
 	d.dbptr.Close()
 
-	db, err := bolt.Open(filepath.Join(d.path, d.name+".db"), 0600, nil)
+	db, err := bolt.Open(filepath.Join(d.path, d.name+"."+d.os+"."+d.arch+".db"), 0600, nil)
 	if err != nil {
 		// failed to open, re-open
 		var err2 error
-		db, err2 = bolt.Open(filepath.Join(d.path, d.name+".db"), 0600, &bolt.Options{ReadOnly: true})
+		db, err2 = bolt.Open(filepath.Join(d.path, d.name+"."+d.os+"."+d.arch+".db"), 0600, &bolt.Options{ReadOnly: true})
 
 		if err2 != nil {
 			// can't help this anymore :(
@@ -36,7 +36,7 @@ func (d *DB) writeStart() error {
 func (d *DB) writeEnd() {
 	d.dbptr.Close()
 
-	db, err := bolt.Open(filepath.Join(d.path, d.name+".db"), 0600, &bolt.Options{ReadOnly: true})
+	db, err := bolt.Open(filepath.Join(d.path, d.name+"."+d.os+"."+d.arch+".db"), 0600, &bolt.Options{ReadOnly: true})
 	if err != nil {
 		// can't be helped
 		panic(err)

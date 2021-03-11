@@ -34,6 +34,8 @@ type DB struct {
 	nextI   uint64 // next unallocated inode #
 	pkgIlk  sync.RWMutex
 	pkgI    map[[32]byte]uint64 // maps package hash → initial inode number
+	sub     map[ArchOS]*DB
+	subLk   sync.RWMutex
 }
 
 func New(prefix, name, path string) (*DB, error) {
@@ -52,7 +54,7 @@ func New(prefix, name, path string) (*DB, error) {
 
 func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	_ = os.MkdirAll(path, 0755) // make sure dir exists
-	fn := filepath.Join(path, name+".db")
+	fn := filepath.Join(path, name+"."+dbos+"."+dbarch+".db")
 
 	opts := &bolt.Options{ReadOnly: true}
 
@@ -60,7 +62,7 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		opts = nil
 	}
 
-	db, err := bolt.Open(filepath.Join(path, name+".db"), 0600, opts)
+	db, err := bolt.Open(filepath.Join(path, name+"."+dbos+"."+dbarch+".db"), 0600, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +80,7 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		pkgI:   make(map[[32]byte]uint64),
 		nextI:  2, // 1=root
 		upd:    make(chan struct{}),
+		sub:    make(map[ArchOS]*DB),
 	}
 
 	updateReq := true

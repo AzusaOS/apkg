@@ -2,7 +2,6 @@ package apkgdb
 
 import (
 	"encoding/binary"
-	"log"
 	"os"
 	"strings"
 
@@ -50,8 +49,31 @@ func (i *DB) Lookup(name string) (n uint64, err error) {
 		return
 	}
 
-	log.Printf("TODO external OS/ARCH lookup: %s/%s", osV, arch)
-	return 0, os.ErrNotExist
+	i.subLk.RLock()
+	db, ok := i.sub[ArchOS{OS: osV, Arch: arch}]
+	i.subLk.RUnlock()
+
+	if ok {
+		return db.Lookup(name)
+	}
+
+	i.subLk.Lock()
+	defer i.subLk.Unlock()
+
+	db, ok = i.sub[ArchOS{OS: osV, Arch: arch}]
+	if ok {
+		return db.Lookup(name)
+	}
+
+	db, err = NewOsArch(i.prefix, i.name, i.path, osV.String(), arch.String())
+	if err != nil {
+		return 0, err
+	}
+	db.parent = i
+
+	i.sub[ArchOS{OS: osV, Arch: arch}] = db
+
+	return db.Lookup(name)
 }
 
 func (i *DB) internalLookup(name string) (n uint64, err error) {
@@ -77,11 +99,10 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 			n = i.pkgIno(v) + 1
 
 			// we need to instanciate pkg at this point
-			pkg, err := i.getPkgTx(tx, n-1, v[:32])
+			_, err := i.getPkgTx(tx, n-1, v[:32])
 			if err != nil {
 				return err
 			}
-			i.ino.ReplaceOrInsert(pkg)
 			return nil
 		}
 
@@ -105,11 +126,10 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 
 		n = i.pkgIno(v)
 		// we need to instanciate pkg at this point
-		pkg, err := i.getPkgTx(tx, n, v[:32])
+		_, err := i.getPkgTx(tx, n, v[:32])
 		if err != nil {
 			return err
 		}
-		i.ino.ReplaceOrInsert(pkg)
 
 		return nil
 	})
@@ -169,12 +189,20 @@ func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 }
 
 func (d *DB) nextInode() (n uint64) {
+	if d.parent != nil {
+		return d.parent.nextInode()
+	}
+
 	d.nextIlk.RLock()
 	defer d.nextIlk.RUnlock()
 	return d.nextI
 }
 
 func (d *DB) allocInodes(c uint64) uint64 {
+	if d.parent != nil {
+		return d.parent.allocInodes(c)
+	}
+
 	d.nextIlk.Lock()
 	defer d.nextIlk.Unlock()
 

@@ -3,6 +3,11 @@ package apkgdb
 type OS uint32
 type Arch uint32
 
+type ArchOS struct {
+	OS   OS
+	Arch Arch
+}
+
 const (
 	AnyOS OS = iota
 	Linux
