@@ -102,6 +102,10 @@ func (d *DB) CurrentVersion() (v string) {
 
 	// get current version from db
 	_ = d.dbptr.View(func(tx *bolt.Tx) error {
+		if tx.Bucket([]byte("p2p")) == nil {
+			// old db, needs update
+			return nil
+		}
 		b := tx.Bucket([]byte("info"))
 		if b == nil {
 			return nil
