@@ -1,6 +1,7 @@
 package apkgfs
 
 import (
+	"context"
 	"os"
 	"syscall"
 
@@ -11,7 +12,7 @@ type Inode interface {
 	//os.FileInfo
 
 	Mode() os.FileMode
-	Lookup(name string) (uint64, error)
+	Lookup(ctx context.Context, name string) (uint64, error)
 	FillAttr(attr *fuse.Attr) error
 	Readlink() ([]byte, error)
 

@@ -1,6 +1,7 @@
 package apkgdb
 
 import (
+	"context"
 	"encoding/binary"
 	"os"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	"github.com/petar/GoLLRB/llrb"
 )
 
-func (i *DB) Lookup(name string) (n uint64, err error) {
+func (i *DB) Lookup(ctx context.Context, name string) (n uint64, err error) {
 	v := strings.LastIndexByte(name, '.')
 	if v == -1 {
 		// there can be no filename without a '.'
@@ -22,19 +23,19 @@ func (i *DB) Lookup(name string) (n uint64, err error) {
 	arch := ParseArch(name[v+1:])
 	if arch == BadArch {
 		// failed, just do normal lookup
-		return i.internalLookup(name)
+		return i.ctxLookup(ctx, name)
 	}
 
 	sname := name[:v]
 	v = strings.LastIndexByte(sname, '.')
 	if v == -1 {
 		// failed, just do normal lookup
-		return i.internalLookup(name)
+		return i.ctxLookup(ctx, name)
 	}
 	osV := ParseOS(sname[v+1:])
 	if osV == BadOS {
 		// failed, just do normal lookup
-		return i.internalLookup(name)
+		return i.ctxLookup(ctx, name)
 	}
 	sname = sname[:v]
 
@@ -53,7 +54,29 @@ func (i *DB) Lookup(name string) (n uint64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return db.Lookup(name)
+	return db.internalLookup(name)
+}
+
+func (i *DB) ctxLookup(ctx context.Context, name string) (n uint64, err error) {
+	if i.parent != nil {
+		return i.internalLookup(name)
+	}
+	switch i.archV {
+	case AMD64:
+		// if calling process is 32bits, let's give it a 32 bits lookup ...
+		pid, ok := ctx.Value(apkgfs.Pid).(uint32)
+		if ok {
+			if is32bitsProcess(pid) {
+				db, err := i.SubGet(ArchOS{OS: i.osV, Arch: X86})
+				if err != nil {
+					return 0, err
+				}
+				return db.internalLookup(name)
+			}
+		}
+	}
+
+	return i.internalLookup(name)
 }
 
 func (i *DB) internalLookup(name string) (n uint64, err error) {

@@ -1,6 +1,7 @@
 package apkgfs
 
 import (
+	"context"
 	"io"
 	"log"
 	"os"
@@ -93,7 +94,9 @@ func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 		return toStatus(err)
 	}
 
-	sub, err := ino.Lookup(name)
+	ctx := context.WithValue(context.Background(), Pid, header.Caller.Pid)
+
+	sub, err := ino.Lookup(ctx, name)
 	if err != nil {
 		return toStatus(err)
 	}

@@ -1,6 +1,7 @@
 package apkgfs
 
 import (
+	"context"
 	"os"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
@@ -12,7 +13,7 @@ func NewSymlink(link []byte) Inode {
 	return symlinkInodeObj(link)
 }
 
-func (i symlinkInodeObj) Lookup(name string) (uint64, error) {
+func (i symlinkInodeObj) Lookup(ctx context.Context, name string) (uint64, error) {
 	return 0, os.ErrInvalid
 }
 
