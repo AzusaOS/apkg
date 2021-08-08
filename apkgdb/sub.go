@@ -1,6 +1,11 @@
 package apkgdb
 
 func (d *DB) SubGet(sub ArchOS) (*DB, error) {
+	if sub.OS == d.osV && sub.Arch == d.archV {
+		// ok, this is us!
+		return d, nil
+	}
+
 	d.subLk.RLock()
 	db, ok := d.sub[sub]
 	d.subLk.RUnlock()
