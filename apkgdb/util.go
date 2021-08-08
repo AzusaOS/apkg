@@ -32,7 +32,7 @@ func is32bitsProcess(pid uint32) bool {
 		lin, err := fpb.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				// not a single 32bits map!
+				// not a single >32bits map!
 				return true
 			}
 			return false
