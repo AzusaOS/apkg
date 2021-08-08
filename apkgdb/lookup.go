@@ -49,30 +49,10 @@ func (i *DB) Lookup(name string) (n uint64, err error) {
 		return
 	}
 
-	i.subLk.RLock()
-	db, ok := i.sub[ArchOS{OS: osV, Arch: arch}]
-	i.subLk.RUnlock()
-
-	if ok {
-		return db.Lookup(name)
-	}
-
-	i.subLk.Lock()
-	defer i.subLk.Unlock()
-
-	db, ok = i.sub[ArchOS{OS: osV, Arch: arch}]
-	if ok {
-		return db.Lookup(name)
-	}
-
-	db, err = NewOsArch(i.prefix, i.name, i.path, osV.String(), arch.String())
+	db, err := i.SubGet(ArchOS{OS: osV, Arch: arch})
 	if err != nil {
 		return 0, err
 	}
-	db.parent = i
-
-	i.sub[ArchOS{OS: osV, Arch: arch}] = db
-
 	return db.Lookup(name)
 }
 

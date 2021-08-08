@@ -1,5 +1,7 @@
 package apkgdb
 
+import "strings"
+
 type OS uint32
 type Arch uint32
 
@@ -57,6 +59,20 @@ func ParseArch(arch string) Arch {
 	}
 }
 
+func ParseArchOS(archos string) ArchOS {
+	// for example "linux.amd64"
+	pos := strings.IndexByte(archos, '.')
+	if pos <= 0 {
+		return ArchOS{BadOS, BadArch}
+	}
+	os := ParseOS(archos[:pos])
+	arch := ParseArch(archos[pos+1:])
+	if os == BadOS || arch == BadArch {
+		return ArchOS{BadOS, BadArch}
+	}
+	return ArchOS{os, arch}
+}
+
 func (os OS) String() string {
 	switch os {
 	case AnyOS:
@@ -87,4 +103,12 @@ func (arch Arch) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+func (archos ArchOS) String() string {
+	return archos.OS.String() + "." + archos.Arch.String()
+}
+
+func (archos ArchOS) IsValid() bool {
+	return archos.OS != BadOS && archos.Arch != BadArch
 }

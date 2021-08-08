@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/MagicalTux/smartremote"
@@ -11,6 +12,23 @@ import (
 )
 
 func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if sub := r.URL.Query().Get("sub"); d.parent == nil && sub != "" {
+		// try to locate a sub database
+		archos := ParseArchOS(sub)
+		if !archos.IsValid() {
+			http.Error(w, "Bad value for sub", http.StatusBadRequest)
+			return
+		}
+
+		db, err := d.SubGet(archos)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		d = db
+	}
+
 	act := r.URL.Query().Get("action")
 
 	switch act {
@@ -21,7 +39,11 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		d.dbptr.View(func(tx *bolt.Tx) error {
 			// use p2p for correct package ordering
-			return tx.Bucket([]byte("p2p")).ForEach(func(k, v []byte) error {
+			bucket := tx.Bucket([]byte("p2p"))
+			if bucket == nil {
+				return nil
+			}
+			return bucket.ForEach(func(k, v []byte) error {
 				_, err := fmt.Fprintf(w, "%s\n", v[8+32:])
 				return err
 			})
@@ -29,8 +51,24 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		fmt.Fprintf(w, "APKGDB STATUS\n\n")
 		fmt.Fprintf(w, "Name: %s\n", d.name)
+		fmt.Fprintf(w, "OS: %s\n", d.os)
+		fmt.Fprintf(w, "Arch: %s\n", d.arch)
 		fmt.Fprintf(w, "Prefix: %s\n", d.prefix)
 		fmt.Fprintf(w, "Version: %s\n", d.CurrentVersion())
+
+		subs := d.ListSubs()
+		if len(subs) > 0 {
+			subs2 := make([]string, 0, len(subs))
+			for _, sub := range subs {
+				subs2 = append(subs2, sub.OS.String()+"."+sub.Arch.String())
+			}
+			sort.Strings(subs2)
+
+			fmt.Fprintf(w, "Sub databases:\n")
+			for _, sub := range subs2 {
+				fmt.Fprintf(w, "  - %s\n", sub)
+			}
+		}
 		//fmt.Fprintf(w, "Package count: %d\n", d.count)
 	}
 }
