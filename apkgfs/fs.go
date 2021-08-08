@@ -64,6 +64,25 @@ func (p *PkgFS) Access(cancel <-chan struct{}, input *fuse.AccessIn) (code fuse.
 	if input.Mask&fuse.W_OK != 0 {
 		return fuse.EPERM
 	}
+	uid := input.Caller.Owner.Uid
+	if uid == 0 {
+		// give root access to everything
+		return fuse.OK
+	}
+
+	ino, err := p.getInode(input.NodeId)
+	if err != nil {
+		return toStatus(err)
+	}
+
+	mode := ino.Mode()
+
+	if input.Mask&fuse.X_OK != 0 {
+		// Need to check executable
+		if mode&1 == 0 {
+			return fuse.EPERM
+		}
+	}
 	return fuse.OK
 }
 

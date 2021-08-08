@@ -16,5 +16,7 @@ func (i *DB) FillAttr(attr *fuse.Attr) error {
 	attr.Atimensec = 0
 	attr.Mtimensec = 0
 	attr.Ctimensec = 0
+	attr.Owner.Uid = 0
+	attr.Owner.Gid = 0
 	return nil
 }
