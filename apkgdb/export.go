@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
@@ -82,8 +83,13 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	var count uint32    // packages count
 	var datasize uint64 // total size
 
+	var unlkOnce sync.Once
+	unlk := func() {
+		unlkOnce.Do(d.dbrw.RUnlock)
+	}
+
 	d.dbrw.RLock()
-	defer d.dbrw.RUnlock()
+	defer unlk()
 
 	// write files
 	err = d.dbptr.View(func(tx *bolt.Tx) error {
@@ -119,6 +125,8 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		})
 	})
 
+	unlk()
+
 	if err != nil {
 		return err
 	}
@@ -145,7 +153,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 
-	log.Printf("apkgdb: Exported %d packages (%s bytes), signing...", count, formatSize(datasize))
+	log.Printf("apkgdb: Exported %d packages (%s), signing...", count, formatSize(datasize))
 	sigB, err := apkgsig.Sign(k, header)
 	if err != nil {
 		return err
@@ -162,7 +170,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 
 	f.Close()
 
-	// TODO: call index on file to check if the generated file is 100% valid
+	// call index on file to check if the generated file is 100% valid
 	f, err = os.Open(fn)
 	if err != nil {
 		return err // ???
