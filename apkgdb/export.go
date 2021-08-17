@@ -79,7 +79,8 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 
 	hash := sha256.New()
 	w := io.MultiWriter(f, hash)
-	var count uint32 // packages count
+	var count uint32    // packages count
+	var datasize uint64 // total size
 
 	d.dbrw.RLock()
 	defer d.dbrw.RUnlock()
@@ -113,6 +114,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 			apkgsig.WriteVarblob(w, metaB.Get(h))
 
 			count += 1
+			datasize += binary.BigEndian.Uint64(pkg[1:9])
 			return nil
 		})
 	})
@@ -143,7 +145,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 
-	log.Printf("apkgdb: Exported %d packages, signing...", count)
+	log.Printf("apkgdb: Exported %d packages (%s bytes), signing...", count, formatSize(datasize))
 	sigB, err := apkgsig.Sign(k, header)
 	if err != nil {
 		return err
@@ -198,4 +200,38 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	cmd2.Stdout = os.Stdout
 	cmd2.Stderr = os.Stderr
 	return cmd2.Run()
+}
+
+func formatSize(v uint64) string {
+	var siz = [...]struct {
+		unit string
+		size float32
+	}{
+		{unit: "B", size: 1},
+		{unit: "kiB", size: 1024},
+		{unit: "MiB", size: 1024},
+		{unit: "GiB", size: 1024},
+		{unit: "TiB", size: 1024},
+		{unit: "PiB", size: 1024},
+	}
+
+	if v == 0 {
+		return "0 B"
+	}
+
+	vf := float32(v)
+	last := siz[0]
+	for _, i := range siz {
+		if vf < i.size*1.5 {
+			break
+		}
+		vf = vf / i.size
+		last = i
+	}
+
+	if last.size > 1 {
+		return fmt.Sprintf("%01.2f %s", vf, last.unit)
+	} else {
+		return fmt.Sprintf("%.0f %s", vf, last.unit)
+	}
 }
