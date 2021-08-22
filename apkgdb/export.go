@@ -19,6 +19,7 @@ import (
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/MagicalTux/hsm"
 	"github.com/boltdb/bolt"
+	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 func (d *DB) ExportAndUpload(k hsm.Key) error {
@@ -190,12 +191,27 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	fmt.Fprintf(lat, "%s\n", stamp)
 	lat.Close()
 
+	// generate LATEST.jwt
+	lat, err = os.Create(path.Join(d.path, "LATEST.jwt"))
+	if err != nil {
+		return err
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"ver": stamp,
+	})
+	tokenString, err := token.SignedString(k)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(lat, "%s\n", tokenString)
+	lat.Close()
+
 	// upload database
 	s3pfx := "s3:/" + path.Join("/azusa-pkg/db", d.name, d.os, d.arch)
 	log.Printf("apkgdb: uploading files to %s", s3pfx)
 
 	//system('aws s3 cp --cache-control max-age=31536000 '.escapeshellarg($db_path.'/'.$datestamp.'.bin').' '.escapeshellarg($s3_prefix.'/'.$datestamp.'.bin'));
-	cmd1 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=31536000", fn, s3pfx+"/"+stamp+".bin")
+	cmd1 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=31536000", "--content-type", "application/azusa-apkg-db", fn, s3pfx+"/"+stamp+".bin")
 	cmd1.Stdout = os.Stdout
 	cmd1.Stderr = os.Stderr
 	err = cmd1.Run()
@@ -204,10 +220,18 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	}
 
 	//system('aws s3 cp --cache-control max-age=60 '.escapeshellarg($db_path.'/LATEST.txt').' '.escapeshellarg($s3_prefix.'/LATEST.txt'));
-	cmd2 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Join(d.path, "LATEST.txt"), s3pfx+"/LATEST.txt")
+	cmd2 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "LATEST.txt"), s3pfx+"/LATEST.txt")
 	cmd2.Stdout = os.Stdout
 	cmd2.Stderr = os.Stderr
-	return cmd2.Run()
+	err = cmd2.Run()
+	if err != nil {
+		return err
+	}
+
+	cmd3 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "LATEST.jwt"), s3pfx+"/LATEST.jwt")
+	cmd3.Stdout = os.Stdout
+	cmd3.Stderr = os.Stderr
+	return cmd3.Run()
 }
 
 func formatSize(v uint64) string {

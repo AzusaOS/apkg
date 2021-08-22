@@ -6,6 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.4.21 // indirect
 	github.com/boltdb/bolt v1.3.1
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect
+	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hanwen/go-fuse v1.0.0
 	github.com/hanwen/go-fuse/v2 v2.0.3-0.20200103165319-0e3c45fc4899
