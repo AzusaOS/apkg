@@ -196,7 +196,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	if err != nil {
 		return err
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, jwt.MapClaims{
 		"ver": stamp,
 	})
 	tokenString, err := token.SignedString(k)
