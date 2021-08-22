@@ -1,5 +1,7 @@
 module git.atonline.com/azusa/apkg
 
+go 1.16
+
 require (
 	github.com/MagicalTux/hsm v0.1.3
 	github.com/MagicalTux/smartremote v0.0.14
@@ -20,4 +22,4 @@ require (
 	golang.org/x/tools v0.0.0-20190923221242-6816ec868d64 // indirect
 )
 
-go 1.13
+replace github.com/golang-jwt/jwt/v4 => github.com/MagicalTux/jwt/v4 v4.0.1-0.20210822070356-97f3b221c77a

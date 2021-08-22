@@ -3,6 +3,7 @@ package apkgdb
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -192,6 +193,11 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	lat.Close()
 
 	// generate LATEST.jwt
+	sig_pub, err := k.PublicBlob()
+	if err != nil {
+		return err
+	}
+
 	lat, err = os.Create(path.Join(d.path, "LATEST.jwt"))
 	if err != nil {
 		return err
@@ -199,6 +205,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, jwt.MapClaims{
 		"ver": stamp,
 	})
+	token.Header["kid"] = base64.RawURLEncoding.EncodeToString(sig_pub)
 	tokenString, err := token.SignedString(k)
 	if err != nil {
 		return err
