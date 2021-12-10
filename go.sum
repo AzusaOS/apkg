@@ -1,3 +1,5 @@
+github.com/KarpelesLab/jwt v0.0.3 h1:hZSii5uuBjIpVAWgsg1h8QYDUzZvB0/U0N5o0tAtR3o=
+github.com/KarpelesLab/jwt v0.0.3/go.mod h1:VUYIYCOSk4qnzdRtv5P8JvPB0cBEjmpZYdvJi2Yao+8=
 github.com/MagicalTux/go-fuse v2.0.3-0.20190909083651-4866016e7410+incompatible h1:KDv4/CZZtINRiKeWaBYmq/HpTlioY+xUvDpbDfogLIY=
 github.com/MagicalTux/go-fuse v2.0.3-0.20190909083651-4866016e7410+incompatible/go.mod h1:VCRtF2RVNeF2iff/4pMctOIrHuyQbVBoeHTYy4xg3mg=
 github.com/MagicalTux/go-fuse v2.0.3-0.20190909083832-eae9832c39d0+incompatible h1:A+2hQP/BcQ2RAxydJXULfuAgBYkWtln+74MYA39xQe4=

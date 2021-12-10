@@ -31,6 +31,14 @@ func VerifyDb(data []byte, sig SigReader) (*VerifyResult, error) {
 	return verify(data, sig, trustedDbSig)
 }
 
+func DbKeyName(k string) string {
+	name, found := trustedDbSig[k]
+	if !found {
+		return ""
+	}
+	return name
+}
+
 func verify(data []byte, sigB SigReader, trust map[string]string) (*VerifyResult, error) {
 	n, _ := binary.ReadUvarint(sigB)
 	if n != 0x0001 {

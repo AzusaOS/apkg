@@ -3,6 +3,7 @@ module git.atonline.com/azusa/apkg
 go 1.16
 
 require (
+	github.com/KarpelesLab/jwt v0.0.3 // indirect
 	github.com/MagicalTux/hsm v0.1.3
 	github.com/MagicalTux/smartremote v0.0.14
 	github.com/RoaringBitmap/roaring v0.4.21 // indirect

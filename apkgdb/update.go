@@ -2,6 +2,9 @@ package apkgdb
 
 import (
 	"bytes"
+	"crypto/ed25519"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,6 +12,9 @@ import (
 	"net"
 	"os"
 	"time"
+
+	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/KarpelesLab/jwt"
 )
 
 func init() {
@@ -17,12 +23,12 @@ func init() {
 }
 
 func (d *DB) download(v string) (bool, error) {
-	resp, err := hClient.Get(d.prefix + "db/" + d.name + "/" + d.os + "/" + d.arch + "/LATEST.txt")
+	resp, err := hClient.Get(d.prefix + "db/" + d.name + "/" + d.os + "/" + d.arch + "/LATEST.jwt")
 	if err != nil {
 		return false, err
 	}
 
-	version, err := ioutil.ReadAll(resp.Body)
+	token, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	if resp.StatusCode != 200 {
@@ -33,17 +39,47 @@ func (d *DB) download(v string) (bool, error) {
 		return false, err
 	}
 
-	version = bytes.TrimSpace(version)
+	token = bytes.TrimSpace(token)
 
-	if string(version) == "NEW" {
+	if string(token) == "NEW" {
 		// special case, this is a new database
 		return false, nil
 	}
 
+	dec, err := jwt.ParseString(string(token))
+	if err != nil {
+		return false, err
+	}
+	kid := dec.GetKeyId()
+	kidName := apkgsig.DbKeyName(kid)
+	if kidName == "" {
+		return false, errors.New("unknown key used for jwt signature")
+	}
+
+	// decode ed25519 key
+	tmpv, err := base64.RawURLEncoding.DecodeString(kid)
+	if err != nil {
+		return false, err
+	}
+	publicKey := ed25519.PublicKey(tmpv)
+
+	err = dec.Verify(jwt.VerifyAlgo(jwt.EdDSA), jwt.VerifySignature(publicKey))
+	if err != nil {
+		return false, err
+	}
+
+	// jwt is valid
+	version := dec.Payload().GetString("ver")
+	if version == "" {
+		return false, errors.New("invalid version in signed jwt")
+	}
+
+	log.Printf("apkgdb: got database descriptor to version %s signed by %s", version, kidName)
+
 	resp = nil
 
 	if v != "" {
-		if v == string(version) {
+		if v == version {
 			// no update needed
 			return false, nil
 		}
