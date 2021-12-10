@@ -54,7 +54,12 @@ func (i *DB) Lookup(ctx context.Context, name string) (n uint64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return db.internalLookup(name)
+	n, err = db.internalLookup(name)
+	if err == os.ErrNotExist {
+		// if error, try without the OS/arch suffix
+		n, err = db.internalLookup(sname)
+	}
+	return
 }
 
 func (i *DB) ctxLookup(ctx context.Context, name string) (n uint64, err error) {
