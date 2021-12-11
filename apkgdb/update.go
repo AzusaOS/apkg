@@ -74,7 +74,7 @@ func (d *DB) download(v string) (bool, error) {
 		return false, errors.New("invalid version in signed jwt")
 	}
 
-	log.Printf("apkgdb: got database descriptor to version %s signed by %s", version, kidName)
+	//log.Printf("apkgdb: got database descriptor to version %s signed by %s", version, kidName)
 
 	resp = nil
 
