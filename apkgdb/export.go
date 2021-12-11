@@ -203,7 +203,10 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, jwt.MapClaims{
-		"ver": stamp,
+		"ver":  stamp,
+		"arch": d.arch,
+		"os":   d.os,
+		"name": d.name,
 	})
 	token.Header["kid"] = base64.RawURLEncoding.EncodeToString(sig_pub)
 	tokenString, err := token.SignedString(k)
