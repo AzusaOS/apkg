@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/KarpelesLab/jwt"
 	"github.com/MagicalTux/hsm"
 	"github.com/boltdb/bolt"
-	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 func (d *DB) ExportAndUpload(k hsm.Key) error {
@@ -202,14 +202,13 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	if err != nil {
 		return err
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, jwt.MapClaims{
-		"ver":  stamp,
-		"arch": d.arch,
-		"os":   d.os,
-		"name": d.name,
-	})
-	token.Header["kid"] = base64.RawURLEncoding.EncodeToString(sig_pub)
-	tokenString, err := token.SignedString(k)
+	token := jwt.New(jwt.ES256)
+	token.Payload().Set("ver", stamp)
+	token.Payload().Set("arch", d.arch)
+	token.Payload().Set("os", d.os)
+	token.Payload().Set("name", d.name)
+	token.Header().Set("kid", base64.RawURLEncoding.EncodeToString(sig_pub))
+	tokenString, err := token.Sign(k)
 	if err != nil {
 		return err
 	}
