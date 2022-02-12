@@ -202,7 +202,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	if err != nil {
 		return err
 	}
-	token := jwt.New(jwt.ES256)
+	token := jwt.New(jwt.EdDSA)
 	token.Payload().Set("ver", stamp)
 	token.Payload().Set("arch", d.arch)
 	token.Payload().Set("os", d.os)
