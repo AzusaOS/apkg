@@ -95,7 +95,7 @@ func process(k hsm.Key, filename string) error {
 	}
 
 	// TODO fetch created from squashfs mkfs date (superblock ModTime?)
-	created := time.Now()
+	created := time.Unix(int64(sb.ModTime), 0)
 
 	// TODO scan squashfs file for the following kind of files:
 	// pkgconfig/*.pc (if subcat_s = dev)
