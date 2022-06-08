@@ -94,6 +94,7 @@ func process(k hsm.Key, filename string) error {
 		names = append(names, strings.Join(tmp, "."))
 	}
 
+	// TODO fetch created from squashfs mkfs date (superblock ModTime?)
 	created := time.Now()
 
 	// TODO scan squashfs file for the following kind of files:

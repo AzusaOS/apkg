@@ -6,4 +6,5 @@
 * Improve the new web API
 * Implement check against hash table upon block access on packages
 * Upgrade without restart (by passing fuse fd to child process)
+* Handle "no space left on device" gracefully
 
