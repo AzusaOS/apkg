@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -54,6 +55,8 @@ func setRlimit() {
 }
 
 func main() {
+	flag.Parse()
+
 	log.Printf("apkg: Starting apkg daemon built on %s", DATE_TAG)
 	setRlimit()
 	setupSignals()

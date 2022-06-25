@@ -56,6 +56,8 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	_ = os.MkdirAll(path, 0755) // make sure dir exists
 	fn := filepath.Join(path, name+"."+dbos+"."+dbarch+".db")
 
+	initUnsigned(path)
+
 	opts := &bolt.Options{ReadOnly: true}
 
 	if _, err := os.Stat(fn); os.IsNotExist(err) {
