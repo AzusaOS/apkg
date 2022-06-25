@@ -5,16 +5,26 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
+	"git.atonline.com/azusa/apkg/squashfs"
 	"github.com/fsnotify/fsnotify"
 )
 
 var (
 	loadUnsigned  = flag.Bool("load_unsigned", false, "load unsigned packages from disk (DANGEROUS)")
-	unsignedMap   = make(map[string]string)
+	unsignedMap   = make(map[string]*unsignedPkg)
 	unsignedMapLk sync.RWMutex
 )
+
+type unsignedPkg struct {
+	os     string
+	arch   string
+	fn     string
+	load   sync.Once
+	squash *squashfs.Superblock
+}
 
 func initUnsigned(p string) {
 	if !*loadUnsigned {
@@ -82,6 +92,11 @@ func unsignedScan(p string) {
 }
 
 func addUnsignedFile(p, f string) {
+	if !strings.HasSuffix(f, ".squashfs") {
+		return
+	}
+	pkgName := strings.TrimSuffix(f, ".squashfs")
+
 	fn := filepath.Join(p, f)
 	st, err := os.Stat(fn)
 	if err != nil {
@@ -93,11 +108,13 @@ func addUnsignedFile(p, f string) {
 		return
 	}
 	// file name should look like: category.package.core.1.2.3.linux.amd64.squashfs
-	log.Printf("apkgdb: add unsigned file: %s", f)
+	log.Printf("apkgdb: add unsigned package: %s", pkgName)
 	unsignedMapLk.Lock()
 	defer unsignedMapLk.Unlock()
 
-	unsignedMap[f] = fn
+	unsignedMap[pkgName] = &unsignedPkg{
+		fn: fn,
+	}
 }
 
 func removeUnsignedFile(p, f string) {
