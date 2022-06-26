@@ -29,6 +29,7 @@ type unsignedPkg struct {
 	load     sync.Once
 	f        *os.File
 	squash   *squashfs.Superblock
+	err      error
 }
 
 func (p *unsignedPkg) Value() uint64 {
@@ -39,21 +40,22 @@ func (p *unsignedPkg) Less(than llrb.Item) bool {
 	return p.startIno < than.(pkgindexItem).Value()
 }
 
-func (p *unsignedPkg) open() error {
+func (p *unsignedPkg) open() {
+	log.Printf("apkgdb: opening UNSIGNED %s", p.fn)
 	f, err := os.Open(p.fn)
 	if err != nil {
-		return err
+		p.err = err
+		return
 	}
 	p.f = f
 	runtime.SetFinalizer(p, closeUnsignedPkg)
 
 	p.squash, err = squashfs.New(p.f, 0)
 	if err != nil {
-		return err
+		p.err = err
+		return
 	}
 	p.inodes = uint64(p.squash.InodeCnt)
-
-	return nil
 }
 
 func closeUnsignedPkg(p *unsignedPkg) {
@@ -63,6 +65,9 @@ func closeUnsignedPkg(p *unsignedPkg) {
 }
 
 func (p *unsignedPkg) handleLookup(ino uint64) (apkgfs.Inode, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
 	if ino == p.startIno {
 		return apkgfs.NewSymlink([]byte(p.pkg)), nil
 	}
@@ -109,6 +114,7 @@ func lookupUnsigned(osV OS, arch Arch, name string) *unsignedPkg {
 		// try to find a matching name
 		for n, v := range m {
 			if strings.HasPrefix(n, name) {
+				v.load.Do(v.open)
 				return v
 			}
 		}
@@ -187,10 +193,6 @@ func addUnsignedFile(p, f string) {
 	pkg := &unsignedPkg{
 		fn:  fn,
 		pkg: name,
-	}
-	if err = pkg.open(); err != nil {
-		log.Printf("apkgdb: failed to open %s: %s", f, err)
-		return
 	}
 
 	// file name should look like: category.package.core.1.2.3.linux.amd64.squashfs
