@@ -66,20 +66,6 @@ func (i *DB) ctxLookup(ctx context.Context, name string) (n uint64, err error) {
 	if i.parent != nil {
 		return i.internalLookup(name)
 	}
-	switch i.archV {
-	case AMD64:
-		// if calling process is 32bits, let's give it a 32 bits lookup ...
-		pid, ok := ctx.Value(apkgfs.Pid).(uint32)
-		if ok {
-			if is32bitsProcess(pid) {
-				db, err := i.SubGet(ArchOS{OS: i.osV, Arch: X86})
-				if err != nil {
-					return 0, err
-				}
-				return db.internalLookup(name)
-			}
-		}
-	}
 
 	return i.internalLookup(name)
 }

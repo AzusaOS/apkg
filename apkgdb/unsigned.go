@@ -14,14 +14,15 @@ import (
 
 var (
 	loadUnsigned  = flag.Bool("load_unsigned", false, "load unsigned packages from disk (DANGEROUS)")
-	unsignedMap   = make(map[string]*unsignedPkg)
+	unsignedMap   map[string]*unsignedPkg
 	unsignedMapLk sync.RWMutex
 )
 
 type unsignedPkg struct {
-	os     string
-	arch   string
+	os     OS
+	arch   Arch
 	fn     string
+	pkg    string
 	load   sync.Once
 	squash *squashfs.Superblock
 }
@@ -36,6 +37,7 @@ func initUnsigned(p string) {
 	log.Printf("WARNING! -load_unsigned has been ENABLED. This means that unsigned packages found in %s will be loaded if requested", p)
 
 	os.MkdirAll(p, 0755)
+	unsignedMap = make(map[string]*unsignedPkg)
 
 	go unsignedScan(p)
 }
@@ -95,7 +97,35 @@ func addUnsignedFile(p, f string) {
 	if !strings.HasSuffix(f, ".squashfs") {
 		return
 	}
-	pkgName := strings.TrimSuffix(f, ".squashfs")
+	name := strings.TrimSuffix(f, ".squashfs")
+
+	v := strings.LastIndexByte(name, '.')
+	if v == -1 {
+		// there can be no filename without a '.'
+		log.Printf("apkgdb: skipping UNSIGNED file %s: no dots", f)
+		return
+	}
+
+	// name must be suffixed by cpu/OS
+	// eg: azusa.symlinks.core.0.0.3.20210216.linux.amd64
+	arch := ParseArch(name[v+1:])
+	if arch == BadArch {
+		log.Printf("apkgdb: skipping UNSIGNED file %s: bad ARCH", f)
+		return
+	}
+
+	name = name[:v]
+	v = strings.LastIndexByte(name, '.')
+	if v == -1 {
+		log.Printf("apkgdb: skipping UNSIGNED file %s: no OS?", f)
+		return
+	}
+	osV := ParseOS(name[v+1:])
+	if osV == BadOS {
+		log.Printf("apkgdb: skipping UNSIGNED file %s: bad OS", f)
+		return
+	}
+	name = name[:v]
 
 	fn := filepath.Join(p, f)
 	st, err := os.Stat(fn)
@@ -108,12 +138,15 @@ func addUnsignedFile(p, f string) {
 		return
 	}
 	// file name should look like: category.package.core.1.2.3.linux.amd64.squashfs
-	log.Printf("apkgdb: add unsigned package: %s", pkgName)
+	log.Printf("apkgdb: add unsigned package: %s OS=%s ARCH=%s", name, osV, arch)
 	unsignedMapLk.Lock()
 	defer unsignedMapLk.Unlock()
 
-	unsignedMap[pkgName] = &unsignedPkg{
-		fn: fn,
+	unsignedMap[name] = &unsignedPkg{
+		fn:   fn,
+		pkg:  name,
+		os:   osV,
+		arch: arch,
 	}
 }
 
