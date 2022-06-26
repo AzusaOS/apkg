@@ -14,13 +14,11 @@ import (
 
 var (
 	loadUnsigned  = flag.Bool("load_unsigned", false, "load unsigned packages from disk (DANGEROUS)")
-	unsignedMap   map[string]*unsignedPkg
+	unsignedMap   map[ArchOS]map[string]*unsignedPkg
 	unsignedMapLk sync.RWMutex
 )
 
 type unsignedPkg struct {
-	os     OS
-	arch   Arch
 	fn     string
 	pkg    string
 	load   sync.Once
@@ -37,7 +35,7 @@ func initUnsigned(p string) {
 	log.Printf("WARNING! -load_unsigned has been ENABLED. This means that unsigned packages found in %s will be loaded if requested", p)
 
 	os.MkdirAll(p, 0755)
-	unsignedMap = make(map[string]*unsignedPkg)
+	unsignedMap = make(map[ArchOS]map[string]*unsignedPkg)
 
 	go unsignedScan(p)
 }
@@ -94,38 +92,10 @@ func unsignedScan(p string) {
 }
 
 func addUnsignedFile(p, f string) {
-	if !strings.HasSuffix(f, ".squashfs") {
+	name, archos, ok := cleanUnsignedName(f)
+	if !ok {
 		return
 	}
-	name := strings.TrimSuffix(f, ".squashfs")
-
-	v := strings.LastIndexByte(name, '.')
-	if v == -1 {
-		// there can be no filename without a '.'
-		log.Printf("apkgdb: skipping UNSIGNED file %s: no dots", f)
-		return
-	}
-
-	// name must be suffixed by cpu/OS
-	// eg: azusa.symlinks.core.0.0.3.20210216.linux.amd64
-	arch := ParseArch(name[v+1:])
-	if arch == BadArch {
-		log.Printf("apkgdb: skipping UNSIGNED file %s: bad ARCH", f)
-		return
-	}
-
-	name = name[:v]
-	v = strings.LastIndexByte(name, '.')
-	if v == -1 {
-		log.Printf("apkgdb: skipping UNSIGNED file %s: no OS?", f)
-		return
-	}
-	osV := ParseOS(name[v+1:])
-	if osV == BadOS {
-		log.Printf("apkgdb: skipping UNSIGNED file %s: bad OS", f)
-		return
-	}
-	name = name[:v]
 
 	fn := filepath.Join(p, f)
 	st, err := os.Stat(fn)
@@ -138,22 +108,69 @@ func addUnsignedFile(p, f string) {
 		return
 	}
 	// file name should look like: category.package.core.1.2.3.linux.amd64.squashfs
-	log.Printf("apkgdb: add unsigned package: %s OS=%s ARCH=%s", name, osV, arch)
+	log.Printf("apkgdb: add unsigned package: %s OS=%s ARCH=%s", name, archos.OS, archos.Arch)
 	unsignedMapLk.Lock()
 	defer unsignedMapLk.Unlock()
 
-	unsignedMap[name] = &unsignedPkg{
-		fn:   fn,
-		pkg:  name,
-		os:   osV,
-		arch: arch,
+	if _, ok := unsignedMap[archos]; !ok {
+		unsignedMap[archos] = make(map[string]*unsignedPkg)
+	}
+
+	unsignedMap[archos][name] = &unsignedPkg{
+		fn:  fn,
+		pkg: name,
 	}
 }
 
 func removeUnsignedFile(p, f string) {
+	name, archos, ok := cleanUnsignedName(f)
+	if !ok {
+		return
+	}
+
 	log.Printf("apkgdb: remove unsigned file: %s", f)
 	unsignedMapLk.Lock()
 	defer unsignedMapLk.Unlock()
 
-	delete(unsignedMap, f)
+	if m, ok := unsignedMap[archos]; ok {
+		delete(m, name)
+	}
+}
+
+func cleanUnsignedName(f string) (name string, archos ArchOS, ok bool) {
+	if !strings.HasSuffix(f, ".squashfs") {
+		return
+	}
+	name = strings.TrimSuffix(f, ".squashfs")
+
+	v := strings.LastIndexByte(name, '.')
+	if v == -1 {
+		// there can be no filename without a '.'
+		log.Printf("apkgdb: skipping UNSIGNED file %s: no dots", f)
+		return
+	}
+
+	// name must be suffixed by cpu/OS
+	// eg: azusa.symlinks.core.0.0.3.20210216.linux.amd64
+	archos.Arch = ParseArch(name[v+1:])
+	if archos.Arch == BadArch {
+		log.Printf("apkgdb: skipping UNSIGNED file %s: bad ARCH", f)
+		return
+	}
+
+	name = name[:v]
+	v = strings.LastIndexByte(name, '.')
+	if v == -1 {
+		log.Printf("apkgdb: skipping UNSIGNED file %s: no OS?", f)
+		return
+	}
+	archos.OS = ParseOS(name[v+1:])
+	if archos.OS == BadOS {
+		log.Printf("apkgdb: skipping UNSIGNED file %s: bad OS", f)
+		return
+	}
+	name = name[:v]
+
+	ok = true
+	return
 }
