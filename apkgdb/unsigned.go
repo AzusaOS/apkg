@@ -24,7 +24,6 @@ var (
 type unsignedPkg struct {
 	fn       string
 	pkg      string
-	pkgfull  string // with OS & ARCH
 	startIno uint64
 	inodes   uint64
 	load     sync.Once
@@ -65,7 +64,7 @@ func closeUnsignedPkg(p *unsignedPkg) {
 
 func (p *unsignedPkg) handleLookup(ino uint64) (apkgfs.Inode, error) {
 	if ino == p.startIno {
-		return apkgfs.NewSymlink([]byte(p.pkgfull)), nil
+		return apkgfs.NewSymlink([]byte(p.pkg)), nil
 	}
 
 	if p.squash == nil {
@@ -186,9 +185,8 @@ func addUnsignedFile(p, f string) {
 	}
 
 	pkg := &unsignedPkg{
-		fn:      fn,
-		pkg:     name,
-		pkgfull: name + "." + archos.OS.String() + "." + archos.Arch.String(),
+		fn:  fn,
+		pkg: name,
 	}
 	if err = pkg.open(); err != nil {
 		log.Printf("apkgdb: failed to open %s: %s", f, err)
@@ -243,18 +241,18 @@ func cleanUnsignedName(f string) (name string, archos ArchOS, ok bool) {
 		return
 	}
 
-	name = name[:v]
-	v = strings.LastIndexByte(name, '.')
+	sname := name[:v]
+	v = strings.LastIndexByte(sname, '.')
 	if v == -1 {
 		log.Printf("apkgdb: skipping UNSIGNED file %s: no OS?", f)
 		return
 	}
-	archos.OS = ParseOS(name[v+1:])
+	archos.OS = ParseOS(sname[v+1:])
 	if archos.OS == BadOS {
 		log.Printf("apkgdb: skipping UNSIGNED file %s: bad OS", f)
 		return
 	}
-	name = name[:v]
+	//name = name[:v]
 
 	ok = true
 	return

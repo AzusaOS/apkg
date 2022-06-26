@@ -78,6 +78,9 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 
 	if v := lookupUnsigned(i.osV, i.archV, name); v != nil {
 		n, err = i.pkgInoUnsigned(v)
+		if name == v.pkg {
+			n += 1
+		}
 		return
 	}
 
