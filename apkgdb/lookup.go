@@ -76,6 +76,11 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 		return 0, os.ErrNotExist
 	}
 
+	if v := lookupUnsigned(i.osV, i.archV, name); v != nil {
+		n, err = i.pkgInoUnsigned(v)
+		return
+	}
+
 	i.dbrw.RLock()
 	defer i.dbrw.RUnlock()
 
@@ -158,6 +163,30 @@ func (i *DB) pkgIno(pkg []byte) uint64 {
 	return v
 }
 
+func (i *DB) pkgInoUnsigned(p *unsignedPkg) (uint64, error) {
+	if p.startIno != 0 {
+		return p.startIno, nil
+	}
+	i.pkgIlk.Lock()
+	defer i.pkgIlk.Unlock()
+
+	if p.startIno != 0 {
+		return p.startIno, nil
+	}
+
+	v := i.allocInodes(p.inodes + 1) // +1 for symlink
+	p.startIno = v
+	p.squash.SetInodeOffset(v)
+
+	if i.parent != nil {
+		i.parent.ino.ReplaceOrInsert(p)
+	} else {
+		i.ino.ReplaceOrInsert(p)
+	}
+
+	return v, nil
+}
+
 func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 	var val pkgindexItem
 
@@ -174,6 +203,10 @@ func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 
 	switch pkg := val.(type) {
 	case *Package:
+		if pkg != nil && reqino < pkg.startIno+pkg.inodes+1 {
+			return pkg.handleLookup(reqino)
+		}
+	case *unsignedPkg:
 		if pkg != nil && reqino < pkg.startIno+pkg.inodes+1 {
 			return pkg.handleLookup(reqino)
 		}

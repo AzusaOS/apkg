@@ -5,11 +5,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
+	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/squashfs"
 	"github.com/fsnotify/fsnotify"
+	"github.com/petar/GoLLRB/llrb"
 )
 
 var (
@@ -19,10 +22,63 @@ var (
 )
 
 type unsignedPkg struct {
-	fn     string
-	pkg    string
-	load   sync.Once
-	squash *squashfs.Superblock
+	fn       string
+	pkg      string
+	pkgfull  string // with OS & ARCH
+	startIno uint64
+	inodes   uint64
+	load     sync.Once
+	f        *os.File
+	squash   *squashfs.Superblock
+}
+
+func (p *unsignedPkg) Value() uint64 {
+	return p.startIno
+}
+
+func (p *unsignedPkg) Less(than llrb.Item) bool {
+	return p.startIno < than.(pkgindexItem).Value()
+}
+
+func (p *unsignedPkg) open() error {
+	f, err := os.Open(p.fn)
+	if err != nil {
+		return err
+	}
+	p.f = f
+	runtime.SetFinalizer(p, closeUnsignedPkg)
+
+	p.squash, err = squashfs.New(p.f, 0)
+	if err != nil {
+		return err
+	}
+	p.inodes = uint64(p.squash.InodeCnt)
+
+	return nil
+}
+
+func closeUnsignedPkg(p *unsignedPkg) {
+	if p.f != nil {
+		p.f.Close()
+	}
+}
+
+func (p *unsignedPkg) handleLookup(ino uint64) (apkgfs.Inode, error) {
+	if ino == p.startIno {
+		return apkgfs.NewSymlink([]byte(p.pkgfull)), nil
+	}
+
+	if p.squash == nil {
+		// problem
+		return nil, os.ErrInvalid
+	}
+
+	if ino <= p.startIno {
+		// in case it is == it is symlink, which is returned by the
+		return nil, os.ErrInvalid
+	}
+
+	return p.squash.GetInode(ino - p.startIno)
 }
 
 func initUnsigned(p string) {
@@ -38,6 +94,27 @@ func initUnsigned(p string) {
 	unsignedMap = make(map[ArchOS]map[string]*unsignedPkg)
 
 	go unsignedScan(p)
+}
+
+func lookupUnsigned(osV OS, arch Arch, name string) *unsignedPkg {
+	if unsignedMap == nil {
+		return nil
+	}
+
+	unsignedMapLk.RLock()
+	defer unsignedMapLk.RUnlock()
+
+	archos := ArchOS{OS: osV, Arch: arch}
+
+	if m, ok := unsignedMap[archos]; ok {
+		// try to find a matching name
+		for n, v := range m {
+			if strings.HasPrefix(n, name) {
+				return v
+			}
+		}
+	}
+	return nil
 }
 
 func unsignedScan(p string) {
@@ -107,6 +184,17 @@ func addUnsignedFile(p, f string) {
 		// ignore directories, links, etc
 		return
 	}
+
+	pkg := &unsignedPkg{
+		fn:      fn,
+		pkg:     name,
+		pkgfull: name + "." + archos.OS.String() + "." + archos.Arch.String(),
+	}
+	if err = pkg.open(); err != nil {
+		log.Printf("apkgdb: failed to open %s: %s", f, err)
+		return
+	}
+
 	// file name should look like: category.package.core.1.2.3.linux.amd64.squashfs
 	log.Printf("apkgdb: add unsigned package: %s OS=%s ARCH=%s", name, archos.OS, archos.Arch)
 	unsignedMapLk.Lock()
@@ -116,10 +204,7 @@ func addUnsignedFile(p, f string) {
 		unsignedMap[archos] = make(map[string]*unsignedPkg)
 	}
 
-	unsignedMap[archos][name] = &unsignedPkg{
-		fn:  fn,
-		pkg: name,
-	}
+	unsignedMap[archos][name] = pkg
 }
 
 func removeUnsignedFile(p, f string) {
