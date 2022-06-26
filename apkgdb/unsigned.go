@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 
@@ -98,6 +99,27 @@ func initUnsigned(p string) {
 	unsignedMap = make(map[ArchOS]map[string]*unsignedPkg)
 
 	go unsignedScan(p)
+}
+
+func listUnsigned(osV OS, arch Arch) []string {
+	if unsignedMap == nil {
+		return nil
+	}
+
+	unsignedMapLk.RLock()
+	defer unsignedMapLk.RUnlock()
+
+	archos := ArchOS{OS: osV, Arch: arch}
+
+	if m, ok := unsignedMap[archos]; ok {
+		res := make([]string, 0, len(m))
+		for n := range m {
+			res = append(res, n)
+		}
+		sort.Strings(res)
+		return res
+	}
+	return nil
 }
 
 func lookupUnsigned(osV OS, arch Arch, name string) *unsignedPkg {

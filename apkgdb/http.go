@@ -11,6 +11,29 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+func (d *DB) getPackagesList() []string {
+	res := listUnsigned(d.osV, d.archV)
+
+	d.dbrw.RLock()
+	defer d.dbrw.RUnlock()
+
+	d.dbptr.View(func(tx *bolt.Tx) error {
+		// use p2p for correct package ordering
+		bucket := tx.Bucket([]byte("p2p"))
+		if bucket == nil {
+			return nil
+		}
+		return bucket.ForEach(func(k, v []byte) error {
+			res = append(res, string(v[8+32:]))
+			return nil
+		})
+	})
+
+	natSort(res)
+
+	return res
+}
+
 func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if sub := r.URL.Query().Get("sub"); d.parent == nil && sub != "" {
 		// try to locate a sub database
@@ -33,21 +56,11 @@ func (d *DB) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch act {
 	case "list":
-		// return list of packages
-		d.dbrw.RLock()
-		defer d.dbrw.RUnlock()
-
-		d.dbptr.View(func(tx *bolt.Tx) error {
-			// use p2p for correct package ordering
-			bucket := tx.Bucket([]byte("p2p"))
-			if bucket == nil {
-				return nil
-			}
-			return bucket.ForEach(func(k, v []byte) error {
-				_, err := fmt.Fprintf(w, "%s\n", v[8+32:])
-				return err
-			})
-		})
+		// list unsigned first
+		list := d.getPackagesList() // sorted
+		for _, v := range list {
+			fmt.Fprintf(w, "%s\n", v)
+		}
 	default:
 		fmt.Fprintf(w, "APKGDB STATUS\n\n")
 		fmt.Fprintf(w, "Name: %s\n", d.name)
