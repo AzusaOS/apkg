@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
-	"github.com/MagicalTux/smartremote"
+	"github.com/KarpelesLab/smartremote"
 	"github.com/boltdb/bolt"
 )
 

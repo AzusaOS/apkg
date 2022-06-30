@@ -19,7 +19,7 @@ import (
 	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"git.atonline.com/azusa/apkg/squashfs"
-	"github.com/MagicalTux/smartremote"
+	"github.com/KarpelesLab/smartremote"
 	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )
