@@ -115,3 +115,28 @@ Contains the following buckets
 * sig → package hash → signature
 * meta → package hash → meta data
 * path → package hash → file relative path
+
+# Metadata
+
+The following values are present in the meta json:
+
+* fullname
+* name
+* version
+* names
+* os (eg. "linux")
+* arch (eg. "amd64")
+* category
+* base_name
+* subcat
+* size
+* hash
+* blocks
+* block_size
+* inodes
+* created
+* provides (key: filename)
+  * size
+  * mode
+* ld.so.cache (if a library)
+

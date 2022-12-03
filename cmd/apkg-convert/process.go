@@ -16,7 +16,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -111,7 +110,7 @@ func process(k hsm.Key, filename string) error {
 
 	// Also scan & include actual file content of:
 	// /.ld.so.cache (if subcat_s = libs)
-	var provides []string
+	var provides map[string]any
 	var provideGlob []string
 
 	// we define metadata now so we can add to it as we check subcat_s
@@ -134,6 +133,8 @@ func process(k hsm.Key, filename string) error {
 	}
 
 	switch subcat_s {
+	case "core":
+		provideGlob = append(provideGlob, "bin/*", "sbin/*", "udev/*")
 	case "libs":
 		// check for /.ld.so.cache
 		if buf, err := fs.ReadFile(sb, "/.ld.so.cache"); err == nil {
@@ -143,11 +144,17 @@ func process(k hsm.Key, filename string) error {
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("while reading /.ld.so.cache: %w", err)
 		}
-		provideGlob = append(provideGlob, "lib/*", "lib32/*", "lib64/*")
+		if arch_s == "amd64" {
+			provideGlob = append(provideGlob, "lib32/*", "lib64/*")
+		} else {
+			provideGlob = append(provideGlob, "lib/*")
+		}
 	case "dev":
-		provideGlob = append(provideGlob, "pkgconfig/*.pc", "bin/*", "sbin/*")
-	case "core":
-		provideGlob = append(provideGlob, "bin/*", "sbin/*")
+		provideGlob = append(provideGlob, "pkgconfig/*.pc", "cmake/*", "bin/*", "sbin/*")
+	case "mod":
+		provideGlob = append(provideGlob, "pkgconfig/*.pc", "cmake/*")
+	case "doc":
+		provideGlob = append(provideGlob, "man/*", "info/*")
 	}
 
 	for _, glob := range provideGlob {
@@ -155,10 +162,18 @@ func process(k hsm.Key, filename string) error {
 		if err != nil {
 			return fmt.Errorf("while glob %s: %w", glob, err)
 		}
-		provides = append(provides, matches...)
+		for _, match := range matches {
+			if _, ok := provides[match]; ok {
+				continue
+			}
+			// grab file stats
+			st, err := sb.Stat(match)
+			if err == nil {
+				provides[match] = map[string]any{"size": st.Size(), "mode": st.Mode()}
+			}
+		}
 	}
 
-	sort.Strings(provides)
 	metadata["provides"] = provides
 
 	metadataJson, err := json.Marshal(metadata)
