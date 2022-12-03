@@ -137,12 +137,12 @@ func process(k hsm.Key, filename string) error {
 		provideGlob = append(provideGlob, "bin/*", "sbin/*", "udev/*")
 	case "libs":
 		// check for /.ld.so.cache
-		if buf, err := fs.ReadFile(sb, "/.ld.so.cache"); err == nil {
+		if buf, err := fs.ReadFile(sb, ".ld.so.cache"); err == nil {
 			// This is a special case where we include the whole ld.so.cache content in metadata
 			// TODO check length and prevent file from growing too much
 			metadata["ld.so.cache"] = base64.StdEncoding.EncodeToString(buf)
 		} else if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("while reading /.ld.so.cache: %w", err)
+			return fmt.Errorf("while reading .ld.so.cache: %w", err)
 		}
 		if arch_s == "amd64" {
 			provideGlob = append(provideGlob, "lib32/*", "lib64/*")
