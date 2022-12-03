@@ -169,7 +169,18 @@ func process(k hsm.Key, filename string) error {
 			// grab file stats
 			st, err := sb.Stat(match)
 			if err == nil {
-				provides[match] = map[string]any{"size": st.Size(), "mode": st.Mode()}
+				if st.Mode().Type() == fs.ModeSymlink {
+					// read symlink
+					v, err := sb.Readlink(match)
+					if err == nil {
+						if strings.IndexByte(v, '/') == -1 {
+							// only store info about symlinks in the same directory
+							provides[match] = map[string]any{"symlink": v}
+						}
+					}
+				} else {
+					provides[match] = map[string]any{"size": st.Size(), "mode": st.Mode()}
+				}
 			}
 		}
 	}
