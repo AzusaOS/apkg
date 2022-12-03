@@ -110,7 +110,7 @@ func process(k hsm.Key, filename string) error {
 
 	// Also scan & include actual file content of:
 	// /.ld.so.cache (if subcat_s = libs)
-	var provides map[string]any
+	provides := make(map[string]any)
 	var provideGlob []string
 
 	// we define metadata now so we can add to it as we check subcat_s
