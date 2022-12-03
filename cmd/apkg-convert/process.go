@@ -5,14 +5,18 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -97,7 +101,7 @@ func process(k hsm.Key, filename string) error {
 	// fetch created from squashfs mkfs date (superblock ModTime?)
 	created := time.Unix(int64(sb.ModTime), 0)
 
-	// TODO scan squashfs file for the following kind of files:
+	// scan squashfs file for the following kind of files:
 	// pkgconfig/*.pc (if subcat_s = dev)
 	// bin/* (with +x) (if subcat_s = core|dev)
 	// sbin/* (with +x) (if subcat_s = core|dev)
@@ -107,8 +111,11 @@ func process(k hsm.Key, filename string) error {
 
 	// Also scan & include actual file content of:
 	// /.ld.so.cache (if subcat_s = libs)
+	var provides []string
+	var provideGlob []string
 
-	metadata := map[string]interface{}{
+	// we define metadata now so we can add to it as we check subcat_s
+	metadata := map[string]any{
 		"full_name":  filename_f,
 		"name":       strings.Join(fn_a, "."),
 		"version":    strings.Join(fn_v, "."),
@@ -125,6 +132,34 @@ func process(k hsm.Key, filename string) error {
 		"inodes":     reserveIno,
 		"created":    []int64{created.Unix(), int64(created.Nanosecond())},
 	}
+
+	switch subcat_s {
+	case "libs":
+		// check for /.ld.so.cache
+		if buf, err := fs.ReadFile(sb, "/.ld.so.cache"); err == nil {
+			// This is a special case where we include the whole ld.so.cache content in metadata
+			// TODO check length and prevent file from growing too much
+			metadata["ld.so.cache"] = base64.StdEncoding.EncodeToString(buf)
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("while reading /.ld.so.cache: %w", err)
+		}
+		provideGlob = append(provideGlob, "lib/*", "lib32/*", "lib64/*")
+	case "dev":
+		provideGlob = append(provideGlob, "pkgconfig/*.pc", "bin/*", "sbin/*")
+	case "core":
+		provideGlob = append(provideGlob, "bin/*", "sbin/*")
+	}
+
+	for _, glob := range provideGlob {
+		matches, err := fs.Glob(sb, glob)
+		if err != nil {
+			return fmt.Errorf("while glob %s: %w", glob, err)
+		}
+		provides = append(provides, matches...)
+	}
+
+	sort.Strings(provides)
+	metadata["provides"] = provides
 
 	metadataJson, err := json.Marshal(metadata)
 	if err != nil {
