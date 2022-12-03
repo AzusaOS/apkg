@@ -94,7 +94,7 @@ func process(k hsm.Key, filename string) error {
 		names = append(names, strings.Join(tmp, "."))
 	}
 
-	// TODO fetch created from squashfs mkfs date (superblock ModTime?)
+	// fetch created from squashfs mkfs date (superblock ModTime?)
 	created := time.Unix(int64(sb.ModTime), 0)
 
 	// TODO scan squashfs file for the following kind of files:
@@ -104,6 +104,9 @@ func process(k hsm.Key, filename string) error {
 	// lib/* (with +x, or symlinks) (if subcat_s = libs)
 	// lib32|64/* (with +x, or symlinks) (if subcat_s = libs)
 	// those are to be added to metadata in "provides"
+
+	// Also scan & include actual file content of:
+	// /.ld.so.cache (if subcat_s = libs)
 
 	metadata := map[string]interface{}{
 		"full_name":  filename_f,

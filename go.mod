@@ -1,6 +1,6 @@
 module git.atonline.com/azusa/apkg
 
-go 1.17
+go 1.18
 
 require (
 	github.com/KarpelesLab/jwt v0.0.3
