@@ -169,6 +169,7 @@ func process(k hsm.Key, filename string) error {
 			// grab file stats
 			st, err := sb.Stat(match)
 			if err == nil {
+				log.Printf("provides: %s %s", st.Mode(), match)
 				if st.Mode().Type() == fs.ModeSymlink {
 					// read symlink
 					v, err := sb.Readlink(match)
