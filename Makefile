@@ -1,6 +1,6 @@
 #!/bin/make
 
-GOROOT:=$(shell PATH="/pkg/main/dev-lang.go/bin:$$PATH" go env GOROOT)
+GOROOT:=$(shell PATH="/pkg/main/dev-lang.go.dev/bin:$$PATH" go env GOROOT)
 GO_TAG:=$(shell /bin/sh -c 'eval `$(GOROOT)/bin/go tool dist env`; echo "$${GOOS}_$${GOARCH}"')
 GIT_TAG:=$(shell git rev-parse --short HEAD)
 GOPATH:=$(shell $(GOROOT)/bin/go env GOPATH)
@@ -37,7 +37,7 @@ all: $(PROJECT_NAME)
 
 $(PROJECT_NAME): $(SOURCES)
 	$(GOPATH)/bin/goimports -w -l .
-	$(GOROOT)/bin/go build -v -gcflags="-N -l" -ldflags=all="-X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=DEV -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) -X main.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
+	$(GOROOT)/bin/go build -v -tags "$(GO_TAGS)" -gcflags="-N -l" -ldflags=all="-X github.com/KarpelesLab/goupd.MODE=DEV $(GOLDFLAGS)"
 
 clean:
 	$(GOROOT)/bin/go clean
@@ -110,10 +110,10 @@ dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%: $(SOURCES)
 
 ifneq ($(TARGET_ARCH),)
 dist/$(PROJECT_NAME)_$(GIT_TAG)/build_$(PROJECT_NAME).$(TARGET_ARCH): $(SOURCES)
-	@GOOS="$(TARGET_GOOS)" GOARCH="$(TARGET_GOARCH)" $(GOROOT)/bin/go build -a -o "$@" -gcflags="-N -l -trimpath=$(shell pwd)" -ldflags=all="-s -w -X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=PROD -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) -X main.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
+	@GOOS="$(TARGET_GOOS)" GOARCH="$(TARGET_GOARCH)" $(GOROOT)/bin/go build -a -o "$@" -tags "$(GO_TAGS)" -gcflags="-N -l -trimpath=$(shell pwd)" -ldflags=all="-s -w -X github.com/KarpelesLab/goupd.MODE=PROD $(GOLDFLAGS)"
 endif
 
 update-make:
 	@echo "Updating Makefile ..."
-	@curl -s "https://raw.githubusercontent.com/TrisTech/make-go/master/Makefile" >Makefile.upd
+	@curl -s "https://raw.githubusercontent.com/KarpelesLab/make-go/master/Makefile" >Makefile.upd
 	@mv -f "Makefile.upd" "Makefile"

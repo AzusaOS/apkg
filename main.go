@@ -17,7 +17,6 @@ import (
 
 var dbMain *apkgdb.DB
 var shutdownChan = make(chan struct{})
-var DATE_TAG = "unknown"
 
 func shutdown() {
 	log.Println("apkg: shutting down...")
