@@ -18,8 +18,8 @@ import (
 
 	"git.atonline.com/azusa/apkg/apkgfs"
 	"git.atonline.com/azusa/apkg/apkgsig"
-	"git.atonline.com/azusa/apkg/squashfs"
 	"github.com/KarpelesLab/smartremote"
+	"github.com/KarpelesLab/squashfs"
 	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
 )

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
-	"git.atonline.com/azusa/apkg/squashfs"
+	"github.com/KarpelesLab/squashfs"
 	"github.com/MagicalTux/hsm"
 )
 

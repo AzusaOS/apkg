@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"git.atonline.com/azusa/apkg/apkgfs"
-	"git.atonline.com/azusa/apkg/squashfs"
+	"github.com/KarpelesLab/squashfs"
 	"github.com/fsnotify/fsnotify"
 	"github.com/petar/GoLLRB/llrb"
 )
