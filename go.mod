@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/KarpelesLab/jwt v0.0.3
 	github.com/KarpelesLab/smartremote v0.0.18
-	github.com/KarpelesLab/squashfs v0.1.3
+	github.com/KarpelesLab/squashfs v0.1.5
 	github.com/MagicalTux/hsm v0.1.6
 	github.com/boltdb/bolt v1.3.1
 	github.com/fsnotify/fsnotify v1.5.4

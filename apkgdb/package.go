@@ -329,7 +329,7 @@ func (p *Package) doDl() {
 		return
 	}
 
-	p.squash, err = squashfs.New(p, p.startIno)
+	p.squash, err = squashfs.New(p, squashfs.InodeOffset(p.startIno))
 	if err != nil {
 		log.Printf("apkgdb: failed to mount: %s", err)
 		defer p.f.Close()

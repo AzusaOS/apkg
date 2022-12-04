@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -28,7 +27,6 @@ type unsignedPkg struct {
 	startIno uint64
 	inodes   uint64
 	load     sync.Once
-	f        *os.File
 	squash   *squashfs.Superblock
 	err      error
 }
@@ -43,26 +41,14 @@ func (p *unsignedPkg) Less(than llrb.Item) bool {
 
 func (p *unsignedPkg) open() {
 	log.Printf("apkgdb: opening UNSIGNED %s", p.fn)
-	f, err := os.Open(p.fn)
-	if err != nil {
-		p.err = err
-		return
-	}
-	p.f = f
-	runtime.SetFinalizer(p, closeUnsignedPkg)
 
-	p.squash, err = squashfs.New(p.f, 0)
+	var err error
+	p.squash, err = squashfs.Open(p.fn)
 	if err != nil {
 		p.err = err
 		return
 	}
 	p.inodes = uint64(p.squash.InodeCnt)
-}
-
-func closeUnsignedPkg(p *unsignedPkg) {
-	if p.f != nil {
-		p.f.Close()
-	}
 }
 
 func (p *unsignedPkg) handleLookup(ino uint64) (apkgfs.Inode, error) {
