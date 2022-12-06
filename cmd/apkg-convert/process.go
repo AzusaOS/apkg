@@ -114,6 +114,7 @@ func process(k hsm.Key, filename string) error {
 
 	// we also have a special case of some packages that need to provide symlinks to be shared in virtual views, for stuff like python modules.
 	// we do that through a special .virtual folder at the squashfs root that can contain directories (virtual module names), each containign symlinks
+	// example: .virtual/python-modules-3.2.1/pythonmodulename → ../../pythonmodulename
 
 	provides := make(map[string]any)
 	var provideGlob []string
