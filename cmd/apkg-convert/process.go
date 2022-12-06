@@ -135,6 +135,7 @@ func process(k hsm.Key, filename string) error {
 				tgt, err := sb.Readlink(path.Join(".virtual", pkg, sym))
 				if err == nil && strings.HasPrefix(string(tgt), "../../") {
 					sub[sym] = strings.TrimPrefix(string(tgt), "../../")
+					log.Printf("provides virtual: %s %s → %s", pkg, sym, sub[sym])
 				}
 			}
 			if len(sub) > 0 {
@@ -202,17 +203,18 @@ func process(k hsm.Key, filename string) error {
 			// grab file stats
 			st, err := sb.Stat(match)
 			if err == nil {
-				log.Printf("provides: %s %s", st.Mode(), match)
 				if st.Mode().Type() == fs.ModeSymlink {
 					// read symlink
 					v, err := sb.Readlink(match)
 					if err == nil {
 						if strings.IndexByte(v, '/') == -1 {
 							// only store info about symlinks in the same directory
+							log.Printf("provides: %s %s -> ", st.Mode(), match, v)
 							provides[match] = map[string]any{"symlink": v}
 						}
 					}
 				} else {
+					log.Printf("provides: %s %s", st.Mode(), match)
 					provides[match] = map[string]any{"size": st.Size(), "mode": st.Mode()}
 				}
 			}
@@ -226,6 +228,10 @@ func process(k hsm.Key, filename string) error {
 		return err
 	}
 	metadataHash := sha256.Sum256(metadataJson)
+
+	jsonDebugOut := &bytes.Buffer{}
+	json.Indent(jsonDebugOut, metadataJson, "", "\t")
+	log.Printf("JSON data for this package:\n%s", jsonDebugOut.Bytes())
 
 	metadataLen := len(metadataJson)
 	signOffset := HEADER_LEN + metadataLen + len(hashtable)
