@@ -188,7 +188,7 @@ func process(k hsm.Key, filename string) error {
 	case "mod":
 		provideGlob = append(provideGlob, "pkgconfig/*.pc", "cmake/*")
 	case "doc":
-		provideGlob = append(provideGlob, "man/*", "info/*")
+		provideGlob = append(provideGlob, "man/man*/*", "man/*/man*/*", "info/*")
 	}
 
 	for _, glob := range provideGlob {
