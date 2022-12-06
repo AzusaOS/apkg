@@ -130,9 +130,10 @@ func process(k hsm.Key, filename string) error {
 			for _, syminfo := range symList {
 				sym := syminfo.Name()
 				// all these should be symlinks, we'll ignore if not
+				// also, symlinks must start with "../../" as these must be local to the package (../../ will be removed)
 				tgt, err := sb.Readlink(path.Join(".virtual", pkg, sym))
-				if err == nil {
-					sub[sym] = string(tgt)
+				if err == nil && strings.HasPrefix(string(tgt), "../../") {
+					sub[sym] = strings.TrimPrefix(string(tgt), "../../")
 				}
 			}
 			if len(sub) > 0 {
