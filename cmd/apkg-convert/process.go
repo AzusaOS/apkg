@@ -15,6 +15,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -40,7 +41,7 @@ func process(k hsm.Key, filename string) error {
 	fileSize := s.Size()
 
 	log.Printf("preparing %s ...", filename)
-	sb, err := squashfs.New(f, 0)
+	sb, err := squashfs.New(f)
 	if err != nil {
 		return err
 	}
@@ -110,8 +111,35 @@ func process(k hsm.Key, filename string) error {
 
 	// Also scan & include actual file content of:
 	// /.ld.so.cache (if subcat_s = libs)
+
+	// we also have a special case of some packages that need to provide symlinks to be shared in virtual views, for stuff like python modules.
+	// we do that through a special .virtual folder at the squashfs root that can contain directories (virtual module names), each containign symlinks
+
 	provides := make(map[string]any)
 	var provideGlob []string
+
+	virtual := make(map[string]map[string]string)
+	if virtList, _ := sb.ReadDir(".virtual"); len(virtList) > 0 {
+		for _, pkginfo := range virtList {
+			if !pkginfo.IsDir() {
+				continue
+			}
+			pkg := pkginfo.Name()
+			sub := make(map[string]string)
+			symList, _ := sb.ReadDir(path.Join(".virtual", pkg))
+			for _, syminfo := range symList {
+				sym := syminfo.Name()
+				// all these should be symlinks, we'll ignore if not
+				tgt, err := sb.Readlink(path.Join(".virtual", pkg, sym))
+				if err == nil {
+					sub[sym] = string(tgt)
+				}
+			}
+			if len(sub) > 0 {
+				virtual[pkg] = sub
+			}
+		}
+	}
 
 	// we define metadata now so we can add to it as we check subcat_s
 	metadata := map[string]any{
@@ -130,6 +158,9 @@ func process(k hsm.Key, filename string) error {
 		"block_size": blockSize,
 		"inodes":     reserveIno,
 		"created":    []int64{created.Unix(), int64(created.Nanosecond())},
+	}
+	if len(virtual) > 0 {
+		metadata["virtual"] = virtual
 	}
 
 	switch subcat_s {
