@@ -201,7 +201,7 @@ func process(k hsm.Key, filename string) error {
 				continue
 			}
 			// grab file stats
-			st, err := sb.Stat(match)
+			st, err := sb.Lstat(match)
 			if err == nil {
 				if st.Mode().Type() == fs.ModeSymlink {
 					// read symlink
