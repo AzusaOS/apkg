@@ -227,6 +227,9 @@ func process(k hsm.Key, filename string) error {
 	if err != nil {
 		return err
 	}
+	if len(metadataJson) > 1024*1024 {
+		return fmt.Errorf("metadata too long, should be below 1MB")
+	}
 	metadataHash := sha256.Sum256(metadataJson)
 
 	jsonDebugOut := &bytes.Buffer{}
