@@ -8,4 +8,4 @@ To generate with YubiHSM2:
 
 Install:
 
-	go get git.atonline.com/azusa/apkg/cmd/apkg-index
+	go install -tags fuse git.atonline.com/azusa/apkg/cmd/apkg-index@latest
