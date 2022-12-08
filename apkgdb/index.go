@@ -212,7 +212,7 @@ func (d *DB) index(r *os.File) error {
 			if err != nil {
 				return err
 			}
-			rawMeta, err := apkgsig.ReadVarblob(b, 65536)
+			rawMeta, err := apkgsig.ReadVarblob(b, 1024*1024)
 			if err != nil {
 				return err
 			}
