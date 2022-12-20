@@ -89,9 +89,9 @@ func process(k hsm.Key, filename string) error {
 	subcat_s := fn_a[2]
 
 	fn_v := fn_a[3:]
-	fn_a = fn_a[:2]
+	fn_a = fn_a[:3]
 
-	tmp := append(fn_a, subcat_s)
+	tmp := fn_a
 	names := []string{strings.Join(tmp, ".")}
 	for i := 0; i < len(fn_v); i++ {
 		tmp = append(tmp, fn_v[i])
