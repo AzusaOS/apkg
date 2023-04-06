@@ -61,6 +61,12 @@ func natsortCompare(a, b string) bool {
 				} else {
 					break
 				}
+				// if digits start with zeroes, ignore it
+				if av == '0' {
+					posa += 1
+					intlna -= 1
+					av = x
+				}
 			}
 			for {
 				if posb+intlnb >= ln_b {
@@ -71,6 +77,12 @@ func natsortCompare(a, b string) bool {
 					intlnb += 1
 				} else {
 					break
+				}
+				// if digits start with zeroes, ignore it
+				if bv == '0' {
+					posb += 1
+					intlnb -= 1
+					bv = x
 				}
 			}
 			if intlnb > intlna {
