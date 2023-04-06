@@ -186,7 +186,7 @@ func process(k hsm.Key, filename string) error {
 	case "dev":
 		provideGlob = append(provideGlob, "pkgconfig/*.pc", "cmake/*", "bin/*", "sbin/*")
 	case "mod":
-		provideGlob = append(provideGlob, "pkgconfig/*.pc", "cmake/*")
+		provideGlob = append(provideGlob, "pkgconfig/*.pc", "cmake/*", "bin/*", "sbin/*", "lib/python*/site-packages/*")
 	case "doc":
 		provideGlob = append(provideGlob, "man/man*/*", "man/*/man*/*", "info/*")
 	}
