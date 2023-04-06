@@ -209,7 +209,7 @@ func process(k hsm.Key, filename string) error {
 					if err == nil {
 						if strings.IndexByte(v, '/') == -1 {
 							// only store info about symlinks in the same directory
-							log.Printf("provides: %s %s -> ", st.Mode(), match, v)
+							log.Printf("provides: %s %s -> %s", st.Mode(), match, v)
 							provides[match] = map[string]any{"symlink": v}
 						}
 					}

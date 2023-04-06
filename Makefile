@@ -53,7 +53,7 @@ fmt:
 	$(GOPATH)/bin/goimports -w -l .
 
 test:
-	$(GOROOT)/bin/go test ./...
+	$(GOROOT)/bin/go test -v -tags "$(GO_TAGS)" ./...
 
 gen:
 	$(GOROOT)/bin/go generate

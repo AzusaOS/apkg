@@ -56,11 +56,6 @@ func natsortCompare(a, b string) bool {
 					break
 				}
 				x := a[posa+intlna]
-				if av == '0' {
-					posa += 1
-					av = x
-					continue
-				}
 				if x >= '0' && x <= '9' {
 					intlna += 1
 				} else {
@@ -72,11 +67,6 @@ func natsortCompare(a, b string) bool {
 					break
 				}
 				x := b[posb+intlnb]
-				if bv == '0' {
-					posb += 1
-					bv = x
-					continue
-				}
 				if x >= '0' && x <= '9' {
 					intlnb += 1
 				} else {
