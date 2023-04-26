@@ -23,7 +23,7 @@ import (
 
 	"git.atonline.com/azusa/apkg/apkgdb"
 	"git.atonline.com/azusa/apkg/apkgsig"
-	"github.com/MagicalTux/hsm"
+	"github.com/KarpelesLab/hsm"
 )
 
 type fileKey struct {

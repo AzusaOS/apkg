@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/MagicalTux/hsm"
+	"github.com/KarpelesLab/hsm"
 )
 
 func main() {

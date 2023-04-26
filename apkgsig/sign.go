@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 
-	"github.com/MagicalTux/hsm"
+	"github.com/KarpelesLab/hsm"
 )
 
 func Sign(k hsm.Key, data []byte) ([]byte, error) {

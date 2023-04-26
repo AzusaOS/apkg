@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/KarpelesLab/hsm"
 	"github.com/KarpelesLab/squashfs"
-	"github.com/MagicalTux/hsm"
 )
 
 const HEADER_LEN = 124

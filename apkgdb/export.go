@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/KarpelesLab/hsm"
 	"github.com/KarpelesLab/jwt"
-	"github.com/MagicalTux/hsm"
 	"github.com/boltdb/bolt"
 )
 
