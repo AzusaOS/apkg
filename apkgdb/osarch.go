@@ -24,6 +24,7 @@ const (
 	AMD64
 	ARM
 	ARM64
+	RiscV64
 	BadArch Arch = 0xffffffff
 )
 
@@ -54,6 +55,8 @@ func ParseArch(arch string) Arch {
 		return ARM
 	case "arm64":
 		return ARM64
+	case "riscv64":
+		return RiscV64
 	default:
 		return BadArch // unknown
 	}
@@ -100,6 +103,8 @@ func (arch Arch) String() string {
 		return "arm"
 	case ARM64:
 		return "arm64"
+	case RiscV64:
+		return "riscv64"
 	default:
 		return "unknown"
 	}
