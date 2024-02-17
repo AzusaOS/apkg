@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -20,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"git.atonline.com/azusa/apkg/apkgdb"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/KarpelesLab/hsm"
 	"github.com/KarpelesLab/squashfs"
@@ -116,7 +116,7 @@ func process(k hsm.Key, filename string) error {
 	// we do that through a special .virtual folder at the squashfs root that can contain directories (virtual module names), each containign symlinks
 	// example: .virtual/python-modules-3.2.1/pythonmodulename → ../../pythonmodulename
 
-	provides := make(map[string]any)
+	provides := make(map[string]*apkgdb.PackageMetaFile)
 	var provideGlob []string
 
 	virtual := make(map[string]map[string]string)
@@ -145,25 +145,25 @@ func process(k hsm.Key, filename string) error {
 	}
 
 	// we define metadata now so we can add to it as we check subcat_s
-	metadata := map[string]any{
-		"full_name":  filename_f,
-		"name":       strings.Join(fn_a, "."),
-		"version":    strings.Join(fn_v, "."),
-		"names":      names,
-		"os":         os_s,
-		"arch":       arch_s,
-		"category":   cat_s,
-		"base_name":  name_s,
-		"subcat":     subcat_s,
-		"size":       s.Size(),
-		"hash":       hex.EncodeToString(tableHash[:]),
-		"blocks":     blocks,
-		"block_size": blockSize,
-		"inodes":     reserveIno,
-		"created":    []int64{created.Unix(), int64(created.Nanosecond())},
+	metadata := &apkgdb.PackageMeta{
+		FullName:  filename_f,
+		Name:      strings.Join(fn_a, "."),
+		Version:   strings.Join(fn_v, "."),
+		Names:     names,
+		OS:        os_s,
+		Arch:      arch_s,
+		Category:  cat_s,
+		BaseName:  name_s,
+		Subcat:    subcat_s,
+		Size:      s.Size(),
+		Hash:      hex.EncodeToString(tableHash[:]),
+		Blocks:    blocks,
+		BlockSize: blockSize,
+		Inodes:    reserveIno,
+		Created:   []int64{created.Unix(), int64(created.Nanosecond())},
 	}
 	if len(virtual) > 0 {
-		metadata["virtual"] = virtual
+		metadata.Virtual = virtual
 	}
 
 	switch subcat_s {
@@ -174,7 +174,7 @@ func process(k hsm.Key, filename string) error {
 		if buf, err := fs.ReadFile(sb, ".ld.so.cache"); err == nil {
 			// This is a special case where we include the whole ld.so.cache content in metadata
 			// TODO check length and prevent file from growing too much
-			metadata["ld.so.cache"] = base64.StdEncoding.EncodeToString(buf)
+			metadata.LDSO = buf
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("while reading .ld.so.cache: %w", err)
 		}
@@ -210,18 +210,18 @@ func process(k hsm.Key, filename string) error {
 						if strings.IndexByte(v, '/') == -1 {
 							// only store info about symlinks in the same directory
 							log.Printf("provides: %s %s -> %s", st.Mode(), match, v)
-							provides[match] = map[string]any{"symlink": v}
+							provides[match] = &apkgdb.PackageMetaFile{Symlink: v}
 						}
 					}
 				} else {
 					log.Printf("provides: %s %s", st.Mode(), match)
-					provides[match] = map[string]any{"size": st.Size(), "mode": st.Mode()}
+					provides[match] = &apkgdb.PackageMetaFile{Size: st.Size(), Mode: st.Mode()}
 				}
 			}
 		}
 	}
 
-	metadata["provides"] = provides
+	metadata.Provides = provides
 
 	metadataJson, err := json.Marshal(metadata)
 	if err != nil {

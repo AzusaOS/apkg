@@ -160,6 +160,10 @@ func (d *DB) index(r *os.File) error {
 		if err != nil {
 			return err
 		}
+		ldsoB, err := tx.CreateBucketIfNotExists([]byte("ldso"))
+		if err != nil {
+			return err
+		}
 
 		// OK now let's read each package
 		for i := uint32(0); i < count; i++ {
@@ -218,6 +222,8 @@ func (d *DB) index(r *os.File) error {
 			}
 
 			//log.Printf("apkgdb: read from db pkg %s size=%d inodes=%d", name, size, inodes)
+			log.Printf("meta = %s", rawMeta)
+			_ = ldsoB
 
 			// do we already have this hash?
 			exInfo := pkgB.Get(hash)

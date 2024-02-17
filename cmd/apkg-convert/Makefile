@@ -1,13 +1,15 @@
 #!/bin/make
 
-GO_TAG:=$(shell /bin/sh -c 'eval `go tool dist env`; echo "$${GOOS}_$${GOARCH}"')
+GOROOT:=$(shell PATH="/pkg/main/dev-lang.go.dev/bin:$$PATH" go env GOROOT)
+GO_TAG:=$(shell /bin/sh -c 'eval `$(GOROOT)/bin/go tool dist env`; echo "$${GOOS}_$${GOARCH}"')
 GIT_TAG:=$(shell git rev-parse --short HEAD)
-GOPATH:=$(shell go env GOPATH)
+GOPATH:=$(shell $(GOROOT)/bin/go env GOPATH)
 SOURCES:=$(shell find . -name '*.go')
 AWS:=$(shell which 2>/dev/null aws)
 S3_TARGET=s3://dist-go
+APKG_DB=main
 ifeq ($(DATE_TAG),)
-DATE_TAG:=$(shell date '+%Y%m%d%H%M%S')
+DATE_TAG:=$(shell TZ=UTC git show -s --format=%cd --date=format-local:%Y%m%d%H%M%S HEAD)
 endif
 export DATE_TAG
 export GO111MODULE=on
@@ -35,37 +37,37 @@ all: $(PROJECT_NAME)
 
 $(PROJECT_NAME): $(SOURCES)
 	$(GOPATH)/bin/goimports -w -l .
-	go build -v -gcflags="-N -l" -ldflags=all="-X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=DEV -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
+	$(GOROOT)/bin/go build -v -tags "$(GO_TAGS)" -gcflags="-N -l" -ldflags=all="-X github.com/KarpelesLab/goupd.MODE=DEV $(GOLDFLAGS)"
 
 clean:
-	go clean
+	$(GOROOT)/bin/go clean
 
 deps:
-	go get -v .
+	$(GOROOT)/bin/go get -v .
 
 update:
-	go get -u .
+	$(GOROOT)/bin/go get -u .
 
 fmt:
-	go fmt ./...
+	$(GOROOT)/bin/go fmt ./...
 	$(GOPATH)/bin/goimports -w -l .
 
 test:
-	go test ./...
+	$(GOROOT)/bin/go test -v -tags "$(GO_TAGS)" ./...
 
 gen:
-	go generate
+	$(GOROOT)/bin/go generate
 
 cov:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
+	$(GOROOT)/bin/go test -coverprofile=coverage.out ./...
+	$(GOROOT)/bin/go tool cover -html=coverage.out -o coverage.html
 
 check:
-	@if [ ! -f $(GOPATH)/bin/gometalinter ]; then go get github.com/alecthomas/gometalinter; fi
+	@if [ ! -f $(GOPATH)/bin/gometalinter ]; then $(GOROOT)/bin/go get github.com/alecthomas/gometalinter; fi
 	$(GOPATH)/bin/gometalinter ./...
 
 doc:
-	@if [ ! -f $(GOPATH)/bin/godoc ]; then go get golang.org/x/tools/cmd/godoc; fi
+	@if [ ! -f $(GOPATH)/bin/godoc ]; then $(GOROOT)/bin/go get golang.org/x/tools/cmd/godoc; fi
 	$(GOPATH)/bin/godoc -v -http=:6060 -index -play
 
 dist:
@@ -87,9 +89,19 @@ endif
 dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2: dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%
 	@echo "Generating $@"
 	@bzip2 --stdout --compress --keep -9 "$<" >"$@"
+ifneq ($(APKG_NAME),)
+	@mkdir -p dist/empty dist/apkg
+	@mksquashfs dist/empty "dist/apkg/$(APKG_NAME).$(DATE_TAG).$(subst _,.,$*).squashfs" -all-root -nopad -noappend -p 'apkg f 777 root root bzcat $@'
+endif
 
 dist/$(PROJECT_NAME)_$(GIT_TAG):
 	@mkdir "$@"
+
+dist/$(PROJECT_NAME)_$(GIT_TAG)/%/$(PROJECT_NAME): $(SOURCES)
+	@echo " * Building $(PROJECT_NAME) for $*"
+	@TARGET_ARCH="$*" make -s dist/$(PROJECT_NAME)_$(GIT_TAG)/build_$(PROJECT_NAME).$*
+	@mkdir -p 'dist/$(PROJECT_NAME)_$(GIT_TAG)/$*/'
+	@mv 'dist/$(PROJECT_NAME)_$(GIT_TAG)/build_$(PROJECT_NAME).$*' 'dist/$(PROJECT_NAME)_$(GIT_TAG)/$*/$(PROJECT_NAME)'
 
 dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%: $(SOURCES)
 	@echo " * Building $(PROJECT_NAME) for $*"
@@ -98,10 +110,10 @@ dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%: $(SOURCES)
 
 ifneq ($(TARGET_ARCH),)
 dist/$(PROJECT_NAME)_$(GIT_TAG)/build_$(PROJECT_NAME).$(TARGET_ARCH): $(SOURCES)
-	@GOOS="$(TARGET_GOOS)" GOARCH="$(TARGET_GOARCH)" go build -a -o "$@" -gcflags="-N -l -trimpath=$(shell pwd)" -ldflags=all="-s -w -X github.com/TrisTech/goupd.PROJECT_NAME=$(PROJECT_NAME) -X github.com/TrisTech/goupd.MODE=PROD -X github.com/TrisTech/goupd.GIT_TAG=$(GIT_TAG) -X github.com/TrisTech/goupd.DATE_TAG=$(DATE_TAG) $(GOLDFLAGS)"
+	@GOOS="$(TARGET_GOOS)" GOARCH="$(TARGET_GOARCH)" $(GOROOT)/bin/go build -a -o "$@" -tags "$(GO_TAGS)" -gcflags="-N -l -trimpath=$(shell pwd)" -ldflags=all="-s -w -X github.com/KarpelesLab/goupd.MODE=PROD $(GOLDFLAGS)"
 endif
 
 update-make:
 	@echo "Updating Makefile ..."
-	@curl -s "https://raw.githubusercontent.com/TrisTech/make-go/master/Makefile" >Makefile.upd
+	@curl -s "https://raw.githubusercontent.com/KarpelesLab/make-go/master/Makefile" >Makefile.upd
 	@mv -f "Makefile.upd" "Makefile"

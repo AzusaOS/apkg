@@ -18,6 +18,12 @@ func (i *DB) Lookup(ctx context.Context, name string) (n uint64, err error) {
 		return 0, os.ErrNotExist
 	}
 
+	// special cases
+	switch name {
+	case "ld.so.cache":
+		return 2, nil
+	}
+
 	// name can be suffixed by cpu/OS
 	// eg: azusa.symlinks.core.0.0.3.20210216.linux.amd64
 	arch := ParseArch(name[v+1:])
@@ -193,9 +199,12 @@ func (i *DB) pkgInoUnsigned(p *unsignedPkg) (uint64, error) {
 func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 	var val pkgindexItem
 
-	if reqino == 1 {
+	switch reqino {
+	case 1: // root
 		// shouldn't happen
 		return d, nil
+	case 2: // ld.so.cache
+		return &ldsoIno{d: d}, nil
 	}
 
 	// check if we have this in loaded cache

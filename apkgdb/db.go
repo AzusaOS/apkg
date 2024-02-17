@@ -80,7 +80,7 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		archV:  ParseArch(dbarch),
 		ino:    llrb.New(),
 		pkgI:   make(map[[32]byte]uint64),
-		nextI:  2, // 1=root
+		nextI:  1000, // 1=root, 2=ld.so.cache
 		upd:    make(chan struct{}),
 		sub:    make(map[ArchOS]*DB),
 	}

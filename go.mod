@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	github.com/KarpelesLab/ldcache v0.1.0 // indirect
 	github.com/RoaringBitmap/roaring v1.2.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/enceve/crypto v0.0.0-20160707101852-34d48bb93815 // indirect

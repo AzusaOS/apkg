@@ -115,6 +115,7 @@ Contains the following buckets
 * sig → package hash → signature
 * meta → package hash → meta data
 * path → package hash → file relative path
+* ldso → package hash → ld.so.cache entry
 
 # Metadata
 
