@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -221,9 +222,12 @@ func (d *DB) index(r *os.File) error {
 				return err
 			}
 
+			var meta *PackageMeta
+			err = json.Unmarshal(rawMeta, &meta)
+			if err != nil {
+				log.Printf("apkgdb: failed to parse metadata: %s", err)
+			}
 			//log.Printf("apkgdb: read from db pkg %s size=%d inodes=%d", name, size, inodes)
-			log.Printf("meta = %s", rawMeta)
-			_ = ldsoB
 
 			// do we already have this hash?
 			exInfo := pkgB.Get(hash)
@@ -263,6 +267,12 @@ func (d *DB) index(r *os.File) error {
 			err = pathB.Put(hash, path)
 			if err != nil {
 				return err
+			}
+			if meta != nil && meta.LDSO != nil {
+				err = ldsoB.Put(hash, meta.LDSO)
+				if err != nil {
+					return err
+				}
 			}
 
 			//log.Printf("read package %s size=%d", name, size)
