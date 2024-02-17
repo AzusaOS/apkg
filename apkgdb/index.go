@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/KarpelesLab/ldcache"
 	"github.com/boltdb/bolt"
 )
 
@@ -269,9 +270,17 @@ func (d *DB) index(r *os.File) error {
 				return err
 			}
 			if meta != nil && meta.LDSO != nil {
-				err = ldsoB.Put(hash, meta.LDSO)
+				data, err := ldcache.Read(bytes.NewReader(meta.LDSO))
 				if err != nil {
-					return err
+					log.Printf("apkgdb: %s: failed to parse ld.so.cache: %s", name, err)
+				} else {
+					for _, e := range data.Entries {
+						eB, _ := json.Marshal(e)
+						err = ldsoB.Put([]byte(e.Value), eB)
+						if err != nil {
+							return err
+						}
+					}
 				}
 			}
 

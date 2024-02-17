@@ -115,7 +115,7 @@ Contains the following buckets
 * sig → package hash → signature
 * meta → package hash → meta data
 * path → package hash → file relative path
-* ldso → package hash → ld.so.cache entry
+* ldso → full target filename → ld.so.cache single entry
 
 # Metadata
 
@@ -139,5 +139,6 @@ The following values are present in the meta json:
 * provides (key: filename)
   * size
   * mode
+  * or: symlink
 * ld.so.cache (if a library)
 
