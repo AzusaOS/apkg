@@ -36,6 +36,7 @@ type DB struct {
 	pkgI    map[[32]byte]uint64 // maps package hash → initial inode number
 	sub     map[ArchOS]*DB
 	subLk   sync.RWMutex
+	ldso    []byte
 }
 
 func New(prefix, name, path string) (*DB, error) {
@@ -84,6 +85,8 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		upd:    make(chan struct{}),
 		sub:    make(map[ArchOS]*DB),
 	}
+
+	res.buildLdso()
 
 	updateReq := true
 

@@ -6,6 +6,8 @@ github.com/KarpelesLab/ldcache v0.1.0 h1:CX8MdH2wpBUqmOiOJfL2Ns7Td7AZ+vdleXj+R4s
 github.com/KarpelesLab/ldcache v0.1.0/go.mod h1:WFQ+frJzxH8D41h2m8HxjMH1RTMqADC7qKooQ+3bGqs=
 github.com/KarpelesLab/ldcache v0.1.1 h1:Xd28FpFjF8Uir/ft5NH1ATf4JeauSHwvGFNO49ozjb0=
 github.com/KarpelesLab/ldcache v0.1.1/go.mod h1:WFQ+frJzxH8D41h2m8HxjMH1RTMqADC7qKooQ+3bGqs=
+github.com/KarpelesLab/ldcache v0.1.2 h1:Hc3vl+VT7oO0JQjuVbWqdMnMaoqYiBjeFTd0mhqd4Hs=
+github.com/KarpelesLab/ldcache v0.1.2/go.mod h1:WFQ+frJzxH8D41h2m8HxjMH1RTMqADC7qKooQ+3bGqs=
 github.com/KarpelesLab/smartremote v0.0.18 h1:dRyB77s/KEeork8IEom9k6Jlv13N/DJv0n6kPzaiOpQ=
 github.com/KarpelesLab/smartremote v0.0.18/go.mod h1:P9jgdX3eGwSuUgci/tHpzO7C1nUfpIiopFQb1CYSTH8=
 github.com/KarpelesLab/squashfs v0.1.2 h1:SPc2QRLf9AQklkd5eG2LswhCbLe6jxEH/9GnTt2FLAA=

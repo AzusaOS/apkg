@@ -298,6 +298,8 @@ func (d *DB) index(r *os.File) error {
 		return err
 	}
 
+	d.buildLdso()
+
 	return nil
 }
 

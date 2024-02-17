@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/KarpelesLab/hsm v0.1.9
 	github.com/KarpelesLab/jwt v0.0.3
-	github.com/KarpelesLab/ldcache v0.1.1
+	github.com/KarpelesLab/ldcache v0.1.2
 	github.com/KarpelesLab/smartremote v0.0.18
 	github.com/KarpelesLab/squashfs v1.0.2
 	github.com/boltdb/bolt v1.3.1

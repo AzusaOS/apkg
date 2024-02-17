@@ -204,7 +204,7 @@ func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 		// shouldn't happen
 		return d, nil
 	case 2: // ld.so.cache
-		return &ldsoIno{d: d}, nil
+		return &ldsoIno{d: d, ldso: d.ldso}, nil
 	}
 
 	// check if we have this in loaded cache

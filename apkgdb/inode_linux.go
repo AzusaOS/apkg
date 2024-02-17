@@ -23,7 +23,7 @@ func (i *DB) FillAttr(attr *fuse.Attr) error {
 
 func (i *ldsoIno) FillAttr(attr *fuse.Attr) error {
 	attr.Ino = 2
-	attr.Size = 4096
+	attr.Size = i.Size()
 	attr.Blocks = 1
 	attr.Mode = apkgfs.ModeToUnix(i.Mode())
 	attr.Nlink = 1 // 1 required
