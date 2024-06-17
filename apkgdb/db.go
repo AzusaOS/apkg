@@ -10,7 +10,7 @@ import (
 	"github.com/petar/GoLLRB/llrb"
 )
 
-const PKG_URL_PREFIX = "https://pkg.azusa.jp/"
+const PKG_URL_PREFIX = "https://data.apkg.net/"
 
 type DB struct {
 	prefix string
