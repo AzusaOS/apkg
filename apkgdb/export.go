@@ -2,6 +2,7 @@ package apkgdb
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
@@ -208,7 +209,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	token.Payload().Set("os", d.os)
 	token.Payload().Set("name", d.name)
 	token.Header().Set("kid", base64.RawURLEncoding.EncodeToString(sig_pub))
-	tokenString, err := token.Sign(k)
+	tokenString, err := token.Sign(rand.Reader, k)
 	if err != nil {
 		return err
 	}
