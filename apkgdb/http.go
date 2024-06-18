@@ -8,7 +8,7 @@ import (
 
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/KarpelesLab/smartremote"
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 func (d *DB) getPackagesList() []string {

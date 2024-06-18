@@ -1,6 +1,8 @@
 module git.atonline.com/azusa/apkg
 
-go 1.18
+go 1.21
+
+toolchain go1.22.2
 
 require (
 	github.com/KarpelesLab/hsm v0.1.9
@@ -12,6 +14,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/hanwen/go-fuse/v2 v2.5.1
 	github.com/petar/GoLLRB v0.0.0-20210522233825-ae3b015fd3e9
+	go.etcd.io/bbolt v1.3.10
 	golang.org/x/crypto v0.24.0
 	golang.org/x/sys v0.21.0
 )

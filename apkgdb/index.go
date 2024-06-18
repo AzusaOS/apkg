@@ -15,7 +15,7 @@ import (
 
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/KarpelesLab/ldcache"
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 func (d *DB) index(r *os.File) error {

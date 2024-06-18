@@ -20,8 +20,8 @@ import (
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/KarpelesLab/smartremote"
 	"github.com/KarpelesLab/squashfs"
-	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
+	bolt "go.etcd.io/bbolt"
 )
 
 type packageMetaInfo struct {

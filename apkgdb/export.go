@@ -21,7 +21,7 @@ import (
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/KarpelesLab/hsm"
 	"github.com/KarpelesLab/jwt"
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 func (d *DB) ExportAndUpload(k hsm.Key) error {

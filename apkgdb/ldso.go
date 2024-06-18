@@ -10,8 +10,8 @@ import (
 	"sort"
 
 	"github.com/KarpelesLab/ldcache"
-	"github.com/boltdb/bolt"
 	"github.com/hanwen/go-fuse/v2/fuse"
+	bolt "go.etcd.io/bbolt"
 )
 
 type ldsoIno struct {

@@ -3,7 +3,7 @@ package apkgdb
 import (
 	"path/filepath"
 
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 func (d *DB) writeStart() error {

@@ -1,6 +1,6 @@
 package apkgdb
 
-import "github.com/boltdb/bolt"
+import bolt "go.etcd.io/bbolt"
 
 func (d *DB) Length() (sz uint64) {
 	d.dbrw.RLock()

@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
+	bolt "go.etcd.io/bbolt"
 )
 
 const PKG_URL_PREFIX = "https://data.apkg.net/"

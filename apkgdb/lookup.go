@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"git.atonline.com/azusa/apkg/apkgfs"
-	"github.com/boltdb/bolt"
 	"github.com/petar/GoLLRB/llrb"
+	bolt "go.etcd.io/bbolt"
 )
 
 func (i *DB) Lookup(ctx context.Context, name string) (n uint64, err error) {
