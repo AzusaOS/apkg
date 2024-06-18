@@ -297,21 +297,23 @@ func (db *dbFile) finalize(k hsm.Key) error {
 func (db *dbFile) upload() error {
 	// upload file to s3
 	s3pfx := "s3:/" + path.Join("/azusa-pkg/db", db.name, db.os, db.arch)
+	s3pfxCf := "s3:/" + path.Join("/azusa/db", db.name, db.os, db.arch)
 	log.Printf("uploading files to %s", s3pfx)
 
-	//system('aws s3 cp --cache-control max-age=31536000 '.escapeshellarg($db_path.'/'.$datestamp.'.bin').' '.escapeshellarg($s3_prefix.'/'.$datestamp.'.bin'));
-	cmd1 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=31536000", db.path, s3pfx+"/"+db.stamp+".bin")
-	cmd1.Stdout = os.Stdout
-	cmd1.Stderr = os.Stderr
-	err := cmd1.Run()
-	if err != nil {
-		return err
+	commands := [][]string{
+		[]string{"aws", "s3", "cp", "--cache-control", "max-age=31536000", db.path, s3pfx + "/" + db.stamp + ".bin"},
+		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path) + "/LATEST.txt", s3pfx + "/LATEST.txt"},
+		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=31536000", db.path, s3pfxCf + "/" + db.stamp + ".bin"},
+		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path) + "/LATEST.txt", s3pfxCf + "/LATEST.txt"},
 	}
 
-	//system('aws s3 cp --cache-control max-age=60 '.escapeshellarg($db_path.'/LATEST.txt').' '.escapeshellarg($s3_prefix.'/LATEST.txt'));
-	cmd2 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path)+"/LATEST.txt", s3pfx+"/LATEST.txt")
-	cmd2.Stdout = os.Stdout
-	cmd2.Stderr = os.Stderr
-
-	return cmd2.Run()
+	for _, c := range commands {
+		cmd := exec.Command(c[0], c[1:]...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
