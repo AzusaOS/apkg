@@ -5,10 +5,10 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -24,6 +24,7 @@ import (
 	"git.atonline.com/azusa/apkg/apkgdb"
 	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/KarpelesLab/hsm"
+	"github.com/KarpelesLab/jwt"
 )
 
 type fileKey struct {
@@ -284,12 +285,25 @@ func (db *dbFile) finalize(k hsm.Key) error {
 	}
 
 	// update LATEST.txt
-	lat, err := os.Create(filepath.Join(filepath.Dir(db.path), "LATEST.txt"))
+	err = os.WriteFile("LATEST.txt", append([]byte(db.stamp), '\n'), 0644)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(lat, "%s\n", db.stamp)
-	lat.Close()
+	// update LATEST.jwt
+	token := jwt.New()
+	token.Header().Set("kid", base64.RawURLEncoding.EncodeToString(sig_pub))
+	token.Payload().Set("arch", db.arch)
+	token.Payload().Set("os", db.os)
+	token.Payload().Set("name", db.name)
+	token.Payload().Set("ver", db.stamp)
+	signedToken, err := token.Sign(rand.Reader, k)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile("LATEST.jwt", append([]byte(signedToken), '\n'), 0644)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -303,8 +317,10 @@ func (db *dbFile) upload() error {
 	commands := [][]string{
 		[]string{"aws", "s3", "cp", "--cache-control", "max-age=31536000", db.path, s3pfx + "/" + db.stamp + ".bin"},
 		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path) + "/LATEST.txt", s3pfx + "/LATEST.txt"},
+		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Dir(db.path) + "/LATEST.jwt", s3pfx + "/LATEST.jwt"},
 		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=31536000", db.path, s3pfxCf + "/" + db.stamp + ".bin"},
 		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path) + "/LATEST.txt", s3pfxCf + "/LATEST.txt"},
+		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Dir(db.path) + "/LATEST.jwt", s3pfxCf + "/LATEST.jwt"},
 	}
 
 	for _, c := range commands {
