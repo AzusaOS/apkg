@@ -312,7 +312,7 @@ func (db *dbFile) upload() error {
 	// upload file to s3
 	s3pfx := "s3:/" + path.Join("/azusa-pkg/db", db.name, db.os, db.arch)
 	s3pfxCf := "s3:/" + path.Join("/azusa/db", db.name, db.os, db.arch)
-	log.Printf("uploading files to %s", s3pfx)
+	log.Printf("uploading files to %s and cf:%s", s3pfx, s3pfxCf)
 
 	commands := [][]string{
 		[]string{"aws", "s3", "cp", "--cache-control", "max-age=31536000", db.path, s3pfx + "/" + db.stamp + ".bin"},
