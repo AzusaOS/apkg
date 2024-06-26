@@ -218,30 +218,27 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 
 	// upload database
 	s3pfx := "s3:/" + path.Join("/azusa-pkg/db", d.name, d.os, d.arch)
-	log.Printf("apkgdb: uploading files to %s", s3pfx)
+	s3pfxCf := "s3:/" + path.Join("/azusa/db", d.name, d.os, d.arch)
+	log.Printf("apkgdb: uploading files to %s and to cf:%s", s3pfx, s3pfxCf)
 
-	//system('aws s3 cp --cache-control max-age=31536000 '.escapeshellarg($db_path.'/'.$datestamp.'.bin').' '.escapeshellarg($s3_prefix.'/'.$datestamp.'.bin'));
-	cmd1 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=31536000", "--content-type", "application/azusa-apkg-db", fn, s3pfx+"/"+stamp+".bin")
-	cmd1.Stdout = os.Stdout
-	cmd1.Stderr = os.Stderr
-	err = cmd1.Run()
-	if err != nil {
-		return err
+	commands := [][]string{
+		[]string{"aws", "s3", "cp", "--cache-control", "max-age=31536000", fn, s3pfx + "/" + stamp + ".bin"},
+		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Join(d.path, "/LATEST.txt"), s3pfx + "/LATEST.txt"},
+		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "/LATEST.jwt"), s3pfx + "/LATEST.jwt"},
+		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=31536000", fn, s3pfxCf + "/" + stamp + ".bin"},
+		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", filepath.Join(d.path, "/LATEST.txt"), s3pfxCf + "/LATEST.txt"},
+		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "LATEST.jwt"), s3pfxCf + "/LATEST.jwt"},
 	}
 
-	//system('aws s3 cp --cache-control max-age=60 '.escapeshellarg($db_path.'/LATEST.txt').' '.escapeshellarg($s3_prefix.'/LATEST.txt'));
-	cmd2 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "LATEST.txt"), s3pfx+"/LATEST.txt")
-	cmd2.Stdout = os.Stdout
-	cmd2.Stderr = os.Stderr
-	err = cmd2.Run()
-	if err != nil {
-		return err
+	for _, c := range commands {
+		cmd := exec.Command(c[0], c[1:]...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
 	}
-
-	cmd3 := exec.Command("aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "LATEST.jwt"), s3pfx+"/LATEST.jwt")
-	cmd3.Stdout = os.Stdout
-	cmd3.Stderr = os.Stderr
-	return cmd3.Run()
+	return nil
 }
 
 func formatSize(v uint64) string {

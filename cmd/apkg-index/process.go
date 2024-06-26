@@ -1,53 +1,21 @@
 package main
 
 import (
-	"bytes"
-	"crypto"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/binary"
-	"encoding/hex"
-	"errors"
-	"hash"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"git.atonline.com/azusa/apkg/apkgdb"
-	"git.atonline.com/azusa/apkg/apkgsig"
 	"github.com/KarpelesLab/hsm"
-	"github.com/KarpelesLab/jwt"
 )
 
 type fileKey struct {
 	arch string
 	os   string
-}
-
-type dbFile struct {
-	f     *os.File
-	name  string
-	path  string
-	stamp string
-	arch  string
-	os    string
-
-	ino uint64
-	cnt uint32
-
-	idxFN  map[string]int64
-	idxIno map[uint64]int64
-
-	w    io.Writer
-	hash hash.Hash
 }
 
 func processDb(name string, k hsm.Key) error {
@@ -142,194 +110,5 @@ func processDb(name string, k hsm.Key) error {
 		}
 	}
 
-	return nil
-}
-
-func (db *dbFile) init(now time.Time) error {
-	log.Printf("Initializing database file %s", db.path)
-	// write header to file
-	db.f.Write([]byte("APDB"))
-	binary.Write(db.f, binary.BigEndian, uint32(0x00000001)) // version
-	binary.Write(db.f, binary.BigEndian, uint64(0))          // flags
-	binary.Write(db.f, binary.BigEndian, uint64(now.Unix()))
-	binary.Write(db.f, binary.BigEndian, uint64(now.Nanosecond()))
-
-	os := apkgdb.ParseOS(db.os)
-	arch := apkgdb.ParseArch(db.arch)
-
-	binary.Write(db.f, binary.BigEndian, os)
-	binary.Write(db.f, binary.BigEndian, arch)
-	// 40 (pkg count)
-	binary.Write(db.f, binary.BigEndian, uint32(0)) // offset 40: number of packages (filled at the end)
-
-	nameBuf := make([]byte, 32)
-	copy(nameBuf, db.name)
-	db.f.Write(nameBuf)
-
-	// SHA256('') = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-	emptyHash, _ := hex.DecodeString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
-
-	// 76
-	binary.Write(db.f, binary.BigEndian, uint32(196+apkgsig.SignatureSize)) // location of data
-	binary.Write(db.f, binary.BigEndian, uint32(0))                         // length of data
-	db.f.Write(emptyHash)                                                   // hash of data
-	// 110
-	binary.Write(db.f, binary.BigEndian, uint32(0)) // location of id index
-	binary.Write(db.f, binary.BigEndian, uint32(0)) // length of id index
-	db.f.Write(emptyHash)                           // hash of id index
-	// 156
-	binary.Write(db.f, binary.BigEndian, uint32(0)) // location of name index
-	binary.Write(db.f, binary.BigEndian, uint32(0)) // length of name index
-	db.f.Write(emptyHash)                           // hash of name index
-
-	n, _ := db.f.Seek(0, io.SeekCurrent)
-
-	if n != 196 {
-		return errors.New("invalid header length")
-	}
-
-	db.f.Write(make([]byte, apkgsig.SignatureSize)) // reserved space for signature
-
-	db.hash = sha256.New()
-	db.w = io.MultiWriter(db.f, db.hash)
-
-	return nil
-}
-
-func (db *dbFile) index(rpath string, info os.FileInfo, p *pkginfo) {
-	// write package to list & store position details
-	pos, _ := db.f.Seek(0, io.SeekCurrent)
-	db.idxFN[p.meta.FullName] = pos
-	db.idxIno[db.ino] = pos
-	db.ino += uint64(p.meta.Inodes) + 1
-	db.cnt += 1
-
-	db.w.Write([]byte{0}) // package
-	db.w.Write(p.headerHash[:])
-	binary.Write(db.w, binary.BigEndian, uint64(info.Size()))
-	binary.Write(db.w, binary.BigEndian, p.meta.Inodes)
-
-	apkgsig.WriteVarblob(db.w, []byte(p.meta.FullName))
-	apkgsig.WriteVarblob(db.w, []byte(rpath))
-	apkgsig.WriteVarblob(db.w, p.rawHeader)
-	apkgsig.WriteVarblob(db.w, p.rawSig)
-	apkgsig.WriteVarblob(db.w, p.rawMeta)
-}
-
-func (db *dbFile) finalize(k hsm.Key) error {
-	// compute hash, etc
-	pos, _ := db.f.Seek(0, io.SeekCurrent)
-	hash := db.hash.Sum(nil)
-
-	// write to header
-	db.w = nil
-	db.hash = nil
-
-	db.f.Seek(40, io.SeekStart)
-	binary.Write(db.f, binary.BigEndian, db.cnt) // pkg count
-
-	db.f.Seek(76, io.SeekStart) // length of data, data starts at 196+128
-	var start uint32
-	binary.Read(db.f, binary.BigEndian, &start)             // should be reading 196+128
-	binary.Write(db.f, binary.BigEndian, uint32(pos)-start) // write length of data
-	db.f.Write(hash)                                        // write hash of data
-
-	// TODO: index, etc
-
-	// compute header signature
-	header := make([]byte, 196)
-	_, err := db.f.ReadAt(header, 0)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Signing %s...", db.path)
-
-	sigB := &bytes.Buffer{}
-	vInt := make([]byte, binary.MaxVarintLen64)
-	n := binary.PutUvarint(vInt, 0x0001) // Signature type 1 = ed25519
-	sigB.Write(vInt[:n])
-
-	sig_pub, err := k.PublicBlob()
-	if err != nil {
-		return err
-	}
-
-	apkgsig.WriteVarblob(sigB, sig_pub)
-
-	// use raw hash for ed25519
-	sig_blob, err := k.Sign(rand.Reader, header, crypto.Hash(0))
-	if err != nil {
-		return err
-	}
-	apkgsig.WriteVarblob(sigB, sig_blob)
-
-	// verify signature
-	_, err = apkgsig.VerifyDb(header, bytes.NewReader(sigB.Bytes()))
-	if err != nil {
-		return err
-	}
-
-	if sigB.Len() > apkgsig.SignatureSize {
-		return errors.New("signature buffer not large enough!")
-	}
-
-	db.f.Seek(196, io.SeekStart)
-	db.f.Write(sigB.Bytes())
-
-	db.f.Close()
-
-	err = os.Rename(db.path+"~", db.path)
-	if err != nil {
-		return err
-	}
-
-	// update LATEST.txt
-	err = os.WriteFile("LATEST.txt", append([]byte(db.stamp), '\n'), 0644)
-	if err != nil {
-		return err
-	}
-	// update LATEST.jwt
-	token := jwt.New()
-	token.Header().Set("kid", base64.RawURLEncoding.EncodeToString(sig_pub))
-	token.Payload().Set("arch", db.arch)
-	token.Payload().Set("os", db.os)
-	token.Payload().Set("name", db.name)
-	token.Payload().Set("ver", db.stamp)
-	signedToken, err := token.Sign(rand.Reader, k)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile("LATEST.jwt", append([]byte(signedToken), '\n'), 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *dbFile) upload() error {
-	// upload file to s3
-	s3pfx := "s3:/" + path.Join("/azusa-pkg/db", db.name, db.os, db.arch)
-	s3pfxCf := "s3:/" + path.Join("/azusa/db", db.name, db.os, db.arch)
-	log.Printf("uploading files to %s and cf:%s", s3pfx, s3pfxCf)
-
-	commands := [][]string{
-		[]string{"aws", "s3", "cp", "--cache-control", "max-age=31536000", db.path, s3pfx + "/" + db.stamp + ".bin"},
-		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path) + "/LATEST.txt", s3pfx + "/LATEST.txt"},
-		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Dir(db.path) + "/LATEST.jwt", s3pfx + "/LATEST.jwt"},
-		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=31536000", db.path, s3pfxCf + "/" + db.stamp + ".bin"},
-		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", filepath.Dir(db.path) + "/LATEST.txt", s3pfxCf + "/LATEST.txt"},
-		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Dir(db.path) + "/LATEST.jwt", s3pfxCf + "/LATEST.jwt"},
-	}
-
-	for _, c := range commands {
-		cmd := exec.Command(c[0], c[1:]...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
