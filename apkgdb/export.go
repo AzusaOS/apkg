@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/AzusaOS/apkg/apkgsig"
 	"github.com/KarpelesLab/hsm"
 	"github.com/KarpelesLab/jwt"
 	bolt "go.etcd.io/bbolt"

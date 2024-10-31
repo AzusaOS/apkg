@@ -8,4 +8,4 @@ To generate with YubiHSM2:
 
 Install:
 
-	go install git.atonline.com/azusa/apkg/cmd/apkg-convert@latest
+	go install github.com/AzusaOS/apkg/cmd/apkg-convert@latest

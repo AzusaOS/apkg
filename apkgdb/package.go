@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"git.atonline.com/azusa/apkg/apkgfs"
-	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/AzusaOS/apkg/apkgfs"
+	"github.com/AzusaOS/apkg/apkgsig"
 	"github.com/KarpelesLab/smartremote"
 	"github.com/KarpelesLab/squashfs"
 	"github.com/petar/GoLLRB/llrb"

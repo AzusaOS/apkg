@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"git.atonline.com/azusa/apkg/apkgfs"
+	"github.com/AzusaOS/apkg/apkgfs"
 	"github.com/petar/GoLLRB/llrb"
 	bolt "go.etcd.io/bbolt"
 )

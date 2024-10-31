@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"git.atonline.com/azusa/apkg/apkgfs"
+	"github.com/AzusaOS/apkg/apkgfs"
 	"github.com/KarpelesLab/squashfs"
 	"github.com/fsnotify/fsnotify"
 	"github.com/petar/GoLLRB/llrb"

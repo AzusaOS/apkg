@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"git.atonline.com/azusa/apkg/apkgdb"
-	"git.atonline.com/azusa/apkg/apkgfs"
+	"github.com/AzusaOS/apkg/apkgdb"
+	"github.com/AzusaOS/apkg/apkgfs"
 )
 
 var dbMain *apkgdb.DB

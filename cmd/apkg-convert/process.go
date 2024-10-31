@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"git.atonline.com/azusa/apkg/apkgdb"
-	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/AzusaOS/apkg/apkgdb"
+	"github.com/AzusaOS/apkg/apkgsig"
 	"github.com/KarpelesLab/hsm"
 	"github.com/KarpelesLab/squashfs"
 )

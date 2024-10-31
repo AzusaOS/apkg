@@ -1,7 +1,7 @@
 package apkgdb
 
 import (
-	"git.atonline.com/azusa/apkg/apkgfs"
+	"github.com/AzusaOS/apkg/apkgfs"
 	"github.com/hanwen/go-fuse/v2/fuse"
 )
 

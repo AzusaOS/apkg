@@ -1,4 +1,4 @@
-module git.atonline.com/azusa/apkg
+module github.com/AzusaOS/apkg
 
 go 1.22
 

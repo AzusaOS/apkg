@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/AzusaOS/apkg/apkgsig"
 	"github.com/KarpelesLab/jwt"
 )
 

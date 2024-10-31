@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"git.atonline.com/azusa/apkg/apkgdb"
+	"github.com/AzusaOS/apkg/apkgdb"
 	"github.com/KarpelesLab/hsm"
 )
 

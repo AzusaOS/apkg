@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sort"
 
-	"git.atonline.com/azusa/apkg/apkgsig"
+	"github.com/AzusaOS/apkg/apkgsig"
 	"github.com/KarpelesLab/smartremote"
 	bolt "go.etcd.io/bbolt"
 )
