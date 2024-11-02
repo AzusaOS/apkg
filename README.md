@@ -2,6 +2,22 @@
 
 Work in progress
 
+## Getting started
+
+In order to download & run the latest build:
+
+    curl -s https://raw.githubusercontent.com/KarpelesLab/make-go/master/get.sh | /bin/sh -s apkg
+    ./apkg
+
+Or if you're using systemd:
+
+    curl -s https://raw.githubusercontent.com/KarpelesLab/make-go/master/systemd.sh | /bin/sh -s apkg
+
+If run as root, this will create /pkg/main and make packages available. Data will be stored in `/var/lib/apkg`. After running apkg you can confirm everything is working by using python for example.
+
+    $ /pkg/main/dev-lang.python.core/bin/python --version
+    Python 3.12.2
+
 # Required minimum system
 
 The following files or devices are required to run apkg
