@@ -9,7 +9,7 @@ require (
 	github.com/KarpelesLab/jwt v0.1.11
 	github.com/KarpelesLab/ldcache v0.1.2
 	github.com/KarpelesLab/smartremote v0.1.0
-	github.com/KarpelesLab/squashfs v1.0.2
+	github.com/KarpelesLab/squashfs v1.1.3
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/hanwen/go-fuse/v2 v2.6.2
 	github.com/petar/GoLLRB v0.0.0-20210522233825-ae3b015fd3e9

@@ -10,6 +10,14 @@ github.com/KarpelesLab/smartremote v0.1.0 h1:vhubsiPR9YtQvUxzlXhW4IQMYCdffuFD3eK
 github.com/KarpelesLab/smartremote v0.1.0/go.mod h1:w1c/OKdDs0+xWlr3DoC525GNKymDGK9NdybvCYfriaU=
 github.com/KarpelesLab/squashfs v1.0.2 h1:sgW5xbcJgnkfTFRq4jKB8AcGkPf9lrPyLLciLhQytF8=
 github.com/KarpelesLab/squashfs v1.0.2/go.mod h1:OQG7SVGA3k47XbY9aT685PdD4/LoR3hI1/EdQJ96rV0=
+github.com/KarpelesLab/squashfs v1.1.0 h1:vcJItQbJ+INrpOqEG/uPnODVJ+k/R9MSBJ/y/anUYZY=
+github.com/KarpelesLab/squashfs v1.1.0/go.mod h1:OQG7SVGA3k47XbY9aT685PdD4/LoR3hI1/EdQJ96rV0=
+github.com/KarpelesLab/squashfs v1.1.1 h1:/lGzWIN2Pe7x0Yk3NL5VtS272/JvoEkQtNEgCsqZqIw=
+github.com/KarpelesLab/squashfs v1.1.1/go.mod h1:OQG7SVGA3k47XbY9aT685PdD4/LoR3hI1/EdQJ96rV0=
+github.com/KarpelesLab/squashfs v1.1.2 h1:9HQxdxDxHSczTTsynfnQD9RfTYXD18JWS7Me7HgClIw=
+github.com/KarpelesLab/squashfs v1.1.2/go.mod h1:OQG7SVGA3k47XbY9aT685PdD4/LoR3hI1/EdQJ96rV0=
+github.com/KarpelesLab/squashfs v1.1.3 h1:uapv/kvBcoT5orxWUbbakMgLi3MlG8ews9Kt69TH7S4=
+github.com/KarpelesLab/squashfs v1.1.3/go.mod h1:OQG7SVGA3k47XbY9aT685PdD4/LoR3hI1/EdQJ96rV0=
 github.com/RoaringBitmap/roaring v1.9.4 h1:yhEIoH4YezLYT04s1nHehNO64EKFTop/wBhxv2QzDdQ=
 github.com/RoaringBitmap/roaring v1.9.4/go.mod h1:6AXUsoIEzDTFFQCe1RbGA6uFONMhvejWj5rqITANK90=
 github.com/bits-and-blooms/bitset v1.12.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
