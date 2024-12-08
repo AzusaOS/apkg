@@ -36,6 +36,7 @@ type DB struct {
 	pkgI    map[[32]byte]uint64 // maps package hash → initial inode number
 	sub     map[ArchOS]*DB
 	subLk   sync.RWMutex
+	ntgt    NotifyTarget // notify target
 	ldso    []byte
 }
 

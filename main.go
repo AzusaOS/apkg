@@ -99,6 +99,8 @@ func main() {
 		fmt.Printf("Mount fail: %s\n", err)
 		os.Exit(1)
 	}
+
+	dbMain.SetNotifyTarget(mp)
 	go mp.Serve()
 	defer mp.Unmount()
 

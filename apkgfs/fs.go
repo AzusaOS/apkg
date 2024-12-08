@@ -2,6 +2,7 @@ package apkgfs
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -59,6 +60,17 @@ func (p *PkgFS) Serve() {
 
 func (p *PkgFS) Unmount() {
 	p.server.Unmount()
+}
+
+func (p *PkgFS) NotifyInode(ino uint64, offt int64, data []byte) error {
+	res := p.server.InodeNotifyStoreCache(ino, offt, data)
+	if res == fuse.ENOSYS {
+		res = p.server.InodeNotify(ino, offt, int64(len(data)))
+	}
+	if res.Ok() {
+		return nil
+	}
+	return fmt.Errorf("error on notify: %s", res)
 }
 
 func (p *PkgFS) Access(cancel <-chan struct{}, input *fuse.AccessIn) (code fuse.Status) {
