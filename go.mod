@@ -7,7 +7,7 @@ toolchain go1.23.1
 require (
 	github.com/KarpelesLab/hsm v0.1.9
 	github.com/KarpelesLab/jwt v0.1.11
-	github.com/KarpelesLab/ldcache v0.1.2
+	github.com/KarpelesLab/ldcache v0.1.3
 	github.com/KarpelesLab/smartremote v0.1.0
 	github.com/KarpelesLab/squashfs v1.1.3
 	github.com/fsnotify/fsnotify v1.7.0

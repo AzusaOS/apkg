@@ -4,6 +4,8 @@ github.com/KarpelesLab/jwt v0.1.11 h1:oEIHZz78qJhs3zzxsjubOTvrE/RXy44oRa3Ul/TGTx
 github.com/KarpelesLab/jwt v0.1.11/go.mod h1:rv2G7Sx+iXO9KH6qCL0SIRordO0FTxLTUwh8GUbtmbY=
 github.com/KarpelesLab/ldcache v0.1.2 h1:Hc3vl+VT7oO0JQjuVbWqdMnMaoqYiBjeFTd0mhqd4Hs=
 github.com/KarpelesLab/ldcache v0.1.2/go.mod h1:WFQ+frJzxH8D41h2m8HxjMH1RTMqADC7qKooQ+3bGqs=
+github.com/KarpelesLab/ldcache v0.1.3 h1:f2IPOSfC8w+R3XNVC8N3QLnCfzRUeHdTZ5jAvLAexjM=
+github.com/KarpelesLab/ldcache v0.1.3/go.mod h1:WFQ+frJzxH8D41h2m8HxjMH1RTMqADC7qKooQ+3bGqs=
 github.com/KarpelesLab/smartremote v0.0.18 h1:dRyB77s/KEeork8IEom9k6Jlv13N/DJv0n6kPzaiOpQ=
 github.com/KarpelesLab/smartremote v0.0.18/go.mod h1:P9jgdX3eGwSuUgci/tHpzO7C1nUfpIiopFQb1CYSTH8=
 github.com/KarpelesLab/smartremote v0.1.0 h1:vhubsiPR9YtQvUxzlXhW4IQMYCdffuFD3eKXslXEwR4=
