@@ -63,10 +63,8 @@ func (p *PkgFS) Unmount() {
 }
 
 func (p *PkgFS) NotifyInode(ino uint64, offt int64, data []byte) error {
-	res := p.server.InodeNotifyStoreCache(ino, offt, data)
-	if res == fuse.ENOSYS {
-		res = p.server.InodeNotify(ino, offt, int64(len(data)))
-	}
+	res := p.server.InodeNotify(ino, offt, int64(len(data)))
+	p.server.InodeNotifyStoreCache(ino, offt, data)
 	if res.Ok() {
 		return nil
 	}
