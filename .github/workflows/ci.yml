@@ -53,10 +53,10 @@ jobs:
       run: go mod verify
 
     - name: Run go vet
-      run: go vet ./...
+      run: go vet -tags fuse ./...
 
     - name: Run tests with race detector
-      run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      run: go test -v -race -tags fuse -coverprofile=coverage.out -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
       if: matrix.go == 'stable' && matrix.arch == 'amd64'
@@ -99,7 +99,7 @@ jobs:
           ${{ runner.os }}-go-build-${{ matrix.arch }}-
 
     - name: Build
-      run: go build -v -o apkg-linux-${{ matrix.arch }} .
+      run: go build -v -tags fuse -o apkg-linux-${{ matrix.arch }} .
       env:
         CGO_ENABLED: 0
 
@@ -127,4 +127,4 @@ jobs:
       uses: golangci/golangci-lint-action@v6
       with:
         version: latest
-        args: --timeout=5m
+        args: --timeout=5m --build-tags=fuse

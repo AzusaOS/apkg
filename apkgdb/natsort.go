@@ -119,5 +119,4 @@ func natsortCompare(a, b string) bool {
 
 		return av < bv
 	}
-	return false
 }
