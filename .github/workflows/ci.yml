@@ -16,13 +16,13 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-latest
-            go: '1.22'
+            go: '1.25'
           - arch: amd64
             runner: ubuntu-latest
             go: 'stable'
           - arch: arm64
             runner: ubuntu-latest-arm64
-            go: '1.22'
+            go: '1.25'
           - arch: arm64
             runner: ubuntu-latest-arm64
             go: 'stable'
