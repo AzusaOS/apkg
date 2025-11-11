@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -30,17 +29,14 @@ func setupSignals() {
 	signal.Notify(c, syscall.SIGHUP)
 
 	go func() {
-		for {
-			select {
-			case sig := <-c:
-				switch sig {
-				case os.Interrupt, syscall.SIGTERM:
-					shutdown()
-					return
-				case syscall.SIGHUP:
-					// reload
-					go dbMain.Update()
-				}
+		for sig := range c {
+			switch sig {
+			case os.Interrupt, syscall.SIGTERM:
+				shutdown()
+				return
+			case syscall.SIGHUP:
+				// reload
+				go dbMain.Update()
 			}
 		}
 	}()
@@ -68,7 +64,7 @@ func main() {
 	base := "/pkg"
 
 	if os.Getuid() == 0 {
-		dl, err := ioutil.ReadDir("/mnt")
+		dl, err := os.ReadDir("/mnt")
 		if err == nil {
 			for _, d := range dl {
 				// for each dir in /mnt, check if /mnt/<d>/AZUSA exists, and if so, use that as prefix

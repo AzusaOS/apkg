@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -28,7 +27,7 @@ func (d *DB) download(v string) (bool, error) {
 		return false, err
 	}
 
-	token, err := ioutil.ReadAll(resp.Body)
+	token, err := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	if resp.StatusCode != 200 {
@@ -114,7 +113,7 @@ func (d *DB) download(v string) (bool, error) {
 		}
 	}
 
-	out, err := ioutil.TempFile("", "apkg")
+	out, err := os.CreateTemp("", "apkg")
 	if err != nil {
 		return false, err
 	}

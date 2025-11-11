@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -20,7 +19,7 @@ type fileKey struct {
 
 func processDb(name string, k hsm.Key) error {
 	// instanciate db
-	tempDir, err := ioutil.TempDir("", "apkgidx")
+	tempDir, err := os.MkdirTemp("", "apkgidx")
 	if err != nil {
 		return err
 	}
@@ -42,7 +41,7 @@ func processDb(name string, k hsm.Key) error {
 			// special case: remove package
 			log.Printf("Removing: %s", rpath)
 			// core/symlinks/core.symlinks.0.0.2.linux.amd64-5d569d7.apkg
-			if r := regexp.MustCompile(".*\\.([a-z]+)\\.([a-z0-9]+)-([a-f0-9]{7})\\.apkg$").FindStringSubmatch(rpath); r != nil {
+			if r := regexp.MustCompile(`.*\.([a-z]+)\.([a-z0-9]+)-([a-f0-9]{7})\.apkg$`).FindStringSubmatch(rpath); r != nil {
 				fk := fileKey{arch: r[2], os: r[1]}
 				db, ok := files[fk]
 				if !ok {

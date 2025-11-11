@@ -41,7 +41,6 @@ func init() {
 	http.HandleFunc("/_stack", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write(Stack())
-		return
 	})
 }
 
@@ -83,8 +82,6 @@ func listenCtrl() {
 	}
 
 	go udpHandler(lUdp, p)
-
-	return
 }
 
 func udpHandler(l *net.UDPConn, tcp_port int) {

@@ -1,0 +1,37 @@
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - staticcheck
+    - unused
+
+linters-settings:
+  errcheck:
+    # List of functions to exclude from checking
+    exclude-functions:
+      - (*bytes.Buffer).Write
+      - (*bytes.Buffer).WriteByte
+      - (*bytes.Buffer).WriteRune
+      - (*bytes.Buffer).WriteString
+      - (io.Closer).Close
+      - fmt.Fprint
+      - fmt.Fprintf
+      - fmt.Fprintln
+      - fmt.Print
+      - fmt.Println
+      - (*os.File).Write
+      - (*hash.Hash).Write
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - errcheck
+        - unused
+
+run:
+  timeout: 5m
+  build-tags:
+    - fuse
