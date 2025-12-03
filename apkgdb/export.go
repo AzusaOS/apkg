@@ -217,14 +217,10 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	lat.Close()
 
 	// upload database
-	s3pfx := "s3:/" + path.Join("/azusa-pkg/db", d.name, d.os, d.arch)
 	s3pfxCf := "s3:/" + path.Join("/azusa/db", d.name, d.os, d.arch)
-	log.Printf("apkgdb: uploading files to %s and to cf:%s", s3pfx, s3pfxCf)
+	log.Printf("apkgdb: uploading files to cf:%s", s3pfxCf)
 
 	commands := [][]string{
-		[]string{"aws", "s3", "cp", "--cache-control", "max-age=31536000", fn, s3pfx + "/" + stamp + ".bin"},
-		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", filepath.Join(d.path, "/LATEST.txt"), s3pfx + "/LATEST.txt"},
-		[]string{"aws", "s3", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "/LATEST.jwt"), s3pfx + "/LATEST.jwt"},
 		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=31536000", fn, s3pfxCf + "/" + stamp + ".bin"},
 		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", filepath.Join(d.path, "/LATEST.txt"), s3pfxCf + "/LATEST.txt"},
 		[]string{"aws", "s3", "--profile", "cf", "cp", "--cache-control", "max-age=60", "--content-type", "text/plain", filepath.Join(d.path, "LATEST.jwt"), s3pfxCf + "/LATEST.jwt"},
