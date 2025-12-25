@@ -17,7 +17,6 @@ type PkgFS struct {
 	fuse.RawFileSystem
 
 	root       RootInode
-	inodesLock sync.RWMutex
 	server     *fuse.Server
 	mountPoint string
 

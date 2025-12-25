@@ -27,7 +27,10 @@ func processDb(name string, k hsm.Key) error {
 	dir := filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist", name)
 	files := make(map[fileKey]*apkgdb.DB)
 
-	err = filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dir, func(fpath string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
 		if !info.Mode().IsRegular() {
 			return nil
 		}

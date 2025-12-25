@@ -3,7 +3,6 @@ package apkgdb
 import (
 	"os"
 	"sync/atomic"
-	"time"
 
 	"github.com/hanwen/go-fuse/v2/fuse"
 )
@@ -14,14 +13,6 @@ func (i *DB) Mode() os.FileMode {
 
 func (i *DB) IsDir() bool {
 	return true
-}
-
-func (i *DB) fillEntry(entry *fuse.EntryOut) {
-	entry.NodeId = 1
-	entry.Attr.Ino = entry.NodeId
-	i.FillAttr(&entry.Attr)
-	entry.SetEntryTimeout(time.Second)
-	entry.SetAttrTimeout(time.Second)
 }
 
 func (i *DB) Readlink() ([]byte, error) {

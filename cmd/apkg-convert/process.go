@@ -293,7 +293,7 @@ func process(k hsm.Key, filename string) error {
 	}
 
 	if sigB.Len() > len(signbuf) {
-		return errors.New("signature buffer not large enough!")
+		return errors.New("signature buffer not large enough")
 	}
 
 	copy(signbuf, sigB.Bytes())

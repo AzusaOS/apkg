@@ -22,7 +22,6 @@ type DB struct {
 	upd    chan struct{}
 
 	ino    *llrb.LLRB
-	inoLk  sync.RWMutex
 	refcnt uint64
 	dbrw   sync.RWMutex
 	parent *DB // if this is called from another db
