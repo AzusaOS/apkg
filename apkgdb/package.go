@@ -83,16 +83,23 @@ func (p *Package) Value() uint64 {
 	return p.startIno
 }
 
+var (
+	// TODO move to inside DB
+	pkgCache  = make(map[[32]byte]*Package)
+	pkgCacheL sync.RWMutex
+)
 
 func (d *DB) getPkgTx(tx *bolt.Tx, startIno uint64, hash []byte) (*Package, error) {
 	var hashB [32]byte
 	copy(hashB[:], hash)
 
 	// load a package based on its hash (from within a bolt transaction)
-	// Check LRU cache first
-	if pkg := globalPkgCache.get(hashB); pkg != nil {
-		return pkg, nil
+	pkgCacheL.RLock()
+	if v, ok := pkgCache[hashB]; ok {
+		pkgCacheL.RUnlock()
+		return v, nil
 	}
+	pkgCacheL.RUnlock()
 
 	b := tx.Bucket([]byte("pkg"))
 	if b == nil {
@@ -119,8 +126,13 @@ func (d *DB) getPkgTx(tx *bolt.Tx, startIno uint64, hash []byte) (*Package, erro
 	pkg.rawSig = bytesDup(tx.Bucket([]byte("sig")).Get(hash))
 	pkg.rawMeta = bytesDup(tx.Bucket([]byte("meta")).Get(hash))
 
-	// Add to LRU cache (handles duplicates internally)
-	globalPkgCache.put(hashB, pkg)
+	// keep pkg in cache
+	pkgCacheL.Lock()
+	defer pkgCacheL.Unlock()
+	if v, ok := pkgCache[hashB]; ok {
+		return v, nil
+	}
+	pkgCache[hashB] = pkg
 
 	if d.parent != nil {
 		d.parent.ino.ReplaceOrInsert(pkg)
