@@ -10,6 +10,8 @@ import (
 	"github.com/KarpelesLab/hsm"
 )
 
+// Sign creates an Ed25519 signature for the given data using the provided HSM key.
+// Returns the signature blob containing version, public key, and signature.
 func Sign(k hsm.Key, data []byte) ([]byte, error) {
 	sigB := &bytes.Buffer{}
 	vInt := make([]byte, binary.MaxVarintLen64)

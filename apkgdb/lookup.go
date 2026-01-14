@@ -11,6 +11,10 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+// Lookup resolves a package name to its inode number. It supports OS and
+// architecture suffixes (e.g., "package.linux.amd64") and will delegate to
+// the appropriate sub-database if the requested architecture differs from
+// the current database.
 func (i *DB) Lookup(ctx context.Context, name string) (n uint64, err error) {
 	v := strings.LastIndexByte(name, '.')
 	if v == -1 {
@@ -196,6 +200,8 @@ func (i *DB) pkgInoUnsigned(p *unsignedPkg) (uint64, error) {
 	return v, nil
 }
 
+// GetInode returns the filesystem inode for the given inode number.
+// Special inodes: 1 = root directory, 2 = ld.so.cache.
 func (d *DB) GetInode(reqino uint64) (apkgfs.Inode, error) {
 	var val pkgindexItem
 

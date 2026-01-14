@@ -24,6 +24,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+// packageMetaInfo holds basic package metadata extracted from JSON.
 type packageMetaInfo struct {
 	FullName string `json:"full_name"`
 	Inodes   uint64 `json:"inodes"`
@@ -31,6 +32,9 @@ type packageMetaInfo struct {
 	Os       string `json:"os"`
 }
 
+// Package represents a signed package in the database. It contains metadata
+// about the package including its hash, size, and inode allocation, as well
+// as a reference to the underlying SquashFS filesystem.
 type Package struct {
 	parent   *DB
 	startIno uint64
@@ -142,6 +146,9 @@ func (d *DB) getPkgTx(tx *bolt.Tx, startIno uint64, hash []byte) (*Package, erro
 	return pkg, nil
 }
 
+// OpenPackage opens and validates a package file, reading its header,
+// verifying its signature, and extracting metadata. Returns an error
+// if the package is invalid, corrupted, or has an untrusted signature.
 func OpenPackage(f *os.File) (*Package, error) {
 	st, err := f.Stat()
 	if err != nil {
@@ -436,10 +443,13 @@ func (p *Package) validate() error {
 	return nil
 }
 
+// Meta unmarshals the package's JSON metadata into the provided value.
 func (p *Package) Meta(v interface{}) error {
 	return json.Unmarshal(p.rawMeta, v)
 }
 
+// ReadAt implements io.ReaderAt for reading package data at a specific offset.
+// The offset is relative to the data section of the package file.
 func (p *Package) ReadAt(b []byte, off int64) (int, error) {
 	if p.f == nil {
 		return 0, os.ErrInvalid // should return E_IO

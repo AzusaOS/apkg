@@ -19,12 +19,14 @@ func (s natsortSlice) Swap(a, b int) {
 	s[a], s[b] = s[b], s[a]
 }
 
-// Sort sorts a list of strings in a natural order
+// natSort sorts a list of strings in natural order, where numeric substrings
+// are compared by their numeric value rather than lexicographically.
 func natSort(l []string) {
 	sort.Sort(natsortSlice(l))
 }
 
-// Compare returns true if the first string precedes the second one according to natural order
+// natsortCompare returns true if string a precedes string b in natural order.
+// Natural order treats numeric substrings as numbers, so "foo2" < "foo10".
 func natsortCompare(a, b string) bool {
 	ln_a := len(a)
 	ln_b := len(b)
@@ -98,7 +100,7 @@ func natsortCompare(a, b string) bool {
 			} else if v > 0 {
 				return false
 			}
-			// equale
+			// equal
 			posa += intlna
 			posb += intlnb
 			continue

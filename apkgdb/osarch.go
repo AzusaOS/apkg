@@ -2,14 +2,20 @@ package apkgdb
 
 import "strings"
 
+// OS represents an operating system type.
 type OS uint32
+
+// Arch represents a CPU architecture type.
 type Arch uint32
 
+// ArchOS combines an OS and architecture into a single type,
+// used as a key for sub-database lookups.
 type ArchOS struct {
 	OS   OS
 	Arch Arch
 }
 
+// OS constants for supported operating systems.
 const (
 	AnyOS OS = iota
 	Linux
@@ -18,6 +24,7 @@ const (
 	BadOS OS = 0xffffffff
 )
 
+// Arch constants for supported CPU architectures.
 const (
 	AnyArch Arch = iota
 	X86
@@ -28,6 +35,7 @@ const (
 	BadArch Arch = 0xffffffff
 )
 
+// ParseOS parses an OS string (e.g., "linux", "darwin") and returns the corresponding OS constant.
 func ParseOS(os string) OS {
 	switch os {
 	case "any":
@@ -43,6 +51,7 @@ func ParseOS(os string) OS {
 	}
 }
 
+// ParseArch parses an architecture string (e.g., "amd64", "arm64") and returns the corresponding Arch constant.
 func ParseArch(arch string) Arch {
 	switch arch {
 	case "any":
@@ -62,6 +71,7 @@ func ParseArch(arch string) Arch {
 	}
 }
 
+// ParseArchOS parses a combined OS.Arch string (e.g., "linux.amd64") and returns the corresponding ArchOS.
 func ParseArchOS(archos string) ArchOS {
 	// for example "linux.amd64"
 	pos := strings.IndexByte(archos, '.')

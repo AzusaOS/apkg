@@ -2,12 +2,16 @@ package apkgdb
 
 import "io/fs"
 
+// PackageMetaFile represents metadata about a file provided by a package.
 type PackageMetaFile struct {
 	Mode    fs.FileMode `json:"mode,omitempty"`
 	Size    int64       `json:"size,omitempty"`
 	Symlink string      `json:"symlink,omitempty"`
 }
 
+// PackageMeta contains the full metadata for a package, including its name,
+// version, architecture, and the files it provides. This is stored as JSON
+// within the package file.
 type PackageMeta struct {
 	BaseName  string                       `json:"base_name"`
 	FullName  string                       `json:"full_name"`

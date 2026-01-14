@@ -8,30 +8,45 @@ import (
 	"github.com/hanwen/go-fuse/v2/fuse"
 )
 
+// Inode represents a filesystem inode with methods for file operations.
+// It is implemented by various types including directories, files, and symlinks.
 type Inode interface {
 	//os.FileInfo
 
+	// Mode returns the file mode and type.
 	Mode() os.FileMode
+	// Lookup finds a child entry by name and returns its inode number.
 	Lookup(ctx context.Context, name string) (uint64, error)
+	// FillAttr populates the FUSE attribute structure.
 	FillAttr(attr *fuse.Attr) error
+	// Readlink returns the target of a symbolic link.
 	Readlink() ([]byte, error)
 
+	// Open opens the file and returns FUSE open flags.
 	Open(flags uint32) (uint32, error)
+	// OpenDir opens a directory and returns FUSE open flags.
 	OpenDir() (uint32, error)
+	// ReadDir reads directory entries.
 	ReadDir(input *fuse.ReadIn, out *fuse.DirEntryList, plus bool) error
 
-	// functions for refcount
+	// AddRef increments the reference count and returns the new value.
 	AddRef(count uint64) uint64
+	// DelRef decrements the reference count and returns the new value.
 	DelRef(count uint64) uint64
 }
 
+// RootInode extends Inode with methods required for the filesystem root.
+// It provides inode lookup and filesystem statistics.
 type RootInode interface {
 	Inode
 
+	// GetInode retrieves an inode by its number.
 	GetInode(ino uint64) (Inode, error)
+	// StatFs returns filesystem statistics.
 	StatFs(out *fuse.StatfsOut) error
 }
 
+// UnixToMode converts a Unix mode (from stat) to Go's os.FileMode.
 func UnixToMode(mode uint32) os.FileMode {
 	res := os.FileMode(mode & 0777)
 
@@ -66,7 +81,8 @@ func UnixToMode(mode uint32) os.FileMode {
 	return res
 }
 
-// see: https://golang.org/src/os/stat_linux.go
+// ModeToUnix converts Go's os.FileMode to a Unix mode suitable for FUSE.
+// See: https://golang.org/src/os/stat_linux.go
 func ModeToUnix(mode os.FileMode) uint32 {
 	res := uint32(mode.Perm())
 

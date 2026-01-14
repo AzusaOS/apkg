@@ -1,3 +1,5 @@
+// Package apkgsig provides cryptographic signature verification and signing
+// for packages and databases using Ed25519.
 package apkgsig
 
 import (
@@ -9,28 +11,39 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+// SigReader is an interface for reading signature data, combining
+// io.Reader and io.ByteReader for efficient varint parsing.
 type SigReader interface {
 	io.Reader
 	io.ByteReader
 }
 
+// VerifyResult contains the result of a successful signature verification.
 type VerifyResult struct {
-	Version int
-	Key     string
-	Name    string
+	Version int    // Signature format version
+	Key     string // Base64-encoded public key
+	Name    string // Name of the trusted signer
 }
 
-// varint(1), varint(ed25519.PublicKeySize), varint(ed25519.SignatureSize) = 3
+// SignatureSize is the maximum size of a signature blob in bytes.
+// It consists of version varint, public key length varint, signature length varint,
+// plus the actual public key and signature data.
 const SignatureSize = 3 + ed25519.PublicKeySize + ed25519.SignatureSize
 
+// VerifyPkg verifies a package signature against trusted package signing keys.
+// Returns an error if the signature is invalid or from an untrusted key.
 func VerifyPkg(data []byte, sig SigReader) (*VerifyResult, error) {
 	return verify(data, sig, trustedPkgSig)
 }
 
+// VerifyDb verifies a database signature against trusted database signing keys.
+// Returns an error if the signature is invalid or from an untrusted key.
 func VerifyDb(data []byte, sig SigReader) (*VerifyResult, error) {
 	return verify(data, sig, trustedDbSig)
 }
 
+// DbKeyName returns the name associated with a trusted database signing key,
+// or an empty string if the key is not trusted.
 func DbKeyName(k string) string {
 	name, found := trustedDbSig[k]
 	if !found {

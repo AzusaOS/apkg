@@ -24,6 +24,8 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+// ExportAndUpload exports the database to a binary file, signs it,
+// and uploads it to the configured S3 bucket.
 func (d *DB) ExportAndUpload(k hsm.Key) error {
 	// generate a binary file with the full db, and upload it
 

@@ -1,3 +1,4 @@
+// Package apkgfs implements a read-only FUSE filesystem for serving packages.
 package apkgfs
 
 import (
@@ -13,6 +14,9 @@ import (
 	"github.com/hanwen/go-fuse/v2/fuse"
 )
 
+// PkgFS implements a read-only FUSE filesystem that serves package contents.
+// It maintains an inode cache and delegates actual file operations to the
+// underlying package database.
 type PkgFS struct {
 	fuse.RawFileSystem
 
@@ -24,6 +28,8 @@ type PkgFS struct {
 	inoCacheL sync.RWMutex
 }
 
+// New creates and mounts a new package filesystem at the specified mount point.
+// The root inode provides the filesystem structure and package lookup functionality.
 func New(mountPoint string, root RootInode) (*PkgFS, error) {
 	if err := os.MkdirAll(mountPoint, 0755); err != nil {
 		return nil, err
@@ -49,18 +55,23 @@ func (p *PkgFS) String() string {
 	return "APkgFS"
 }
 
+// Path returns the filesystem's mount point path.
 func (p *PkgFS) Path() string {
 	return p.mountPoint
 }
 
+// Serve starts the FUSE server and blocks until unmounted.
 func (p *PkgFS) Serve() {
 	p.server.Serve()
 }
 
+// Unmount unmounts the filesystem.
 func (p *PkgFS) Unmount() {
 	p.server.Unmount()
 }
 
+// NotifyInode notifies the kernel that inode data has changed at the given offset.
+// This is used to invalidate kernel caches when package data is updated.
 func (p *PkgFS) NotifyInode(ino uint64, offt int64, data []byte) error {
 	res := p.server.InodeNotify(ino, offt, int64(len(data)))
 	p.server.InodeNotifyStoreCache(ino, offt, data)

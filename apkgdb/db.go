@@ -1,3 +1,5 @@
+// Package apkgdb provides the package database functionality for apkg,
+// including package indexing, lookup, and management of signed packages.
 package apkgdb
 
 import (
@@ -10,8 +12,12 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+// PKG_URL_PREFIX is the default URL prefix for downloading packages and databases.
 const PKG_URL_PREFIX = "https://data.apkg.net/"
 
+// DB represents a package database that manages package metadata, lookups,
+// and inode allocation for the FUSE filesystem. It uses BoltDB for persistent
+// storage and supports multiple OS/architecture combinations through sub-databases.
 type DB struct {
 	prefix string
 	path   string
@@ -39,6 +45,8 @@ type DB struct {
 	ldso    []byte
 }
 
+// New creates a new package database using the current system's OS and architecture.
+// It opens or creates a BoltDB database file at the specified path.
 func New(prefix, name, path string) (*DB, error) {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
@@ -53,6 +61,8 @@ func New(prefix, name, path string) (*DB, error) {
 	return NewOsArch(prefix, name, path, goos, goarch)
 }
 
+// NewOsArch creates a new package database for a specific OS and architecture.
+// This is used both for the primary database and for cross-architecture sub-databases.
 func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	_ = os.MkdirAll(path, 0755) // make sure dir exists
 	fn := filepath.Join(path, name+"."+dbos+"."+dbarch+".db")
@@ -104,6 +114,8 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	return res, nil
 }
 
+// CurrentVersion returns the version string of the currently loaded database,
+// or an empty string if no version is set.
 func (d *DB) CurrentVersion() (v string) {
 	d.dbrw.RLock()
 	defer d.dbrw.RUnlock()
@@ -130,6 +142,7 @@ func (d *DB) CurrentVersion() (v string) {
 	return
 }
 
+// Close closes the underlying BoltDB database.
 func (d *DB) Close() error {
 	d.dbrw.Lock()
 	defer d.dbrw.Unlock()

@@ -303,6 +303,8 @@ func (d *DB) index(r *os.File) error {
 	return nil
 }
 
+// AddPackage adds a new package to the database. The rpath is the relative
+// path to the package file from the database root.
 func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
 	if err := d.writeStart(); err != nil {
 		return err
@@ -383,6 +385,7 @@ func (d *DB) AddPackage(rpath string, info os.FileInfo, p *Package) error {
 	})
 }
 
+// RemovePackage removes a package from the database by its full name.
 func (d *DB) RemovePackage(name string) error {
 	// lookup & remove package
 	log.Printf("apkgdb: removing %s", name)

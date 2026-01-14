@@ -7,8 +7,10 @@ import (
 	"github.com/hanwen/go-fuse/v2/fuse"
 )
 
+// symlinkInodeObj represents a virtual symbolic link inode.
 type symlinkInodeObj []byte
 
+// NewSymlink creates a new virtual symlink inode pointing to the given target.
 func NewSymlink(link []byte) Inode {
 	return symlinkInodeObj(link)
 }

@@ -168,6 +168,8 @@ func (d *DB) updateThread(updateReq bool) {
 	}
 }
 
+// Update triggers an asynchronous database update check.
+// If an update is already in progress, this call is ignored.
 func (d *DB) Update() {
 	select {
 	case d.upd <- struct{}{}:
