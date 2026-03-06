@@ -41,19 +41,35 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 
-	f.Write([]byte("APDB"))
-	binary.Write(f, binary.BigEndian, uint32(0x00000001)) // version
-	binary.Write(f, binary.BigEndian, uint64(0))          // flags
-	binary.Write(f, binary.BigEndian, uint64(now.Unix()))
-	binary.Write(f, binary.BigEndian, uint64(now.Nanosecond()))
+	if _, err := f.Write([]byte("APDB")); err != nil {
+		return err
+	}
+	if err := binary.Write(f, binary.BigEndian, uint32(0x00000001)); err != nil { // version
+		return err
+	}
+	if err := binary.Write(f, binary.BigEndian, uint64(0)); err != nil { // flags
+		return err
+	}
+	if err := binary.Write(f, binary.BigEndian, uint64(now.Unix())); err != nil {
+		return err
+	}
+	if err := binary.Write(f, binary.BigEndian, uint64(now.Nanosecond())); err != nil {
+		return err
+	}
 
 	fos := ParseOS(d.os)
 	farch := ParseArch(d.arch)
 
-	binary.Write(f, binary.BigEndian, fos)
-	binary.Write(f, binary.BigEndian, farch)
+	if err := binary.Write(f, binary.BigEndian, fos); err != nil {
+		return err
+	}
+	if err := binary.Write(f, binary.BigEndian, farch); err != nil {
+		return err
+	}
 	// 40 (pkg count)
-	binary.Write(f, binary.BigEndian, uint32(0)) // offset 40: number of packages (filled at the end of export)
+	if err := binary.Write(f, binary.BigEndian, uint32(0)); err != nil { // offset 40: number of packages (filled at the end of export)
+		return err
+	}
 
 	nameBuf := make([]byte, 32)
 	copy(nameBuf, d.name)
@@ -63,17 +79,34 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	emptyHash, _ := hex.DecodeString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 
 	// 76
-	binary.Write(f, binary.BigEndian, uint32(196+apkgsig.SignatureSize)) // location of data
-	binary.Write(f, binary.BigEndian, uint32(0))                         // length of data
-	f.Write(emptyHash)                                                   // hash of data
+	for _, v := range []interface{}{
+		uint32(196 + apkgsig.SignatureSize), uint32(0), // data location + length
+	} {
+		if err := binary.Write(f, binary.BigEndian, v); err != nil {
+			return err
+		}
+	}
+	if _, err := f.Write(emptyHash); err != nil { // hash of data
+		return err
+	}
 	// 110
-	binary.Write(f, binary.BigEndian, uint32(0)) // location of id index
-	binary.Write(f, binary.BigEndian, uint32(0)) // length of id index
-	f.Write(emptyHash)                           // hash of id index
+	for _, v := range []interface{}{uint32(0), uint32(0)} { // id index location + length
+		if err := binary.Write(f, binary.BigEndian, v); err != nil {
+			return err
+		}
+	}
+	if _, err := f.Write(emptyHash); err != nil { // hash of id index
+		return err
+	}
 	// 156
-	binary.Write(f, binary.BigEndian, uint32(0)) // location of name index
-	binary.Write(f, binary.BigEndian, uint32(0)) // length of name index
-	f.Write(emptyHash)                           // hash of name index
+	for _, v := range []interface{}{uint32(0), uint32(0)} { // name index location + length
+		if err := binary.Write(f, binary.BigEndian, v); err != nil {
+			return err
+		}
+	}
+	if _, err := f.Write(emptyHash); err != nil { // hash of name index
+		return err
+	}
 
 	n, _ := f.Seek(0, io.SeekCurrent)
 
@@ -113,16 +146,17 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 			pkg := pkgB.Get(h)
 
 			// write package data to disk
-			w.Write([]byte{0})
-			w.Write(h)
-			w.Write(pkg[1:9])       // size is already bigendian in our database
-			w.Write(pkg[17+4 : 25]) // inodes count, already big endian but needs to be made uint32
+			for _, b := range [][]byte{{0}, h, pkg[1:9], pkg[17+4 : 25]} {
+				if _, err := w.Write(b); err != nil {
+					return err
+				}
+			}
 
-			apkgsig.WriteVarblob(w, pkg[25:]) // name
-			apkgsig.WriteVarblob(w, pathB.Get(h))
-			apkgsig.WriteVarblob(w, headerB.Get(h))
-			apkgsig.WriteVarblob(w, sigB.Get(h))
-			apkgsig.WriteVarblob(w, metaB.Get(h))
+			for _, b := range [][]byte{pkg[25:], pathB.Get(h), headerB.Get(h), sigB.Get(h), metaB.Get(h)} {
+				if err := apkgsig.WriteVarblob(w, b); err != nil {
+					return err
+				}
+			}
 
 			count += 1
 			datasize += binary.BigEndian.Uint64(pkg[1:9])
@@ -142,14 +176,26 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 	w = nil
 	hash = nil
 
-	f.Seek(40, io.SeekStart)
-	binary.Write(f, binary.BigEndian, count) // pkg count
+	if _, err = f.Seek(40, io.SeekStart); err != nil {
+		return err
+	}
+	if err = binary.Write(f, binary.BigEndian, count); err != nil { // pkg count
+		return err
+	}
 
-	f.Seek(76, io.SeekStart) // length of data, data starts at 196+128
+	if _, err = f.Seek(76, io.SeekStart); err != nil { // length of data, data starts at 196+128
+		return err
+	}
 	var start uint32
-	binary.Read(f, binary.BigEndian, &start)             // should be reading 196+128
-	binary.Write(f, binary.BigEndian, uint32(pos)-start) // write length of data
-	f.Write(finalHash)
+	if err = binary.Read(f, binary.BigEndian, &start); err != nil { // should be reading 196+128
+		return err
+	}
+	if err = binary.Write(f, binary.BigEndian, uint32(pos)-start); err != nil { // write length of data
+		return err
+	}
+	if _, err = f.Write(finalHash); err != nil {
+		return err
+	}
 
 	// compute header signature
 	header := make([]byte, 196)
@@ -170,8 +216,12 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 
-	f.Seek(196, io.SeekStart)
-	f.Write(sigB)
+	if _, err = f.Seek(196, io.SeekStart); err != nil {
+		return err
+	}
+	if _, err = f.Write(sigB); err != nil {
+		return err
+	}
 
 	f.Close()
 
@@ -206,11 +256,14 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 	token := jwt.New(jwt.EdDSA)
-	token.Payload().Set("ver", stamp)
-	token.Payload().Set("arch", d.arch)
-	token.Payload().Set("os", d.os)
-	token.Payload().Set("name", d.name)
-	token.Header().Set("kid", base64.RawURLEncoding.EncodeToString(sig_pub))
+	for k, v := range map[string]string{"ver": stamp, "arch": d.arch, "os": d.os, "name": d.name} {
+		if err = token.Payload().Set(k, v); err != nil {
+			return err
+		}
+	}
+	if err = token.Header().Set("kid", base64.RawURLEncoding.EncodeToString(sig_pub)); err != nil {
+		return err
+	}
 	tokenString, err := token.Sign(rand.Reader, k)
 	if err != nil {
 		return err

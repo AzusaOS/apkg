@@ -17,7 +17,7 @@ func (d *DB) getPackagesList() []string {
 	d.dbrw.RLock()
 	defer d.dbrw.RUnlock()
 
-	d.dbptr.View(func(tx *bolt.Tx) error {
+	_ = d.dbptr.View(func(tx *bolt.Tx) error {
 		// use p2p for correct package ordering
 		bucket := tx.Bucket([]byte("p2p"))
 		if bucket == nil {

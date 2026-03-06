@@ -81,7 +81,7 @@ func initUnsigned(p string) {
 
 	log.Printf("WARNING! -load_unsigned has been ENABLED. This means that unsigned packages found in %s will be loaded if requested", p)
 
-	os.MkdirAll(p, 0755)
+	_ = os.MkdirAll(p, 0755)
 	unsignedMap = make(map[ArchOS]map[string]*unsignedPkg)
 
 	go unsignedScan(p)

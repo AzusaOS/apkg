@@ -76,8 +76,8 @@ func listenCtrl() {
 	// set SO_REUSEPORT (if it fails we don't really care, shouldn't anyway)
 	sc, err := lUdp.SyscallConn()
 	if err == nil {
-		sc.Control(func(fd uintptr) {
-			unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+		_ = sc.Control(func(fd uintptr) {
+			_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
 		})
 	}
 
@@ -102,7 +102,7 @@ func udpHandler(l *net.UDPConn, tcp_port int) {
 		if bytes.Equal(b, []byte("DISCOVER")) {
 			// send response
 			res := fmt.Sprintf("tcp/%d", tcp_port) // TODO
-			l.WriteToUDP([]byte(res), addr)
+			_, _ = l.WriteToUDP([]byte(res), addr)
 			continue
 		}
 	}

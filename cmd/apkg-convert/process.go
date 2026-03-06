@@ -233,7 +233,7 @@ func process(k hsm.Key, filename string) error {
 	metadataHash := sha256.Sum256(metadataJson)
 
 	jsonDebugOut := &bytes.Buffer{}
-	json.Indent(jsonDebugOut, metadataJson, "", "\t")
+	_ = json.Indent(jsonDebugOut, metadataJson, "", "\t")
 	log.Printf("JSON data for this package:\n%s", jsonDebugOut.Bytes())
 
 	metadataLen := len(metadataJson)

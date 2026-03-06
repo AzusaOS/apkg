@@ -67,7 +67,7 @@ func (p *PkgFS) Serve() {
 
 // Unmount unmounts the filesystem.
 func (p *PkgFS) Unmount() {
-	p.server.Unmount()
+	_ = p.server.Unmount()
 }
 
 // NotifyInode notifies the kernel that inode data has changed at the given offset.

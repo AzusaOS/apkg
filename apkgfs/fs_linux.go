@@ -44,7 +44,7 @@ func (res *PkgFS) doMount() error {
 		// mount -t overlay overlay -o lowerdir=/pkg/main,upperdir="$tmp_dir/.pkg-main-rw",workdir="$tmp_dir/.pkg-main-work" "$tmp_dir/pkg/main"
 		err = syscall.Mount("overlay", filepath.Join(mkPath, mkName), "overlay", syscall.MS_NOATIME, "lowerdir="+res.mountPoint+",upperdir="+filepath.Join(mkPath, "."+mkName+"-rw")+",workdir="+filepath.Join(mkPath, "."+mkName+"-work"))
 		if err != nil {
-			res.server.Unmount()
+			_ = res.server.Unmount()
 			return err
 		}
 	}

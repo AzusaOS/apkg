@@ -98,7 +98,7 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		sub:    make(map[ArchOS]*DB),
 	}
 
-	res.buildLdso()
+	_ = res.buildLdso()
 
 	updateReq := true
 

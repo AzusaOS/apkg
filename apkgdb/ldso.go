@@ -107,7 +107,7 @@ func (d *DB) buildLdso() error {
 	log.Printf("apkgdb: built ld.so.cache containing %d libs (%d bytes)", len(entries), len(d.ldso))
 
 	// push to kernel (ld.so.cache inode = 2)
-	d.notifyInode(2, 0, d.ldso)
+	_ = d.notifyInode(2, 0, d.ldso)
 
 	return nil
 }

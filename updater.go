@@ -64,7 +64,7 @@ func updater(p string) {
 				break
 			}
 
-			os.Chmod(exec+"."+n, 0755)
+			_ = os.Chmod(exec+"."+n, 0755)
 
 			// rename
 			err = os.Rename(exec+"."+n, exec)

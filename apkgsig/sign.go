@@ -23,14 +23,18 @@ func Sign(k hsm.Key, data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	WriteVarblob(sigB, sig_pub)
+	if err = WriteVarblob(sigB, sig_pub); err != nil {
+		return nil, err
+	}
 
 	// use raw hash for ed25519
 	sig_blob, err := k.Sign(rand.Reader, data, crypto.Hash(0))
 	if err != nil {
 		return nil, err
 	}
-	WriteVarblob(sigB, sig_blob)
+	if err = WriteVarblob(sigB, sig_blob); err != nil {
+		return nil, err
+	}
 
 	if sigB.Len() > SignatureSize {
 		return nil, errors.New("signature was too large")
