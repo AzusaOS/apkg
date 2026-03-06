@@ -127,13 +127,13 @@ func (p *PkgFS) Lookup(cancel <-chan struct{}, header *fuse.InHeader, name strin
 	}
 
 	subI.AddRef(1)
-	go p.addToCache(sub, subI)
+	p.addToCache(sub, subI)
 
 	out.NodeId, out.Generation = sub, 0
 	out.Ino = sub
-	subI.FillAttr(&out.Attr)
-
-	// TODO sub addref()
+	if err := subI.FillAttr(&out.Attr); err != nil {
+		return toStatus(err)
+	}
 
 	out.SetEntryTimeout(30 * time.Second)
 	out.SetAttrTimeout(30 * time.Second)
@@ -157,7 +157,9 @@ func (p *PkgFS) GetAttr(cancel <-chan struct{}, input *fuse.GetAttrIn, out *fuse
 	}
 
 	out.Ino = input.NodeId
-	ino.FillAttr(&out.Attr)
+	if err := ino.FillAttr(&out.Attr); err != nil {
+		return toStatus(err)
+	}
 	out.SetTimeout(30 * time.Second)
 	return fuse.OK
 }
@@ -205,11 +207,14 @@ func (p *PkgFS) Read(cancel <-chan struct{}, input *fuse.ReadIn, buf []byte) (fu
 	}
 
 	n, err := r.ReadAt(buf, int64(input.Offset))
+	if n > 0 {
+		return fuse.ReadResultData(buf[:n]), fuse.OK
+	}
 	if err != nil {
 		return nil, toStatus(err)
 	}
 
-	return fuse.ReadResultData(buf[:n]), fuse.OK
+	return fuse.ReadResultData(buf[:0]), fuse.OK
 }
 
 //    Lseek(cancel <-chan struct{}, in *LseekIn, out *LseekOut) Status

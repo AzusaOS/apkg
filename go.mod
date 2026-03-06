@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/KarpelesLab/hsm v0.2.0
 	github.com/KarpelesLab/jwt v0.1.11
-	github.com/KarpelesLab/ldcache v0.1.3
+	github.com/KarpelesLab/ldcache v0.1.4
 	github.com/KarpelesLab/smartremote v0.2.0
 	github.com/KarpelesLab/squashfs v1.1.5
 	github.com/fsnotify/fsnotify v1.9.0

@@ -23,6 +23,7 @@ func processDb(name string, k hsm.Key) error {
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(tempDir)
 
 	dir := filepath.Join(os.Getenv("HOME"), "projects/apkg-tools/repo/apkg/dist", name)
 	files := make(map[fileKey]*apkgdb.DB)

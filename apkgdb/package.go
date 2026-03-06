@@ -53,7 +53,8 @@ type Package struct {
 	flags   uint64
 	created time.Time
 
-	dl        sync.Once
+	dlMu      sync.Mutex
+	dlDone    bool
 	f         *smartremote.File
 	offset    int64 // offset of data in file
 	blockSize int64
@@ -107,7 +108,7 @@ func (d *DB) getPkgTx(tx *bolt.Tx, startIno uint64, hash []byte) (*Package, erro
 	}
 
 	v := b.Get(hash)
-	if v == nil {
+	if len(v) < 25 {
 		return nil, os.ErrInvalid
 	}
 
@@ -285,7 +286,7 @@ func (p *Package) handleLookup(ino uint64) (apkgfs.Inode, error) {
 		return apkgfs.NewSymlink([]byte(p.name)), nil
 	}
 
-	p.dl.Do(p.doDl)
+	p.ensureDl()
 
 	if p.squash == nil {
 		// problem
@@ -298,6 +299,18 @@ func (p *Package) handleLookup(ino uint64) (apkgfs.Inode, error) {
 	}
 
 	return p.squash.GetInode(ino - p.startIno)
+}
+
+func (p *Package) ensureDl() {
+	p.dlMu.Lock()
+	defer p.dlMu.Unlock()
+	if p.dlDone {
+		return
+	}
+	p.doDl()
+	if p.squash != nil {
+		p.dlDone = true
+	}
 }
 
 func (p *Package) doDl() {
@@ -329,7 +342,9 @@ func (p *Package) doDl() {
 		go func() {
 			// cause download to be re-available in 10 seconds
 			time.Sleep(10 * time.Second)
-			p.dl = sync.Once{}
+			p.dlMu.Lock()
+			p.dlDone = false
+			p.dlMu.Unlock()
 		}()
 		defer p.f.Close()
 		p.f = nil

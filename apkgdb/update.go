@@ -126,7 +126,11 @@ func (d *DB) download(v string) (bool, error) {
 		return false, err
 	}
 
-	out.Seek(0, io.SeekStart)
+	if _, err = out.Seek(0, io.SeekStart); err != nil {
+		out.Close()
+		os.Remove(out.Name())
+		return false, err
+	}
 
 	err = d.index(out)
 	out.Close()
@@ -151,12 +155,14 @@ func (d *DB) updateThread(updateReq bool) {
 
 	// keep running & check for updates
 	t := time.NewTicker(1 * time.Hour)
+	defer t.Stop()
 	for {
 		select {
+		case <-d.done:
+			return
 		case <-t.C:
 			err := d.update()
 			if err != nil {
-
 				log.Printf("apkgdb: update failed: %s", err)
 			}
 		case <-d.upd:

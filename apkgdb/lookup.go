@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/AzusaOS/apkg/apkgfs"
 	"github.com/petar/GoLLRB/llrb"
@@ -72,11 +73,7 @@ func (i *DB) Lookup(ctx context.Context, name string) (n uint64, err error) {
 	return
 }
 
-func (i *DB) ctxLookup(ctx context.Context, name string) (n uint64, err error) {
-	if i.parent != nil {
-		return i.internalLookup(name)
-	}
-
+func (i *DB) ctxLookup(_ context.Context, name string) (n uint64, err error) {
 	return i.internalLookup(name)
 }
 
@@ -177,8 +174,8 @@ func (i *DB) pkgIno(pkg []byte) uint64 {
 }
 
 func (i *DB) pkgInoUnsigned(p *unsignedPkg) (uint64, error) {
-	if p.startIno != 0 {
-		return p.startIno, nil
+	if v := atomic.LoadUint64(&p.startIno); v != 0 {
+		return v, nil
 	}
 	i.pkgIlk.Lock()
 	defer i.pkgIlk.Unlock()
@@ -188,7 +185,7 @@ func (i *DB) pkgInoUnsigned(p *unsignedPkg) (uint64, error) {
 	}
 
 	v := i.allocInodes(p.inodes + 1) // +1 for symlink
-	p.startIno = v
+	atomic.StoreUint64(&p.startIno, v)
 	p.squash.SetInodeOffset(v)
 
 	if i.parent != nil {

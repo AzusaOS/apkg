@@ -26,6 +26,7 @@ type DB struct {
 	arch   string
 	dbptr  *bolt.DB
 	upd    chan struct{}
+	done   chan struct{}
 
 	ino    *llrb.LLRB
 	refcnt uint64
@@ -93,6 +94,7 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 		pkgI:   make(map[[32]byte]uint64),
 		nextI:  1000, // 1=root, 2=ld.so.cache
 		upd:    make(chan struct{}),
+		done:   make(chan struct{}),
 		sub:    make(map[ArchOS]*DB),
 	}
 
@@ -146,6 +148,8 @@ func (d *DB) CurrentVersion() (v string) {
 func (d *DB) Close() error {
 	d.dbrw.Lock()
 	defer d.dbrw.Unlock()
+
+	close(d.done)
 
 	if err := d.dbptr.Close(); err != nil {
 		return err

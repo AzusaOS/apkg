@@ -70,7 +70,7 @@ func (i *ldsoIno) Lookup(ctx context.Context, name string) (n uint64, err error)
 func (d *DB) buildLdso() error {
 	entries := make(map[string]*ldcache.Entry)
 
-	d.dbptr.View(func(tx *bolt.Tx) error {
+	if err := d.dbptr.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("ldso"))
 		if bucket == nil {
 			// no ldso data?
@@ -85,7 +85,9 @@ func (d *DB) buildLdso() error {
 			entries[e.Key] = e
 			return nil
 		})
-	})
+	}); err != nil {
+		return err
+	}
 
 	//natSort(res)
 
@@ -96,7 +98,9 @@ func (d *DB) buildLdso() error {
 	sort.Sort(f.Entries)
 
 	buf := &bytes.Buffer{}
-	f.WriteTo(buf)
+	if _, err := f.WriteTo(buf); err != nil {
+		return err
+	}
 
 	d.ldso = buf.Bytes()
 

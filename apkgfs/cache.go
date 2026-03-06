@@ -28,7 +28,10 @@ func (p *PkgFS) getInodeCache(nodeid uint64) (Inode, bool) {
 }
 
 func (p *PkgFS) removeFromCache(nodeid, nlookup uint64) {
-	c, ok := p.getInodeCache(nodeid)
+	p.inoCacheL.Lock()
+	defer p.inoCacheL.Unlock()
+
+	c, ok := p.inoCache[nodeid]
 	if !ok {
 		return
 	}
@@ -37,10 +40,6 @@ func (p *PkgFS) removeFromCache(nodeid, nlookup uint64) {
 
 	// also checking if over large value in case of overflow
 	if v == 0 || v > 0xffffffffffff {
-		// need to forget inode
-		p.inoCacheL.Lock()
-		defer p.inoCacheL.Unlock()
-
 		delete(p.inoCache, nodeid)
 	}
 }

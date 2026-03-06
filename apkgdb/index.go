@@ -89,15 +89,19 @@ func (d *DB) index(r *os.File) error {
 	}
 
 	dataHash := make([]byte, 32)
-	_, err = r.Read(dataHash)
+	_, err = io.ReadFull(r, dataHash)
 	if err != nil {
 		return err
 	}
 
 	// hash the data area
 	hash := sha256.New()
-	r.Seek(int64(dataLoc[0]), io.SeekStart)
-	io.CopyN(hash, r, int64(dataLoc[1]))
+	if _, err = r.Seek(int64(dataLoc[0]), io.SeekStart); err != nil {
+		return err
+	}
+	if _, err = io.CopyN(hash, r, int64(dataLoc[1])); err != nil {
+		return err
+	}
 	dataHashChk := hash.Sum(nil)
 
 	if !bytes.Equal(dataHash, dataHashChk) {
@@ -105,7 +109,9 @@ func (d *DB) index(r *os.File) error {
 	}
 
 	// grab the header only
-	r.Seek(0, io.SeekStart)
+	if _, err = r.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 	headerData := make([]byte, 196)
 	_, err = io.ReadFull(r, headerData)
 	if err != nil {
@@ -113,7 +119,9 @@ func (d *DB) index(r *os.File) error {
 	}
 
 	// seek at signature location
-	r.Seek(196, io.SeekStart)
+	if _, err = r.Seek(196, io.SeekStart); err != nil {
+		return err
+	}
 	_, err = apkgsig.VerifyDb(headerData, bufio.NewReader(r))
 	if err != nil {
 		return err
@@ -121,7 +129,9 @@ func (d *DB) index(r *os.File) error {
 
 	// TODO → use indices
 
-	r.Seek(int64(dataLoc[0]), io.SeekStart)
+	if _, err = r.Seek(int64(dataLoc[0]), io.SeekStart); err != nil {
+		return err
+	}
 
 	// let's use a limited read buffer so we don't expand over hashed area
 	b := bufio.NewReader(&io.LimitedReader{R: r, N: int64(dataLoc[1])})
@@ -288,7 +298,9 @@ func (d *DB) index(r *os.File) error {
 		}
 
 		// store version
-		infoB.Put([]byte("version"), []byte(created.UTC().Format("20060102150405")))
+		if err := infoB.Put([]byte("version"), []byte(created.UTC().Format("20060102150405"))); err != nil {
+			return err
+		}
 
 		// cause commit to happen
 		return nil
@@ -298,9 +310,7 @@ func (d *DB) index(r *os.File) error {
 		return err
 	}
 
-	d.buildLdso()
-
-	return nil
+	return d.buildLdso()
 }
 
 // AddPackage adds a new package to the database. The rpath is the relative
