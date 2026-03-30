@@ -14,8 +14,11 @@ import (
 	"github.com/AzusaOS/apkg/apkgfs"
 )
 
-var dbMain *apkgdb.DB
-var shutdownChan = make(chan struct{})
+var (
+	dbMain       *apkgdb.DB
+	shutdownChan = make(chan struct{})
+	channel      = flag.String("channel", "stable", "release channel for version resolution (use \"latest\" for newest)")
+)
 
 func shutdown() {
 	log.Println("apkg: shutting down...")
@@ -87,6 +90,7 @@ func main() {
 		log.Printf("db: failed to load: %s", err)
 		return
 	}
+	dbMain.SetChannel(*channel)
 	http.Handle("/apkgdb/"+db, dbMain)
 
 	// mount database

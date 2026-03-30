@@ -49,6 +49,7 @@ type DB struct {
 	subLk   sync.RWMutex
 	ntgt    atomic.Value // stores NotifyTarget
 	ldso    []byte
+	channel string // release channel for version resolution ("latest" = no pins)
 }
 
 // New creates a new package database using the current system's OS and architecture.
@@ -119,6 +120,17 @@ func NewOsArch(prefix, name, path, dbos, dbarch string) (*DB, error) {
 	go res.updateThread(updateReq)
 
 	return res, nil
+}
+
+// SetChannel sets the release channel used for version resolution.
+// Use "latest" to always resolve to the newest version (no pins).
+func (d *DB) SetChannel(ch string) {
+	d.channel = ch
+	d.subLk.RLock()
+	for _, sub := range d.sub {
+		sub.channel = ch
+	}
+	d.subLk.RUnlock()
 }
 
 // CurrentVersion returns the version string of the currently loaded database,

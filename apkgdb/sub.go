@@ -31,6 +31,7 @@ func (d *DB) SubGet(sub ArchOS) (*DB, error) {
 		return nil, err
 	}
 	db.parent = d
+	db.channel = d.channel
 
 	d.sub[sub] = db
 	return db, nil

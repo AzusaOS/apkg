@@ -143,7 +143,7 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		metaB := tx.Bucket([]byte("meta"))
 		pathB := tx.Bucket([]byte("path"))
 
-		return p2pB.ForEach(func(k, v []byte) error {
+		if err := p2pB.ForEach(func(k, v []byte) error {
 			h := v[:32]
 
 			// load info
@@ -165,7 +165,34 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 			count += 1
 			datasize += binary.BigEndian.Uint64(pkg[1:9])
 			return nil
-		})
+		}); err != nil {
+			return err
+		}
+
+		// Write pin entries (type 0x01) after packages
+		pinsB := tx.Bucket([]byte("pins"))
+		if pinsB != nil {
+			return pinsB.ForEach(func(k, v []byte) error {
+				// key is "channel\x00prefix", value is version
+				if _, err := w.Write([]byte{0x01}); err != nil {
+					return err
+				}
+				sep := bytes.IndexByte(k, 0x00)
+				if sep == -1 {
+					return nil // malformed key, skip
+				}
+				ch := k[:sep]
+				pfx := k[sep+1:]
+				for _, b := range [][]byte{ch, pfx, v} {
+					if err := apkgsig.WriteVarblob(w, b); err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+		}
+
+		return nil
 	})
 
 	unlk()

@@ -176,6 +176,10 @@ func (d *DB) index(r *os.File) error {
 		if err != nil {
 			return err
 		}
+		pinsB, err := tx.CreateBucketIfNotExists([]byte("pins"))
+		if err != nil {
+			return err
+		}
 
 		// OK now let's read each package
 		for i := uint32(0); i < count; i++ {
@@ -295,6 +299,36 @@ func (d *DB) index(r *os.File) error {
 			}
 
 			//log.Printf("read package %s size=%d", name, size)
+		}
+
+		// Read pin entries (type 0x01) that follow packages
+		for {
+			var t uint8
+			err = binary.Read(b, binary.BigEndian, &t)
+			if err != nil {
+				// EOF or end of data section — normal termination
+				break
+			}
+			if t != 0x01 {
+				return fmt.Errorf("invalid data in db (unexpected type %d after packages)", t)
+			}
+
+			pinChannel, err := apkgsig.ReadVarblob(b, 256)
+			if err != nil {
+				return err
+			}
+			pinPrefix, err := apkgsig.ReadVarblob(b, 256)
+			if err != nil {
+				return err
+			}
+			pinVersion, err := apkgsig.ReadVarblob(b, 256)
+			if err != nil {
+				return err
+			}
+
+			if err := pinsB.Put(pinKey(string(pinChannel), string(pinPrefix)), pinVersion); err != nil {
+				return err
+			}
 		}
 
 		// store version

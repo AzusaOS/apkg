@@ -3,6 +3,7 @@ package apkgdb
 import (
 	"context"
 	"encoding/binary"
+	"log"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -119,7 +120,29 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 			return nil
 		}
 
-		// try to find value prefix
+		// Check for a version pin on the active channel
+		if pin := i.lookupPinTx(tx, name); pin != "" {
+			// Constrain the cursor seek to the pinned version prefix
+			pinnedName := name + "." + pin
+			pinnedC := collatedVersion(pinnedName)
+			c := b.Cursor()
+			c.Seek(append(pinnedC, 0xff))
+			k, pv := c.Prev()
+
+			if k != nil && strings.HasPrefix(string(pv[32+8:]), pinnedName+".") {
+				n = i.pkgIno(pv)
+				_, err := i.getPkgTx(tx, n, pv[:32])
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+
+			// Pinned version not found — log warning and fall through to unpinned
+			log.Printf("apkgdb: warning: pinned version %q for %q not found, falling back to latest", pin, name)
+		}
+
+		// Find latest version via prefix seek
 		c := b.Cursor()
 		c.Seek(append(nameC, 0xff))
 		k, v := c.Prev()
@@ -132,10 +155,6 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 		if !strings.HasPrefix(string(v[32+8:]), name+".") {
 			return os.ErrNotExist
 		}
-
-		// TODO scroll to next until no match anymore so we use latest version
-		// OR seek past (adding 0xff at end of string) and go prev once
-		// TODO handle versionning through profiles and other methods
 
 		n = i.pkgIno(v)
 		// we need to instanciate pkg at this point
