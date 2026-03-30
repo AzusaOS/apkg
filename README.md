@@ -41,11 +41,11 @@ When running as root, apkg also checks `/mnt/*/AZUSA` for an AzusaOS installatio
 Package names are dot-separated: `category.name.subcat.version.os.arch`
 
     sys-libs.glibc.libs.2.41.linux.amd64
-    ││             │    │    │     └─ architecture
-    ││             │    │    └─ operating system
-    ││             │    └─ version (variable depth)
-    ││             └─ subcategory (core, libs, dev, doc, data, mod, ...)
-    │└─ package name
+    │        │     │    │    │     └─ architecture
+    │        │     │    │    └─ operating system
+    │        │     │    └─ version (variable depth)
+    │        │     └─ subcategory (core, libs, dev, doc, data, mod, ...)
+    │        └─ package name
     └─ category
 
 Subcategories can be multi-level (e.g. `data.locale`, `data.fonts.afm`).
