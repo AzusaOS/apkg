@@ -1,6 +1,7 @@
 package apkgdb
 
 import (
+	"log"
 	"path/filepath"
 
 	bolt "go.etcd.io/bbolt"
@@ -9,7 +10,9 @@ import (
 func (d *DB) writeStart() error {
 	d.dbrw.Lock()
 
-	d.dbptr.Close()
+	if d.dbptr != nil {
+		d.dbptr.Close()
+	}
 
 	db, err := bolt.Open(filepath.Join(d.path, d.name+"."+d.os+"."+d.arch+".db"), 0600, nil)
 	if err != nil {
@@ -18,8 +21,10 @@ func (d *DB) writeStart() error {
 		db, err2 = bolt.Open(filepath.Join(d.path, d.name+"."+d.os+"."+d.arch+".db"), 0600, &bolt.Options{ReadOnly: true})
 
 		if err2 != nil {
-			// can't help this anymore :(
-			panic(err2)
+			log.Printf("apkgdb: CRITICAL: failed to reopen database: %s (original error: %s)", err2, err)
+			d.dbptr = nil
+			d.dbrw.Unlock()
+			return err
 		}
 		d.dbptr = db
 
@@ -34,12 +39,16 @@ func (d *DB) writeStart() error {
 }
 
 func (d *DB) writeEnd() {
-	d.dbptr.Close()
+	if d.dbptr != nil {
+		d.dbptr.Close()
+	}
 
 	db, err := bolt.Open(filepath.Join(d.path, d.name+"."+d.os+"."+d.arch+".db"), 0600, &bolt.Options{ReadOnly: true})
 	if err != nil {
-		// can't be helped
-		panic(err)
+		log.Printf("apkgdb: CRITICAL: failed to reopen database read-only: %s", err)
+		d.dbptr = nil
+		d.dbrw.Unlock()
+		return
 	}
 
 	d.dbptr = db

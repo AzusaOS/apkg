@@ -66,6 +66,39 @@ In order for package names to be appropriately sorted, the following collation r
 
 Note: this is EXPERIMENTAL. A lot of stuff is missing. Do not use unless you know what you are doing.
 
+# Unsigned packages
+
+The `-load_unsigned` flag enables loading unsigned SquashFS packages from disk
+for local development and testing. **This is dangerous and should never be used
+in production**, as it bypasses all signature verification.
+
+    ./apkg -load_unsigned
+
+When enabled, apkg watches the `unsigned/` subdirectory under the database
+storage path (`/var/lib/apkg/unsigned` as root, or `~/.cache/apkg/unsigned` as a
+regular user). Any `.squashfs` file placed there is automatically detected and
+made available through the FUSE filesystem.
+
+## File naming
+
+Unsigned package files must follow the standard naming convention:
+
+    category.name.subcat.version.os.arch.squashfs
+
+For example:
+
+    core.foobar.libs.1.2.3.linux.amd64.squashfs
+
+The OS and architecture suffixes are parsed from the filename and used to serve
+the package to the correct sub-database. Files that do not match this format are
+ignored.
+
+## Hot reload
+
+The unsigned directory is monitored with inotify (via fsnotify). New files are
+picked up automatically when created, and removed files are unregistered. No
+restart is required.
+
 # Database
 
 Encoding is big endian unless specified.

@@ -6,6 +6,10 @@ func (d *DB) Length() (sz uint64) {
 	d.dbrw.RLock()
 	defer d.dbrw.RUnlock()
 
+	if d.dbptr == nil {
+		return 0
+	}
+
 	_ = d.dbptr.View(func(tx *bolt.Tx) error {
 		sz = uint64(tx.Size())
 		return nil

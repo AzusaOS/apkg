@@ -77,19 +77,10 @@ func process(k hsm.Key, filename string) error {
 
 	filename_f := strings.TrimSuffix(filepath.Base(filename), ".squashfs")
 
-	fn_a := strings.Split(filename_f, ".")
-	// cat.name.subcat.1.2.3.linux.amd64
-
-	arch_s := fn_a[len(fn_a)-1]
-	os_s := fn_a[len(fn_a)-2]
-	fn_a = fn_a[:len(fn_a)-2]
-
-	cat_s := fn_a[0]
-	name_s := fn_a[1]
-	subcat_s := fn_a[2]
-
-	fn_v := fn_a[3:]
-	fn_a = fn_a[:3]
+	cat_s, name_s, subcat_s, fn_v, os_s, arch_s, fn_a, err := parsePackageFilename(filename_f)
+	if err != nil {
+		return err
+	}
 
 	tmp := fn_a
 	names := []string{strings.Join(tmp, ".")}
@@ -248,20 +239,46 @@ func process(k hsm.Key, filename string) error {
 	log.Printf("signature at %d, data at %d", signOffset, dataOffset)
 
 	header := &bytes.Buffer{}
-	header.Write([]byte("APKG"))
-	binary.Write(header, binary.BigEndian, uint32(1)) // version
-	binary.Write(header, binary.BigEndian, uint64(0)) // flags
-	binary.Write(header, binary.BigEndian, uint64(created.Unix()))
-	binary.Write(header, binary.BigEndian, uint64(created.Nanosecond()))
-	binary.Write(header, binary.BigEndian, uint32(HEADER_LEN)) // MetaData offset int32
-	binary.Write(header, binary.BigEndian, uint32(metadataLen))
-	header.Write(metadataHash[:])
-	binary.Write(header, binary.BigEndian, uint32(HEADER_LEN+metadataLen)) // Hash descriptor offset
-	binary.Write(header, binary.BigEndian, uint32(len(hashtable)))
-	header.Write(tableHash[:])
-	binary.Write(header, binary.BigEndian, uint32(signOffset))
-	binary.Write(header, binary.BigEndian, uint32(dataOffset))
-	binary.Write(header, binary.BigEndian, uint32(blockSize))
+	for _, v := range []interface{}{
+		[]byte("APKG"),
+		uint32(1),                          // version
+		uint64(0),                          // flags
+		uint64(created.Unix()),             // created timestamp
+		uint64(created.Nanosecond()),       // created nanoseconds
+		uint32(HEADER_LEN),                 // metadata offset
+		uint32(metadataLen),                // metadata length
+	} {
+		if b, ok := v.([]byte); ok {
+			if _, err := header.Write(b); err != nil {
+				return err
+			}
+		} else if err := binary.Write(header, binary.BigEndian, v); err != nil {
+			return err
+		}
+	}
+	if _, err := header.Write(metadataHash[:]); err != nil {
+		return err
+	}
+	for _, v := range []interface{}{
+		uint32(HEADER_LEN + metadataLen), // hash table offset
+		uint32(len(hashtable)),           // hash table length
+	} {
+		if err := binary.Write(header, binary.BigEndian, v); err != nil {
+			return err
+		}
+	}
+	if _, err := header.Write(tableHash[:]); err != nil {
+		return err
+	}
+	for _, v := range []interface{}{
+		uint32(signOffset),  // signature offset
+		uint32(dataOffset),  // data offset
+		uint32(blockSize),   // block size
+	} {
+		if err := binary.Write(header, binary.BigEndian, v); err != nil {
+			return err
+		}
+	}
 
 	if header.Len() != HEADER_LEN {
 		return errors.New("invalid header length")
@@ -277,14 +294,18 @@ func process(k hsm.Key, filename string) error {
 	if err != nil {
 		return err
 	}
-	apkgsig.WriteVarblob(sigB, sig_pub)
+	if err := apkgsig.WriteVarblob(sigB, sig_pub); err != nil {
+		return err
+	}
 
 	// use raw hash for ed25519
 	sig_blob, err := k.Sign(rand.Reader, header.Bytes(), crypto.Hash(0))
 	if err != nil {
 		return err
 	}
-	apkgsig.WriteVarblob(sigB, sig_blob)
+	if err := apkgsig.WriteVarblob(sigB, sig_blob); err != nil {
+		return err
+	}
 
 	// verify signature
 	_, err = apkgsig.VerifyPkg(header.Bytes(), bytes.NewReader(sigB.Bytes()))
@@ -334,11 +355,37 @@ func process(k hsm.Key, filename string) error {
 		return err
 	}
 
-	f.Seek(0, io.SeekStart)
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 	_, err = io.Copy(outf, f)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// parsePackageFilename parses a package filename of the form
+// "cat.name.subcat.version_parts.os.arch" into its components.
+// It requires at least 5 dot-separated components.
+func parsePackageFilename(filename_f string) (cat, name, subcat string, version []string, osStr, archStr string, nameComponents []string, err error) {
+	fn_a := strings.Split(filename_f, ".")
+	// cat.name.subcat.1.2.3.linux.amd64
+	if len(fn_a) < 5 {
+		err = fmt.Errorf("invalid filename format %q: expected at least cat.name.subcat.version.os.arch", filename_f)
+		return
+	}
+
+	archStr = fn_a[len(fn_a)-1]
+	osStr = fn_a[len(fn_a)-2]
+	fn_a = fn_a[:len(fn_a)-2]
+
+	cat = fn_a[0]
+	name = fn_a[1]
+	subcat = fn_a[2]
+
+	version = fn_a[3:]
+	nameComponents = fn_a[:3]
+	return
 }

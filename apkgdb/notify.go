@@ -8,9 +8,8 @@ type NotifyTarget interface {
 
 func (db *DB) notifyInode(ino uint64, offt int64, data []byte) error {
 	for {
-		tgt := db.ntgt
-		if tgt != nil {
-			return tgt.NotifyInode(ino, offt, data)
+		if v := db.ntgt.Load(); v != nil {
+			return v.(NotifyTarget).NotifyInode(ino, offt, data)
 		}
 		db = db.parent
 		if db == nil {
@@ -22,5 +21,5 @@ func (db *DB) notifyInode(ino uint64, offt int64, data []byte) error {
 
 // SetNotifyTarget sets the notification target for inode changes.
 func (db *DB) SetNotifyTarget(tgt NotifyTarget) {
-	db.ntgt = tgt
+	db.ntgt.Store(tgt)
 }

@@ -52,6 +52,7 @@ func (p *unsignedPkg) open() {
 }
 
 func (p *unsignedPkg) handleLookup(ino uint64) (apkgfs.Inode, error) {
+	p.load.Do(p.open)
 	if p.err != nil {
 		return nil, p.err
 	}

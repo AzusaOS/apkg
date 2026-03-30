@@ -73,7 +73,9 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 
 	nameBuf := make([]byte, 32)
 	copy(nameBuf, d.name)
-	f.Write(nameBuf)
+	if _, err := f.Write(nameBuf); err != nil {
+		return err
+	}
 
 	// SHA256('') = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 	emptyHash, _ := hex.DecodeString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
@@ -114,7 +116,9 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return errors.New("invalid header length")
 	}
 
-	f.Write(make([]byte, apkgsig.SignatureSize)) // reserved space for signature
+	if _, err := f.Write(make([]byte, apkgsig.SignatureSize)); err != nil { // reserved space for signature
+		return err
+	}
 
 	hash := sha256.New()
 	w := io.MultiWriter(f, hash)
@@ -223,7 +227,9 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 
-	f.Close()
+	if err := f.Close(); err != nil {
+		return err
+	}
 
 	// call index on file to check if the generated file is 100% valid
 	f, err = os.Open(fn)
@@ -243,7 +249,9 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 	fmt.Fprintf(lat, "%s\n", stamp)
-	lat.Close()
+	if err := lat.Close(); err != nil {
+		return err
+	}
 
 	// generate LATEST.jwt
 	sig_pub, err := k.PublicBlob()
@@ -269,7 +277,9 @@ func (d *DB) ExportAndUpload(k hsm.Key) error {
 		return err
 	}
 	fmt.Fprintf(lat, "%s\n", tokenString)
-	lat.Close()
+	if err := lat.Close(); err != nil {
+		return err
+	}
 
 	// upload database
 	s3pfxCf := "s3:/" + path.Join("/azusa/db", d.name, d.os, d.arch)

@@ -68,6 +68,10 @@ func (i *ldsoIno) Lookup(ctx context.Context, name string) (n uint64, err error)
 
 // buildLdso builds d.ldso based on entries found in the db
 func (d *DB) buildLdso() error {
+	if d.dbptr == nil {
+		return ErrDatabaseClosed
+	}
+
 	entries := make(map[string]*ldcache.Entry)
 
 	if err := d.dbptr.View(func(tx *bolt.Tx) error {

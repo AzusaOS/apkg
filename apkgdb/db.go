@@ -3,14 +3,19 @@
 package apkgdb
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"github.com/petar/GoLLRB/llrb"
 	bolt "go.etcd.io/bbolt"
 )
+
+// ErrDatabaseClosed is returned when an operation is attempted on a closed or failed database.
+var ErrDatabaseClosed = errors.New("database is closed")
 
 // PKG_URL_PREFIX is the default URL prefix for downloading packages and databases.
 const PKG_URL_PREFIX = "https://data.apkg.net/"
@@ -42,7 +47,7 @@ type DB struct {
 	pkgI    map[[32]byte]uint64 // maps package hash → initial inode number
 	sub     map[ArchOS]*DB
 	subLk   sync.RWMutex
-	ntgt    NotifyTarget // notify target
+	ntgt    atomic.Value // stores NotifyTarget
 	ldso    []byte
 }
 
@@ -122,6 +127,10 @@ func (d *DB) CurrentVersion() (v string) {
 	d.dbrw.RLock()
 	defer d.dbrw.RUnlock()
 
+	if d.dbptr == nil {
+		return ""
+	}
+
 	// get current version from db
 	_ = d.dbptr.View(func(tx *bolt.Tx) error {
 		if tx.Bucket([]byte("p2p")) == nil {
@@ -144,15 +153,25 @@ func (d *DB) CurrentVersion() (v string) {
 	return
 }
 
-// Close closes the underlying BoltDB database.
+// Close closes the underlying BoltDB database and all sub-databases.
 func (d *DB) Close() error {
+	// Close all sub-databases first
+	d.subLk.Lock()
+	for k, sub := range d.sub {
+		sub.Close()
+		delete(d.sub, k)
+	}
+	d.subLk.Unlock()
+
 	d.dbrw.Lock()
 	defer d.dbrw.Unlock()
 
 	close(d.done)
 
-	if err := d.dbptr.Close(); err != nil {
-		return err
+	if d.dbptr != nil {
+		if err := d.dbptr.Close(); err != nil {
+			return err
+		}
 	}
 
 	d.dbptr = nil

@@ -94,6 +94,10 @@ func (i *DB) internalLookup(name string) (n uint64, err error) {
 	i.dbrw.RLock()
 	defer i.dbrw.RUnlock()
 
+	if i.dbptr == nil {
+		return 0, ErrDatabaseClosed
+	}
+
 	err = i.dbptr.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("p2p"))
 		if b == nil {

@@ -112,20 +112,27 @@ func (d *DB) getPkgTx(tx *bolt.Tx, startIno uint64, hash []byte) (*Package, erro
 		return nil, os.ErrInvalid
 	}
 
+	pathB := tx.Bucket([]byte("path"))
+	headerB := tx.Bucket([]byte("header"))
+	sigB := tx.Bucket([]byte("sig"))
+	metaB := tx.Bucket([]byte("meta"))
+	if pathB == nil || headerB == nil || sigB == nil || metaB == nil {
+		return nil, os.ErrInvalid
+	}
+
 	pkg := &Package{
 		parent:   d,
 		size:     binary.BigEndian.Uint64(v[1:9]),
 		startIno: startIno,
 		inodes:   binary.BigEndian.Uint64(v[17:25]),
 		name:     string(v[25:]),
-		path:     string(tx.Bucket([]byte("path")).Get(hash)),
+		path:     string(pathB.Get(hash)),
 		hash:     bytesDup(hash),
 	}
 
-	// read raw values (assuming buckets will exist)
-	pkg.rawHeader = bytesDup(tx.Bucket([]byte("header")).Get(hash))
-	pkg.rawSig = bytesDup(tx.Bucket([]byte("sig")).Get(hash))
-	pkg.rawMeta = bytesDup(tx.Bucket([]byte("meta")).Get(hash))
+	pkg.rawHeader = bytesDup(headerB.Get(hash))
+	pkg.rawSig = bytesDup(sigB.Get(hash))
+	pkg.rawMeta = bytesDup(metaB.Get(hash))
 
 	// keep pkg in cache
 	pkgCacheL.Lock()
