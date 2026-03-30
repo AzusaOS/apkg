@@ -34,9 +34,9 @@ func TestGetPkgTxMissingBuckets(t *testing.T) {
 		// Build a minimal valid value: 1 byte type + 8 bytes size + 8 bytes padding + 8 bytes inodes + name
 		val := make([]byte, 26)
 		val[0] = 0
-		binary.BigEndian.PutUint64(val[1:9], 1000)   // size
-		binary.BigEndian.PutUint64(val[17:25], 10)    // inodes
-		val[25] = 'x'                                  // name
+		binary.BigEndian.PutUint64(val[1:9], 1000) // size
+		binary.BigEndian.PutUint64(val[17:25], 10) // inodes
+		val[25] = 'x'                              // name
 		return b.Put(hash, val)
 	})
 	if err != nil {

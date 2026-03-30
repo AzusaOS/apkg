@@ -241,12 +241,12 @@ func process(k hsm.Key, filename string) error {
 	header := &bytes.Buffer{}
 	for _, v := range []interface{}{
 		[]byte("APKG"),
-		uint32(1),                          // version
-		uint64(0),                          // flags
-		uint64(created.Unix()),             // created timestamp
-		uint64(created.Nanosecond()),       // created nanoseconds
-		uint32(HEADER_LEN),                 // metadata offset
-		uint32(metadataLen),                // metadata length
+		uint32(1),                    // version
+		uint64(0),                    // flags
+		uint64(created.Unix()),       // created timestamp
+		uint64(created.Nanosecond()), // created nanoseconds
+		uint32(HEADER_LEN),           // metadata offset
+		uint32(metadataLen),          // metadata length
 	} {
 		if b, ok := v.([]byte); ok {
 			if _, err := header.Write(b); err != nil {
@@ -271,9 +271,9 @@ func process(k hsm.Key, filename string) error {
 		return err
 	}
 	for _, v := range []interface{}{
-		uint32(signOffset),  // signature offset
-		uint32(dataOffset),  // data offset
-		uint32(blockSize),   // block size
+		uint32(signOffset), // signature offset
+		uint32(dataOffset), // data offset
+		uint32(blockSize),  // block size
 	} {
 		if err := binary.Write(header, binary.BigEndian, v); err != nil {
 			return err

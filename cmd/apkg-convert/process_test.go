@@ -6,15 +6,15 @@ import (
 
 func TestParsePackageFilename(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantCat   string
-		wantName  string
-		wantSub   string
-		wantVer   []string
-		wantOS    string
-		wantArch  string
-		wantErr   bool
+		name     string
+		input    string
+		wantCat  string
+		wantName string
+		wantSub  string
+		wantVer  []string
+		wantOS   string
+		wantArch string
+		wantErr  bool
 	}{
 		{
 			name:     "valid full filename",
