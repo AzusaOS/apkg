@@ -16,6 +16,7 @@ import (
 
 var (
 	dbMain       *apkgdb.DB
+	fuseFS       *apkgfs.PkgFS
 	shutdownChan = make(chan struct{})
 	channel      = flag.String("channel", "stable", "release channel for version resolution (use \"latest\" for newest)")
 )
@@ -25,11 +26,28 @@ func shutdown() {
 	close(shutdownChan)
 }
 
+func gracefulRestart() {
+	exec, err := os.Executable()
+	if err != nil {
+		log.Printf("apkg: graceful restart failed: cannot determine executable: %s", err)
+		return
+	}
+	if fuseFS == nil || fuseFS.FuseServer() == nil {
+		log.Printf("apkg: graceful restart not available (no FUSE server)")
+		return
+	}
+	log.Printf("apkg: performing graceful restart...")
+	if err := fuseFS.FuseServer().GracefulExec(exec); err != nil {
+		log.Printf("apkg: graceful restart failed: %s", err)
+	}
+}
+
 func setupSignals() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
 	signal.Notify(c, syscall.SIGHUP)
+	signal.Notify(c, syscall.SIGUSR2)
 
 	go func() {
 		for sig := range c {
@@ -40,6 +58,9 @@ func setupSignals() {
 			case syscall.SIGHUP:
 				// reload
 				go dbMain.Update()
+			case syscall.SIGUSR2:
+				// graceful restart
+				go gracefulRestart()
 			}
 		}
 	}()
@@ -99,6 +120,7 @@ func main() {
 		fmt.Printf("Mount fail: %s\n", err)
 		os.Exit(1)
 	}
+	fuseFS = mp
 
 	dbMain.SetNotifyTarget(mp)
 	go mp.Serve()

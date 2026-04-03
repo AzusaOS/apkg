@@ -21,7 +21,8 @@ type PkgFS struct {
 	fuse.RawFileSystem
 
 	root       RootInode
-	server     *fuse.Server
+	server     *fuse.Server  // used on Darwin (go-fuse)
+	fuseServer *FuseServer   // used on Linux (our implementation)
 	mountPoint string
 
 	inoCache  map[uint64]Inode
@@ -60,25 +61,50 @@ func (p *PkgFS) Path() string {
 	return p.mountPoint
 }
 
+// FuseServer returns the underlying FuseServer, or nil if using go-fuse (Darwin).
+func (p *PkgFS) FuseServer() *FuseServer {
+	return p.fuseServer
+}
+
 // Serve starts the FUSE server and blocks until unmounted.
 func (p *PkgFS) Serve() {
-	p.server.Serve()
+	if p.fuseServer != nil {
+		p.fuseServer.Serve()
+	} else if p.server != nil {
+		p.server.Serve()
+	}
 }
 
 // Unmount unmounts the filesystem.
 func (p *PkgFS) Unmount() {
-	_ = p.server.Unmount()
+	if p.fuseServer != nil {
+		fuseUnmount(p.fuseServer.MountPoint)
+		syscall.Close(p.fuseServer.Fd)
+	} else if p.server != nil {
+		_ = p.server.Unmount()
+	}
 }
 
 // NotifyInode notifies the kernel that inode data has changed at the given offset.
 // This is used to invalidate kernel caches when package data is updated.
 func (p *PkgFS) NotifyInode(ino uint64, offt int64, data []byte) error {
-	res := p.server.InodeNotify(ino, offt, int64(len(data)))
-	p.server.InodeNotifyStoreCache(ino, offt, data)
-	if res.Ok() {
-		return nil
+	if p.fuseServer != nil {
+		err := p.fuseServer.InodeNotify(ino, offt, int64(len(data)))
+		if err == nil && len(data) > 0 {
+			p.fuseServer.InodeNotifyStoreCache(ino, offt, data)
+		}
+		return err
 	}
-	return fmt.Errorf("error on notify: %s", res)
+
+	if p.server != nil {
+		res := p.server.InodeNotify(ino, offt, int64(len(data)))
+		p.server.InodeNotifyStoreCache(ino, offt, data)
+		if res.Ok() {
+			return nil
+		}
+		return fmt.Errorf("error on notify: %s", res)
+	}
+	return nil
 }
 
 func (p *PkgFS) Access(cancel <-chan struct{}, input *fuse.AccessIn) (code fuse.Status) {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -74,9 +75,13 @@ func updater(p string) {
 				break
 			}
 
-			log.Printf("apkg: updated to version %s, restart required", n)
+			log.Printf("apkg: updated to version %s, performing graceful restart", n)
 			// we update v so we don't update again unless needed
 			v = n
+			// trigger graceful restart via SIGUSR2
+			if p, err := os.FindProcess(os.Getpid()); err == nil {
+				_ = p.Signal(syscall.SIGUSR2)
+			}
 		}
 
 		time.Sleep(1 * time.Hour)
